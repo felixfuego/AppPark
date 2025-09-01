@@ -1,0 +1,108 @@
+@page "/roles/crear"
+@using Park.Web.Services
+@using Park.Comun.DTOs
+@inject IRoleService RoleService
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Crear Rol</PageTitle>
+
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-shield me-2"></i>
+                        Crear Nuevo Rol
+                    </h5>
+                    <button class="btn btn-secondary" @onclick="@(() => Navigation.NavigateTo("/roles"))">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Volver
+                    </button>
+                </div>
+                <div class="card-body">
+                    <EditForm Model="@roleModel" OnValidSubmit="HandleValidSubmit">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary />
+
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Nombre del Rol *</label>
+                            <InputText id="name" class="form-control" @bind-Value="roleModel.Name" />
+                            <ValidationMessage For="@(() => roleModel.Name)" />
+                            <div class="form-text">
+                                Ingrese un nombre único para el rol (ej: AdminEmpresa, GestorVisitas, Guardia).
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Descripción *</label>
+                            <InputTextArea id="description" class="form-control" rows="3" @bind-Value="roleModel.Description" />
+                            <ValidationMessage For="@(() => roleModel.Description)" />
+                            <div class="form-text">
+                                Describa las funciones y permisos que tendrá este rol.
+                            </div>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            <strong>Tipos de Roles Predefinidos:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li><strong>SuperAdmin:</strong> Acceso completo al sistema</li>
+                                <li><strong>AdminEmpresa:</strong> Administrador de empresa específica</li>
+                                <li><strong>GestorVisitas:</strong> Gestión de visitas y visitantes</li>
+                                <li><strong>Guardia:</strong> Control de acceso en portones</li>
+                            </ul>
+                        </div>
+
+                        <hr />
+
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="button" class="btn btn-secondary" @onclick="@(() => Navigation.NavigateTo("/roles"))">
+                                <i class="fas fa-times me-2"></i>
+                                Cancelar
+                            </button>
+                            <button type="submit" class="btn btn-primary" disabled="@saving">
+                                @if (saving)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                    <span>Creando...</span>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-save me-2"></i>
+                                    <span>Crear Rol</span>
+                                }
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private CreateRoleDto roleModel = new();
+    private bool saving = false;
+
+    private async Task HandleValidSubmit()
+    {
+        saving = true;
+        try
+        {
+            await RoleService.CreateRoleAsync(roleModel);
+            
+            await JSRuntime.InvokeVoidAsync("alert", "Rol creado exitosamente");
+            Navigation.NavigateTo("/roles");
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error al crear rol: {ex.Message}");
+        }
+        finally
+        {
+            saving = false;
+        }
+    }
+}

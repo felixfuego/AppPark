@@ -1,0 +1,287 @@
+@page "/zones/{Id:int}"
+@using Park.Web.Models
+@using Park.Web.Services
+@inject IZoneService ZoneService
+@inject NavigationManager Navigation
+@inject ILogger<Details> Logger
+
+<AuthorizeView>
+    <ChildContent>
+        <div class="container-fluid">
+            @if (isLoading)
+            {
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p class="mt-2">Cargando información de la zona...</p>
+                </div>
+            }
+            else if (zone == null)
+            {
+                <div class="text-center py-5">
+                    <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                    <h4>Zona no encontrada</h4>
+                    <p class="text-muted">La zona que buscas no existe o ha sido eliminada.</p>
+                    <button class="btn btn-primary" @onclick="@(() => Navigation.NavigateTo("/zones"))">
+                        <i class="fas fa-arrow-left me-2"></i>
+                        Volver a Zonas
+                    </button>
+                </div>
+            }
+            else
+            {
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h1 class="h3 mb-0">
+                            <i class="fas fa-map-marker-alt me-2"></i>
+                            @zone.Name
+                        </h1>
+                        <p class="text-muted">Detalles de la zona</p>
+                    </div>
+                    <div class="btn-group">
+                        <button class="btn btn-outline-warning" @onclick="@(() => Navigation.NavigateTo($"/zones/{zone.Id}/edit"))">
+                            <i class="fas fa-edit me-2"></i>
+                            Editar
+                        </button>
+                        <button class="btn btn-outline-secondary" @onclick="@(() => Navigation.NavigateTo("/zones"))">
+                            <i class="fas fa-arrow-left me-2"></i>
+                            Volver
+                        </button>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">Información General</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label fw-bold">Nombre</label>
+                                        <p class="form-control-plaintext">@zone.Name</p>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label fw-bold">Estado</label>
+                                        <div>
+                                            @if (zone.IsActive)
+                                            {
+                                                <span class="badge bg-success">Activa</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger">Inactiva</span>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+
+                                @if (!string.IsNullOrEmpty(zone.Description))
+                                {
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Descripción</label>
+                                        <p class="form-control-plaintext">@zone.Description</p>
+                                    </div>
+                                }
+
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label fw-bold">Ubicación</label>
+                                        <p class="form-control-plaintext">
+                                            @if (!string.IsNullOrEmpty(zone.Location))
+                                            {
+                                                <i class="fas fa-map-pin me-1"></i>@zone.Location
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">No especificada</span>
+                                            }
+                                        </p>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label fw-bold">Capacidad</label>
+                                        <p class="form-control-plaintext">
+                                            <i class="fas fa-users me-1"></i>@zone.Capacity personas
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h5 class="mb-0">Empresas en esta Zona</h5>
+                            </div>
+                            <div class="card-body">
+                                @if (zone.CompaniesCount > 0)
+                                {
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        Esta zona tiene <strong>@zone.CompaniesCount empresas</strong> asignadas.
+                                    </div>
+                                    <button class="btn btn-outline-primary" @onclick="@(() => Navigation.NavigateTo($"/zones/{zone.Id}/companies"))">
+                                        <i class="fas fa-building me-2"></i>
+                                        Ver Empresas
+                                    </button>
+                                }
+                                else
+                                {
+                                    <div class="text-center py-3">
+                                        <i class="fas fa-building fa-2x text-muted mb-2"></i>
+                                        <p class="text-muted">No hay empresas asignadas a esta zona.</p>
+                                        <button class="btn btn-outline-primary" @onclick="@(() => Navigation.NavigateTo("/companies/create"))">
+                                            <i class="fas fa-plus me-2"></i>
+                                            Agregar Empresa
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Puertas de Acceso</h5>
+                            </div>
+                            <div class="card-body">
+                                @if (zone.GatesCount > 0)
+                                {
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        Esta zona tiene <strong>@zone.GatesCount puertas</strong> de acceso.
+                                    </div>
+                                    <button class="btn btn-outline-primary" @onclick="@(() => Navigation.NavigateTo($"/zones/{zone.Id}/gates"))">
+                                        <i class="fas fa-door-open me-2"></i>
+                                        Ver Puertas
+                                    </button>
+                                }
+                                else
+                                {
+                                    <div class="text-center py-3">
+                                        <i class="fas fa-door-open fa-2x text-muted mb-2"></i>
+                                        <p class="text-muted">No hay puertas asignadas a esta zona.</p>
+                                        <button class="btn btn-outline-primary" @onclick="@(() => Navigation.NavigateTo("/gates/create"))">
+                                            <i class="fas fa-plus me-2"></i>
+                                            Agregar Puerta
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4">
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h6 class="mb-0">Estadísticas</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row text-center">
+                                    <div class="col-6">
+                                        <div class="border-end">
+                                            <h4 class="text-primary mb-1">@zone.CompaniesCount</h4>
+                                            <small class="text-muted">Empresas</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <h4 class="text-success mb-1">@zone.GatesCount</h4>
+                                        <small class="text-muted">Puertas</small>
+                                    </div>
+                                </div>
+                                <hr />
+                                <div class="text-center">
+                                    <h4 class="text-info mb-1">@zone.Capacity</h4>
+                                    <small class="text-muted">Capacidad Total</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h6 class="mb-0">Acciones Rápidas</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-outline-primary btn-sm" @onclick="@(() => Navigation.NavigateTo("/companies/create"))">
+                                        <i class="fas fa-plus me-2"></i>
+                                        Nueva Empresa
+                                    </button>
+                                    <button class="btn btn-outline-success btn-sm" @onclick="@(() => Navigation.NavigateTo("/gates/create"))">
+                                        <i class="fas fa-door-open me-2"></i>
+                                        Nueva Puerta
+                                    </button>
+                                    <button class="btn btn-outline-info btn-sm" @onclick="@(() => Navigation.NavigateTo("/visits/create"))">
+                                        <i class="fas fa-calendar-plus me-2"></i>
+                                        Nueva Visita
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">Información del Sistema</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">ID de Zona</label>
+                                    <p class="form-control-plaintext">@zone.Id</p>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Fecha de Creación</label>
+                                    <p class="form-control-plaintext">@zone.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
+                                </div>
+                                @if (zone.UpdatedAt.HasValue)
+                                {
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Última Actualización</label>
+                                        <p class="form-control-plaintext">@zone.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm")</p>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </ChildContent>
+    <NotAuthorized>
+        <div class="text-center">
+            <h3>Acceso Denegado</h3>
+            <p>Debes iniciar sesión para ver los detalles de la zona.</p>
+            <a href="/login" class="btn btn-primary">Iniciar Sesión</a>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private Zone? zone;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadZone();
+    }
+
+    private async Task LoadZone()
+    {
+        try
+        {
+            isLoading = true;
+            zone = await ZoneService.GetByIdAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al cargar zona {ZoneId}", Id);
+            zone = null;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

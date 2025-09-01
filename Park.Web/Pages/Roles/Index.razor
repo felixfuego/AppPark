@@ -1,0 +1,292 @@
+@page "/roles"
+@using Park.Web.Services
+@using Park.Comun.DTOs
+@using Park.Web.Components
+@inject IRoleService RoleService
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Gestión de Roles</PageTitle>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-shield me-2"></i>
+                        Gestión de Roles
+                    </h5>
+                    <button class="btn btn-primary" @onclick="@(() => Navigation.NavigateTo("/roles/crear"))">
+                        <i class="fas fa-plus me-2"></i>
+                        Nuevo Rol
+                    </button>
+                </div>
+                <div class="card-body">
+                    <!-- Filtros -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-search"></i>
+                                </span>
+                                <input type="text" class="form-control" placeholder="Buscar roles..." 
+                                       @bind="searchTerm" @bind:event="oninput" @onkeyup="OnSearch" />
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <select class="form-select" @onchange="OnStatusFilterChanged" value="@statusFilter">
+                                <option value="">Todos</option>
+                                <option value="true">Activos</option>
+                                <option value="false">Inactivos</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Tabla de Roles -->
+                    @if (loading)
+                    {
+                        <div class="text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Cargando...</span>
+                            </div>
+                        </div>
+                    }
+                    else if (filteredRoles.Any())
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Nombre</th>
+                                        <th>Descripción</th>
+                                        <th>Estado</th>
+                                        <th>Fecha Creación</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var role in paginatedRoles)
+                                    {
+                                        <tr>
+                                            <td>@role.Id</td>
+                                            <td>
+                                                <strong>@role.Name</strong>
+                                            </td>
+                                            <td>@role.Description</td>
+                                            <td>
+                                                @if (role.IsActive)
+                                                {
+                                                    <span class="badge bg-success">Activo</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-danger">Inactivo</span>
+                                                }
+                                            </td>
+                                            <td>@role.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    
+                                                    <button class="btn btn-sm btn-outline-warning" 
+                                                            @onclick="() => EditRole(role.Id)" title="Editar">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    @if (role.IsActive)
+                                                    {
+                                                        <button class="btn btn-sm btn-outline-danger" 
+                                                                @onclick="() => DeactivateRole(role.Id)" title="Desactivar">
+                                                            <i class="fas fa-times"></i>
+                                                        </button>
+                                                    }
+                                                    else
+                                                    {
+                                                        <button class="btn btn-sm btn-outline-success" 
+                                                                @onclick="() => ActivateRole(role.Id)" title="Activar">
+                                                            <i class="fas fa-check"></i>
+                                                        </button>
+                                                    }
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Paginación -->
+                        <Pagination CurrentPage="@currentPage" 
+                                   TotalPages="@totalPages" 
+                                   PageChanged="OnPageChanged" />
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <i class="fas fa-user-shield fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No se encontraron roles</h5>
+                            <p class="text-muted">No hay roles que coincidan con los criterios de búsqueda.</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<RoleDto> roles = new();
+    private List<RoleDto> filteredRoles = new();
+    private List<RoleDto> paginatedRoles = new();
+    
+    private string searchTerm = "";
+    private string statusFilter = "";
+    
+    private int currentPage = 1;
+    private int pageSize = 10;
+    private int totalPages = 1;
+    private bool loading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        loading = true;
+        try
+        {
+            var rolesResult = await RoleService.GetAllRolesAsync();
+            roles = rolesResult?.ToList() ?? new List<RoleDto>();
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("console.error", "Error loading roles:", ex.Message);
+        }
+        finally
+        {
+            loading = false;
+        }
+    }
+
+    private void ApplyFilters()
+    {
+        var filtered = roles.AsEnumerable();
+
+        // Filtro por búsqueda
+        if (!string.IsNullOrEmpty(searchTerm))
+        {
+            filtered = filtered.Where(r =>
+                r.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                r.Description.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+        }
+
+        // Filtro por estado
+        if (!string.IsNullOrEmpty(statusFilter))
+        {
+            if (statusFilter == "true")
+            {
+                filtered = filtered.Where(r => r.IsActive == true);
+            }
+            else if (statusFilter == "false")
+            {
+                filtered = filtered.Where(r => r.IsActive == false);
+            }
+            // Si statusFilter es vacío o cualquier otro valor, muestra todos
+        }
+
+        filteredRoles = filtered.ToList();
+        CalculatePagination();
+    }
+
+    private void CalculatePagination()
+    {
+        totalPages = (int)Math.Ceiling((double)filteredRoles.Count / pageSize);
+        currentPage = Math.Max(1, Math.Min(currentPage, totalPages));
+        
+        var skip = (currentPage - 1) * pageSize;
+        paginatedRoles = filteredRoles.Skip(skip).Take(pageSize).ToList();
+    }
+
+    private void OnSearch()
+    {
+        currentPage = 1;
+        ApplyFilters();
+        StateHasChanged();
+    }
+
+    private void OnStatusFilterChanged(ChangeEventArgs e)
+    {
+        statusFilter = e.Value?.ToString() ?? "";
+        currentPage = 1;
+        ApplyFilters();
+        StateHasChanged();
+    }
+
+    private void OnPageChanged(int page)
+    {
+        currentPage = page;
+        CalculatePagination();
+        StateHasChanged();
+    }
+
+    private void ViewRole(int roleId)
+    {
+        Navigation.NavigateTo($"/roles/{roleId}");
+    }
+
+    private void EditRole(int roleId)
+    {
+        Navigation.NavigateTo($"/roles/edit/{roleId}");
+    }
+
+    private async Task ActivateRole(int roleId)
+    {
+        try
+        {
+            var role = roles.FirstOrDefault(r => r.Id == roleId);
+            if (role != null)
+            {
+                var editModel = new UpdateRoleDto
+                {
+                    Name = role.Name,
+                    Description = role.Description,
+                    IsActive = true
+                };
+
+                await RoleService.UpdateRoleAsync(roleId, editModel);
+                await LoadData();
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error al activar rol: {ex.Message}");
+        }
+    }
+
+    private async Task DeactivateRole(int roleId)
+    {
+        try
+        {
+            var role = roles.FirstOrDefault(r => r.Id == roleId);
+            if (role != null)
+            {
+                var editModel = new UpdateRoleDto
+                {
+                    Name = role.Name,
+                    Description = role.Description,
+                    IsActive = false
+                };
+
+                await RoleService.UpdateRoleAsync(roleId, editModel);
+                await LoadData();
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error al desactivar rol: {ex.Message}");
+        }
+    }
+}

@@ -1,0 +1,140 @@
+@page "/test-api"
+@using Park.Web.Services
+@inject HttpClient Http
+@inject ILogger<TestApi> Logger
+
+<PageTitle>Test API - Sistema de Parque Industrial</PageTitle>
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-plug text-primary me-2"></i>
+                        Test de Conexión API
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if (isLoading)
+                    {
+                        <div class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Probando conexión...</span>
+                            </div>
+                            <p class="mt-3">Probando conexión con la API...</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Estado de la API:</h6>
+                                @if (apiStatus == "success")
+                                {
+                                    <div class="alert alert-success">
+                                        <i class="fas fa-check-circle me-2"></i>
+                                        API conectada correctamente
+                                    </div>
+                                }
+                                else if (apiStatus == "error")
+                                {
+                                    <div class="alert alert-danger">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        Error al conectar con la API: @errorMessage
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-question-circle me-2"></i>
+                                        Estado desconocido
+                                    </div>
+                                }
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <h6>Información de la API:</h6>
+                                <ul class="list-group">
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>URL Base:</span>
+                                        <span class="text-muted">@Http.BaseAddress</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between">
+                                        <span>Timeout:</span>
+                                        <span class="text-muted">@Http.Timeout.TotalSeconds segundos</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <button class="btn btn-primary" @onclick="TestConnection" disabled="@isLoading">
+                                <i class="fas fa-sync-alt me-2"></i>
+                                Probar Conexión
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private bool isLoading = false;
+    private string apiStatus = "";
+    private string errorMessage = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await TestConnection();
+    }
+
+    private async Task TestConnection()
+    {
+        isLoading = true;
+        apiStatus = "";
+        errorMessage = "";
+
+        try
+        {
+            // Intentar hacer una petición a la API
+            var response = await Http.GetAsync("api/health");
+            
+            if (response.IsSuccessStatusCode)
+            {
+                apiStatus = "success";
+                Logger.LogInformation("API conectada correctamente");
+            }
+            else
+            {
+                apiStatus = "error";
+                errorMessage = $"HTTP {response.StatusCode}: {response.ReasonPhrase}";
+                Logger.LogWarning("Error al conectar con la API: {StatusCode}", response.StatusCode);
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            apiStatus = "error";
+            errorMessage = $"Error de conexión: {ex.Message}";
+            Logger.LogError(ex, "Error de conexión HTTP");
+        }
+        catch (TaskCanceledException ex)
+        {
+            apiStatus = "error";
+            errorMessage = "Timeout: La API no respondió en el tiempo esperado";
+            Logger.LogError(ex, "Timeout al conectar con la API");
+        }
+        catch (Exception ex)
+        {
+            apiStatus = "error";
+            errorMessage = $"Error inesperado: {ex.Message}";
+            Logger.LogError(ex, "Error inesperado al conectar con la API");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

@@ -1,0 +1,79 @@
+@if (TotalPages > 1)
+{
+    <nav aria-label="Navegación de páginas">
+        <ul class="pagination justify-content-center mb-0">
+            <!-- Botón Anterior -->
+            <li class="page-item @(CurrentPage == 1 ? "disabled" : "")">
+                <button class="page-link" @onclick="() => OnPageChanged(CurrentPage - 1)" disabled="@(CurrentPage == 1)">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+            </li>
+
+            <!-- Primera página -->
+            @if (CurrentPage > 3)
+            {
+                <li class="page-item">
+                    <button class="page-link" @onclick="() => OnPageChanged(1)">1</button>
+                </li>
+                @if (CurrentPage > 4)
+                {
+                    <li class="page-item disabled">
+                        <span class="page-link">...</span>
+                    </li>
+                }
+            }
+
+            <!-- Páginas alrededor de la página actual -->
+            @for (int i = Math.Max(1, CurrentPage - 2); i <= Math.Min(TotalPages, CurrentPage + 2); i++)
+            {
+                <li class="page-item @(i == CurrentPage ? "active" : "")">
+                    <button class="page-link" @onclick="() => OnPageChanged(i)">@i</button>
+                </li>
+            }
+
+            <!-- Última página -->
+            @if (CurrentPage < TotalPages - 2)
+            {
+                @if (CurrentPage < TotalPages - 3)
+                {
+                    <li class="page-item disabled">
+                        <span class="page-link">...</span>
+                    </li>
+                }
+                <li class="page-item">
+                    <button class="page-link" @onclick="() => OnPageChanged(TotalPages)">@TotalPages</button>
+                </li>
+            }
+
+            <!-- Botón Siguiente -->
+            <li class="page-item @(CurrentPage == TotalPages ? "disabled" : "")">
+                <button class="page-link" @onclick="() => OnPageChanged(CurrentPage + 1)" disabled="@(CurrentPage == TotalPages)">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Información de páginas -->
+    <div class="text-center mt-2">
+        <small class="text-muted">
+            Mostrando @((CurrentPage - 1) * PageSize + 1) a @Math.Min(CurrentPage * PageSize, TotalItems) de @TotalItems elementos
+        </small>
+    </div>
+}
+
+@code {
+    [Parameter] public int CurrentPage { get; set; } = 1;
+    [Parameter] public int TotalPages { get; set; }
+    [Parameter] public int PageSize { get; set; }
+    [Parameter] public int TotalItems { get; set; }
+    [Parameter] public EventCallback<int> PageChanged { get; set; }
+
+    private async Task OnPageChanged(int page)
+    {
+        if (page >= 1 && page <= TotalPages && page != CurrentPage)
+        {
+            await PageChanged.InvokeAsync(page);
+        }
+    }
+}

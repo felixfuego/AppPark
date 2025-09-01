@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Park.Maui.Views.LoginPage"
+             Title="Login"
+             BackgroundColor="{StaticResource Primary}">
+
+    <ScrollView>
+        <VerticalStackLayout Spacing="25" Padding="30,0" VerticalOptions="Center">
+
+            <!-- Logo/Icon -->
+            <Image Source="dotnet_bot.png"
+                   WidthRequest="120"
+                   HeightRequest="120"
+                   HorizontalOptions="Center" />
+
+            <!-- App Title -->
+            <Label 
+                Text="Park Guardia"
+                FontSize="28"
+                FontAttributes="Bold"
+                TextColor="White"
+                HorizontalOptions="Center" />
+
+            <Label 
+                Text="Panel de Guardia"
+                FontSize="16"
+                TextColor="White"
+                Opacity="0.8"
+                HorizontalOptions="Center" />
+
+            <!-- Login Form -->
+            <Frame BackgroundColor="White" 
+                   CornerRadius="12" 
+                   Padding="24"
+                   Margin="16,0">
+
+                <VerticalStackLayout Spacing="16">
+
+                    <!-- Username Input -->
+                    <Label Text="Usuario" 
+                           FontSize="14" 
+                           TextColor="{StaticResource TextPrimary}" />
+
+                    <Entry x:Name="UsernameEntry"
+                           Placeholder="Ingrese su usuario"
+                           Text="{Binding Username}"
+                           IsSpellCheckEnabled="false" />
+
+                    <!-- Password Input -->
+                    <Label Text="Contraseña" 
+                           FontSize="14" 
+                           TextColor="{StaticResource TextPrimary}" />
+
+                    <Entry x:Name="PasswordEntry"
+                           Placeholder="Ingrese su contraseña"
+                           Text="{Binding Password}"
+                           IsPassword="true"
+                           IsSpellCheckEnabled="false" />
+
+                    <!-- Login Button -->
+                    <Button x:Name="LoginButton"
+                            Text="Entrar"
+                            Clicked="OnLoginClicked"
+                            HorizontalOptions="Fill" />
+
+                    <!-- Progress Bar -->
+                    <ActivityIndicator x:Name="ProgressIndicator"
+                                      IsRunning="{Binding IsBusy}"
+                                      IsVisible="{Binding IsBusy}"
+                                      HorizontalOptions="Center" />
+
+                </VerticalStackLayout>
+
+            </Frame>
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

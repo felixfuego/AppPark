@@ -1,0 +1,246 @@
+@page "/zones/edit/{Id:int}"
+@using Park.Web.Models
+@using Park.Web.Services
+@inject IZoneService ZoneService
+@inject NavigationManager Navigation
+@inject ILogger<Edit> Logger
+
+<AuthorizeView>
+    <ChildContent>
+        <div class="container-fluid">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-edit me-2"></i>
+                        Editar Zona
+                    </h1>
+                    <p class="text-muted">Modifica la información de la zona</p>
+                </div>
+                <button class="btn btn-outline-secondary" @onclick="@(() => Navigation.NavigateTo("/zones"))">
+                    <i class="fas fa-arrow-left me-2"></i>
+                    Volver
+                </button>
+            </div>
+
+            @if (isLoading)
+            {
+                <div class="text-center">
+                    <div class="spinner-border" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p class="mt-2">Cargando información de la zona...</p>
+                </div>
+            }
+            else if (zone == null)
+            {
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    No se pudo cargar la información de la zona.
+                </div>
+            }
+            else
+            {
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="mb-0">Información de la Zona</h5>
+                            </div>
+                            <div class="card-body">
+                                <EditForm Model="zone" OnValidSubmit="HandleValidSubmit">
+                                    <DataAnnotationsValidator />
+                                    <ValidationSummary />
+
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="name" class="form-label">Nombre de la Zona *</label>
+                                            <InputText id="name" class="form-control" @bind-Value="zone.Name" />
+                                            <ValidationMessage For="@(() => zone.Name)" />
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="capacity" class="form-label">Capacidad</label>
+                                            <InputNumber id="capacity" class="form-control" @bind-Value="zone.Capacity" />
+                                            <ValidationMessage For="@(() => zone.Capacity)" />
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <label for="description" class="form-label">Descripción</label>
+                                        <InputTextArea id="description" class="form-control" rows="3" @bind-Value="zone.Description" />
+                                        <ValidationMessage For="@(() => zone.Description)" />
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="location" class="form-label">Ubicación</label>
+                                            <InputText id="location" class="form-control" @bind-Value="zone.Location" />
+                                            <ValidationMessage For="@(() => zone.Location)" />
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="zoneType" class="form-label">Tipo de Zona</label>
+                                            <InputSelect id="zoneType" class="form-select" @bind-Value="zone.ZoneType">
+                                                <option value="">Seleccionar tipo...</option>
+                                                <option value="Industrial">Industrial</option>
+                                                <option value="Comercial">Comercial</option>
+                                                <option value="Logística">Logística</option>
+                                                <option value="Administrativa">Administrativa</option>
+                                                <option value="Servicios">Servicios</option>
+                                            </InputSelect>
+                                            <ValidationMessage For="@(() => zone.ZoneType)" />
+                                        </div>
+                                    </div>
+
+                                    <div class="mb-3">
+                                        <div class="form-check">
+                                            <InputCheckbox id="isActive" class="form-check-input" @bind-Value="zone.IsActive" />
+                                            <label class="form-check-label" for="isActive">
+                                                Zona Activa
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex justify-content-end gap-2">
+                                        <button type="button" class="btn btn-outline-secondary" @onclick="@(() => Navigation.NavigateTo("/zones"))">
+                                            Cancelar
+                                        </button>
+                                        <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+                                            @if (isSubmitting)
+                                            {
+                                                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                                <span>Guardando...</span>
+                                            }
+                                            else
+                                            {
+                                                <i class="fas fa-save me-2"></i>
+                                                <span>Guardar Cambios</span>
+                                            }
+                                        </button>
+                                    </div>
+                                </EditForm>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h6 class="mb-0">Información Adicional</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <strong>Nota:</strong> Los campos marcados con * son obligatorios.
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <h6>Estadísticas de la Zona</h6>
+                                    <div class="list-group list-group-flush">
+                                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <strong>Capacidad</strong>
+                                            </div>
+                                            <span class="badge bg-info rounded-pill">@(zone.Capacity?.ToString() ?? "No especificada")</span>
+                                        </div>
+                                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <strong>Estado</strong>
+                                            </div>
+                                            <span class="badge @(zone.IsActive ? "bg-success" : "bg-danger") rounded-pill">
+                                                @(zone.IsActive ? "Activa" : "Inactiva")
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="alert alert-warning">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    <strong>Importante:</strong> Al editar una zona, los cambios afectarán a todas las empresas y portones asociados.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </ChildContent>
+    <NotAuthorized>
+        <div class="text-center">
+            <h3>Acceso Denegado</h3>
+            <p>Debes iniciar sesión para editar zonas.</p>
+            <a href="/login" class="btn btn-primary">Iniciar Sesión</a>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private UpdateZone zone = new();
+    private bool isLoading = true;
+    private bool isSubmitting = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            isLoading = true;
+            var zoneResult = await ZoneService.GetByIdAsync(Id);
+            
+            if (zoneResult != null)
+            {
+                // Mapear Zone a UpdateZone
+                zone = new UpdateZone
+                {
+                    Name = zoneResult.Name,
+                    Description = zoneResult.Description,
+                    Location = zoneResult.Location ?? string.Empty,
+                    ZoneType = zoneResult.ZoneType ?? string.Empty,
+                    Capacity = zoneResult.Capacity,
+                    IsActive = zoneResult.IsActive
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al cargar datos para editar zona {Id}", Id);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            isSubmitting = true;
+            var result = await ZoneService.UpdateAsync(Id, zone);
+            
+            if (result != null)
+            {
+                // TODO: Mostrar mensaje de éxito
+                Navigation.NavigateTo("/zones");
+            }
+            else
+            {
+                // TODO: Mostrar mensaje de error
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al actualizar zona {Id}", Id);
+            // TODO: Mostrar mensaje de error
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+} 

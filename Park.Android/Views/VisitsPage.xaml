@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Park.Maui.Views.VisitsPage"
+             Title="Visitas"
+             BackgroundColor="{StaticResource Background}">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        
+        <!-- Header con filtros -->
+        <Frame Grid.Row="0" 
+               BackgroundColor="{StaticResource Primary}" 
+               CornerRadius="0" 
+               Padding="16"
+               Margin="0,0,0,8">
+
+            <VerticalStackLayout Spacing="12">
+                
+                <!-- Título -->
+                <Label Text="Lista de Visitas"
+                       FontSize="20"
+                       FontAttributes="Bold"
+                       TextColor="White"
+                       HorizontalOptions="Center" />
+
+                <!-- Filtros -->
+                <HorizontalStackLayout Spacing="8" HorizontalOptions="Center">
+                    
+                    <Button x:Name="AllButton"
+                            Text="Todas"
+                            BackgroundColor="White"
+                            TextColor="{StaticResource Primary}"
+                            CornerRadius="20"
+                            Padding="16,8"
+                            Clicked="OnFilterClicked" />
+
+                    <Button x:Name="PendingButton"
+                            Text="Pendientes"
+                            BackgroundColor="Transparent"
+                            TextColor="White"
+                            CornerRadius="20"
+                            Padding="16,8"
+                            Clicked="OnFilterClicked" />
+
+                    <Button x:Name="InProgressButton"
+                            Text="En Progreso"
+                            BackgroundColor="Transparent"
+                            TextColor="White"
+                            CornerRadius="20"
+                            Padding="16,8"
+                            Clicked="OnFilterClicked" />
+
+                    <Button x:Name="CompletedButton"
+                            Text="Completadas"
+                            BackgroundColor="Transparent"
+                            TextColor="White"
+                            CornerRadius="20"
+                            Padding="16,8"
+                            Clicked="OnFilterClicked" />
+
+                </HorizontalStackLayout>
+
+            </VerticalStackLayout>
+
+        </Frame>
+
+        <!-- Lista de visitas -->
+        <RefreshView Grid.Row="1" 
+                     x:Name="RefreshView"
+                     Command="{Binding RefreshCommand}"
+                     IsRefreshing="{Binding IsRefreshing}">
+
+            <CollectionView x:Name="VisitsCollectionView"
+                           ItemsSource="{Binding Visits}"
+                           SelectionMode="Single"
+                           SelectionChanged="OnVisitSelected">
+
+                <CollectionView.ItemTemplate>
+                    <DataTemplate>
+                        <Frame Margin="8,4" 
+                               Padding="16" 
+                               CornerRadius="12"
+                               BackgroundColor="{StaticResource Surface}">
+
+                            <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto,Auto">
+                                
+                                <!-- Información principal -->
+                                <VerticalStackLayout Grid.Column="0" Grid.Row="0" Spacing="4">
+                                    
+                                    <Label Text="{Binding VisitCode}"
+                                           FontSize="16"
+                                           FontAttributes="Bold"
+                                           TextColor="{StaticResource TextPrimary}" />
+
+                                    <Label Text="{Binding Visitor.FullName}"
+                                           FontSize="14"
+                                           TextColor="{StaticResource TextSecondary}" />
+
+                                    <Label Text="{Binding Company.Name}"
+                                           FontSize="12"
+                                           TextColor="{StaticResource TextSecondary}" />
+
+                                </VerticalStackLayout>
+
+                                <!-- Estado -->
+                                <Frame Grid.Column="1" Grid.Row="0"
+                                       BackgroundColor="{Binding StatusColor}"
+                                       CornerRadius="8"
+                                       Padding="8,4"
+                                       HorizontalOptions="End">
+
+                                    <Label Text="{Binding StatusDisplay}"
+                                           FontSize="10"
+                                           TextColor="White"
+                                           FontAttributes="Bold" />
+
+                                </Frame>
+
+                                <!-- Fecha y hora -->
+                                <Label Grid.Column="0" Grid.Row="1"
+                                       Text="{Binding FormattedScheduledDate, StringFormat='Fecha: {0}'}"
+                                       FontSize="12"
+                                       TextColor="{StaticResource TextSecondary}"
+                                       Margin="0,8,0,0" />
+
+                                <Label Grid.Column="1" Grid.Row="1"
+                                       Text="{Binding FormattedScheduledTime, StringFormat='Hora: {0}'}"
+                                       FontSize="12"
+                                       TextColor="{StaticResource TextSecondary}"
+                                       HorizontalOptions="End"
+                                       Margin="0,8,0,0" />
+
+                                <!-- Propósito -->
+                                <Label Grid.Column="0" Grid.ColumnSpan="2" Grid.Row="2"
+                                       Text="{Binding Purpose}"
+                                       FontSize="12"
+                                       TextColor="{StaticResource TextSecondary}"
+                                       Margin="0,8,0,0" />
+
+                            </Grid>
+
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+
+                <CollectionView.EmptyView>
+                    <VerticalStackLayout HorizontalOptions="Center" 
+                                         VerticalOptions="Center"
+                                         Spacing="16">
+
+                        <Image Source="dotnet_bot.png"
+                               WidthRequest="80"
+                               HeightRequest="80"
+                               Opacity="0.5" />
+
+                        <Label Text="No hay visitas disponibles"
+                               FontSize="16"
+                               TextColor="{StaticResource TextSecondary}"
+                               HorizontalOptions="Center" />
+
+                        <Label Text="Las visitas aparecerán aquí cuando estén programadas"
+                               FontSize="12"
+                               TextColor="{StaticResource TextSecondary}"
+                               HorizontalOptions="Center" />
+
+                    </VerticalStackLayout>
+                </CollectionView.EmptyView>
+
+            </CollectionView>
+
+        </RefreshView>
+
+        <!-- Indicador de carga -->
+        <ActivityIndicator Grid.Row="1"
+                          x:Name="LoadingIndicator"
+                          IsRunning="{Binding IsLoading}"
+                          IsVisible="{Binding IsLoading}"
+                          HorizontalOptions="Center"
+                          VerticalOptions="Center" />
+
+        <!-- Botón flotante para escanear QR -->
+        <Button Grid.Row="2"
+                x:Name="ScanQrButton"
+                Text="📱"
+                FontSize="24"
+                BackgroundColor="{StaticResource Accent}"
+                TextColor="{StaticResource TextPrimary}"
+                CornerRadius="30"
+                WidthRequest="60"
+                HeightRequest="60"
+                HorizontalOptions="End"
+                VerticalOptions="End"
+                Margin="16"
+                Clicked="OnScanQrClicked" />
+
+    </Grid>
+
+</ContentPage>

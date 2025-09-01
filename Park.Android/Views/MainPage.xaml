@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Park.Maui.Views.MainPage"
+             Title="Panel de Guardia"
+             BackgroundColor="{StaticResource Background}">
+
+    <ScrollView>
+        <VerticalStackLayout Spacing="16" Padding="16">
+
+            <!-- Header -->
+            <Frame BackgroundColor="{StaticResource Primary}" 
+                   CornerRadius="12" 
+                   Padding="20"
+                   Margin="0,0,0,16">
+
+                <VerticalStackLayout Spacing="8">
+                    <Label x:Name="WelcomeLabel"
+                           Text="Bienvenido, Guardia"
+                           FontSize="20"
+                           FontAttributes="Bold"
+                           TextColor="White"
+                           HorizontalOptions="Center" />
+
+                    <Label Text="Panel de Control"
+                           FontSize="14"
+                           TextColor="White"
+                           Opacity="0.8"
+                           HorizontalOptions="Center" />
+                </VerticalStackLayout>
+
+            </Frame>
+
+            <!-- Statistics Cards -->
+            <HorizontalStackLayout Spacing="8" Margin="0,0,0,24">
+
+                <!-- Pending Visits Card -->
+                <Frame BackgroundColor="{StaticResource Warning}" 
+                       CornerRadius="8" 
+                       Padding="16"
+                       HorizontalOptions="FillAndExpand">
+
+                    <VerticalStackLayout Spacing="4" HorizontalOptions="Center">
+                        <Label x:Name="PendingVisitsLabel"
+                               Text="0"
+                               FontSize="24"
+                               FontAttributes="Bold"
+                               TextColor="White"
+                               HorizontalOptions="Center" />
+
+                        <Label Text="Visitas Pendientes"
+                               FontSize="12"
+                               TextColor="White"
+                               Opacity="0.9"
+                               HorizontalOptions="Center" />
+                    </VerticalStackLayout>
+
+                </Frame>
+
+                <!-- In Progress Visits Card -->
+                <Frame BackgroundColor="{StaticResource Info}" 
+                       CornerRadius="8" 
+                       Padding="16"
+                       HorizontalOptions="FillAndExpand">
+
+                    <VerticalStackLayout Spacing="4" HorizontalOptions="Center">
+                        <Label x:Name="InProgressVisitsLabel"
+                               Text="0"
+                               FontSize="24"
+                               FontAttributes="Bold"
+                               TextColor="White"
+                               HorizontalOptions="Center" />
+
+                        <Label Text="En Progreso"
+                               FontSize="12"
+                               TextColor="White"
+                               Opacity="0.9"
+                               HorizontalOptions="Center" />
+                    </VerticalStackLayout>
+
+                </Frame>
+
+                <!-- Completed Visits Card -->
+                <Frame BackgroundColor="{StaticResource Success}" 
+                       CornerRadius="8" 
+                       Padding="16"
+                       HorizontalOptions="FillAndExpand">
+
+                    <VerticalStackLayout Spacing="4" HorizontalOptions="Center">
+                        <Label x:Name="CompletedVisitsLabel"
+                               Text="0"
+                               FontSize="24"
+                               FontAttributes="Bold"
+                               TextColor="White"
+                               HorizontalOptions="Center" />
+
+                        <Label Text="Completadas"
+                               FontSize="12"
+                               TextColor="White"
+                               Opacity="0.9"
+                               HorizontalOptions="Center" />
+                    </VerticalStackLayout>
+
+                </Frame>
+
+            </HorizontalStackLayout>
+
+            <!-- Action Buttons -->
+            <Frame BackgroundColor="{StaticResource Surface}" 
+                   CornerRadius="12" 
+                   Padding="20"
+                   Margin="0,0,0,16">
+
+                <VerticalStackLayout Spacing="12">
+
+                    <!-- View Visits Button -->
+                    <Button x:Name="ViewVisitsButton"
+                            Text="Ver Visitas"
+                            SemanticProperties.Hint="Ver lista de visitas"
+                            Clicked="OnViewVisitsClicked"
+                            HorizontalOptions="Fill" />
+
+                    <!-- Scan QR Button -->
+                    <Button x:Name="ScanQrButton"
+                            Text="Escanear QR"
+                            BackgroundColor="{StaticResource Accent}"
+                            TextColor="{StaticResource TextPrimary}"
+                            SemanticProperties.Hint="Escanear código QR"
+                            Clicked="OnScanQrClicked"
+                            HorizontalOptions="Fill" />
+
+                </VerticalStackLayout>
+
+            </Frame>
+
+            <!-- Logout Button -->
+            <Button x:Name="LogoutButton"
+                    Text="Cerrar Sesión"
+                    BackgroundColor="{StaticResource Danger}"
+                    SemanticProperties.Hint="Cerrar sesión"
+                    Clicked="OnLogoutClicked"
+                    HorizontalOptions="Fill" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

@@ -1,0 +1,218 @@
+@page "/zones"
+@using Park.Web.Models
+@using Park.Web.Services
+@inject IZoneService ZoneService
+@inject NavigationManager Navigation
+@inject ILogger<Index> Logger
+
+<AuthorizeView>
+    <ChildContent>
+        <div class="container-fluid">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0">
+                        <i class="fas fa-map-marker-alt me-2"></i>
+                        Gestión de Zonas
+                    </h1>
+                    <p class="text-muted">Administra las zonas del parque industrial</p>
+                </div>
+                <button class="btn btn-primary" @onclick="@(() => Navigation.NavigateTo("/zones/create"))">
+                    <i class="fas fa-plus me-2"></i>
+                    Nueva Zona
+                </button>
+            </div>
+
+            @if (isLoading)
+            {
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p class="mt-2">Cargando zonas...</p>
+                </div>
+            }
+            else if (zones == null || !zones.Any())
+            {
+                <div class="text-center py-5">
+                    <i class="fas fa-map-marker-alt fa-3x text-muted mb-3"></i>
+                    <h4>No hay zonas registradas</h4>
+                    <p class="text-muted">Comienza agregando la primera zona al parque industrial.</p>
+                    <button class="btn btn-primary" @onclick="@(() => Navigation.NavigateTo("/zones/create"))">
+                        <i class="fas fa-plus me-2"></i>
+                        Agregar Zona
+                    </button>
+                </div>
+            }
+            else
+            {
+                <div class="card">
+                    <div class="card-header">
+                        <div class="row align-items-center">
+                            <div class="col">
+                                <h5 class="mb-0">Zonas (@zones.Count())</h5>
+                            </div>
+                            <div class="col-auto">
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-search"></i>
+                                    </span>
+                                    <input type="text" class="form-control" placeholder="Buscar zonas..." 
+                                           @bind="searchTerm" @bind:event="oninput" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Zona</th>
+                                        <th>Ubicación</th>
+                                        <th>Capacidad</th>
+                                        <th>Empresas</th>
+                                        <th>Puertas</th>
+                                        <th>Estado</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var zone in filteredZones)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <div>
+                                                    <strong>@zone.Name</strong>
+                                                    @if (!string.IsNullOrEmpty(zone.Description))
+                                                    {
+                                                        <br />
+                                                        <small class="text-muted">@zone.Description</small>
+                                                    }
+                                                </div>
+                                            </td>
+                                            <td>
+                                                @if (!string.IsNullOrEmpty(zone.Location))
+                                                {
+                                                    <i class="fas fa-map-pin me-1"></i>@zone.Location
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">No especificada</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-info">@zone.Capacity</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-primary">@zone.CompaniesCount</span>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-secondary">@zone.GatesCount</span>
+                                            </td>
+                                            <td>
+                                                @if (zone.IsActive)
+                                                {
+                                                    <span class="badge bg-success">Activa</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-danger">Inactiva</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <button class="btn btn-sm btn-outline-primary" 
+                                                            @onclick="@(() => Navigation.NavigateTo($"/zones/{zone.Id}"))"
+                                                            title="Ver detalles">
+                                                        <i class="fas fa-eye"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-warning" 
+                                                            @onclick="@(() => Navigation.NavigateTo($"/zones/edit/{zone.Id}"))"
+                                                            title="Editar">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-danger" 
+                                                            @onclick="() => DeleteZone(zone)"
+                                                            title="Eliminar">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </ChildContent>
+    <NotAuthorized>
+        <div class="text-center">
+            <h3>Acceso Denegado</h3>
+            <p>Debes iniciar sesión para acceder a la gestión de zonas.</p>
+            <a href="/login" class="btn btn-primary">Iniciar Sesión</a>
+        </div>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private List<Zone>? zones;
+    private bool isLoading = true;
+    private string searchTerm = string.Empty;
+
+    private IEnumerable<Zone> filteredZones => zones?
+        .Where(z => string.IsNullOrEmpty(searchTerm) || 
+                   z.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                   z.Description.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                   z.Location.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+        .OrderBy(z => z.Name) ?? Enumerable.Empty<Zone>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadZones();
+    }
+
+    private async Task LoadZones()
+    {
+        try
+        {
+            isLoading = true;
+            var result = await ZoneService.GetAllAsync();
+            zones = result?.ToList() ?? new List<Zone>();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al cargar zonas");
+            zones = new List<Zone>();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task DeleteZone(Zone zone)
+    {
+        // TODO: Implementar confirmación de eliminación
+        try
+        {
+            var success = await ZoneService.DeleteAsync(zone.Id);
+            if (success)
+            {
+                await LoadZones();
+                // TODO: Mostrar mensaje de éxito
+            }
+            else
+            {
+                // TODO: Mostrar mensaje de error
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al eliminar zona {ZoneId}", zone.Id);
+            // TODO: Mostrar mensaje de error
+        }
+    }
+}

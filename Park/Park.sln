@@ -1,0 +1,59 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36414.22
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Park.Api", "..\Park.Api\Park.Api.csproj", "{963D9445-C2FF-4F44-B0AE-7264061BF230}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Park.Web", "..\Park.Web\Park.Web.csproj", "{3A4A414B-8442-433F-AFCF-13E18C0AA2EB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Park.Comun", "..\Park.Comun\Park.Comun.csproj", "{25F74A5F-71DD-431A-9BF1-4EEE9FA1FA9B}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Movil", "Movil", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Park.Android", "..\Park.Android\Park.Android.csproj", "{C7DC68CA-B05C-42E9-AE97-E1A644513058}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Park.MovilApp", "..\Park.MovilApp\Park.MovilApp.csproj", "{E3970B55-823F-4C72-B658-B3303BC05ED0}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{963D9445-C2FF-4F44-B0AE-7264061BF230}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{963D9445-C2FF-4F44-B0AE-7264061BF230}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{963D9445-C2FF-4F44-B0AE-7264061BF230}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{963D9445-C2FF-4F44-B0AE-7264061BF230}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3A4A414B-8442-433F-AFCF-13E18C0AA2EB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3A4A414B-8442-433F-AFCF-13E18C0AA2EB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3A4A414B-8442-433F-AFCF-13E18C0AA2EB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3A4A414B-8442-433F-AFCF-13E18C0AA2EB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{25F74A5F-71DD-431A-9BF1-4EEE9FA1FA9B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{25F74A5F-71DD-431A-9BF1-4EEE9FA1FA9B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{25F74A5F-71DD-431A-9BF1-4EEE9FA1FA9B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{25F74A5F-71DD-431A-9BF1-4EEE9FA1FA9B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C7DC68CA-B05C-42E9-AE97-E1A644513058}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C7DC68CA-B05C-42E9-AE97-E1A644513058}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C7DC68CA-B05C-42E9-AE97-E1A644513058}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{C7DC68CA-B05C-42E9-AE97-E1A644513058}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C7DC68CA-B05C-42E9-AE97-E1A644513058}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C7DC68CA-B05C-42E9-AE97-E1A644513058}.Release|Any CPU.Deploy.0 = Release|Any CPU
+		{E3970B55-823F-4C72-B658-B3303BC05ED0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E3970B55-823F-4C72-B658-B3303BC05ED0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E3970B55-823F-4C72-B658-B3303BC05ED0}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{E3970B55-823F-4C72-B658-B3303BC05ED0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E3970B55-823F-4C72-B658-B3303BC05ED0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E3970B55-823F-4C72-B658-B3303BC05ED0}.Release|Any CPU.Deploy.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{C7DC68CA-B05C-42E9-AE97-E1A644513058} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{E3970B55-823F-4C72-B658-B3303BC05ED0} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {21845BC2-70CD-48FB-ABE3-6770EAB0A93A}
+	EndGlobalSection
+EndGlobal
