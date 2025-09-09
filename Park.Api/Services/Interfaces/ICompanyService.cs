@@ -12,11 +12,9 @@ namespace Park.Api.Services.Interfaces
         Task<CompanyDto?> UpdateCompanyAsync(int id, UpdateCompanyDto updateCompanyDto);
         Task<bool> DeleteCompanyAsync(int id);
         Task<bool> CompanyExistsAsync(int id);
-        Task<bool> CompanyNameExistsAsync(string name);
-        Task<bool> CompanyEmailExistsAsync(string email);
-        Task<IEnumerable<CompanyDto>> GetCompaniesByZoneAsync(int zoneId);
-        Task<IEnumerable<UserDto>> GetCompanyUsersAsync(int companyId);
-        Task<bool> AssignUserToCompanyAsync(int userId, int companyId);
-        Task<bool> RemoveUserFromCompanyAsync(int userId, int companyId);
+        Task<bool> CompanyExistsByNameAsync(string name);
+        Task<bool> CompanyExistsByEmailAsync(string email);
+        Task<int> GetCompaniesCountAsync();
+        Task<IEnumerable<CentroDto>> GetCentrosBySitioAsync(int idSitio);
     }
 }

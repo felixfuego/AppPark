@@ -1,0 +1,63 @@
+@using Park.Front.Services
+@using Park.Comun.DTOs
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+
+@if (isLoading)
+{
+    <div class="loading-container">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+        <p class="mt-3">Verificando autenticación...</p>
+    </div>
+}
+else if (isAuthenticated)
+{
+    @ChildContent
+}
+else
+{
+    <div class="unauthorized-container">
+        <div class="unauthorized-card">
+            <h3>Acceso No Autorizado</h3>
+            <p>Necesitas iniciar sesión para acceder a esta página.</p>
+            <button class="btn btn-primary" @onclick="RedirectToLogin">
+                Ir a Login
+            </button>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public bool RequireAuth { get; set; } = true;
+
+    private bool isAuthenticated = false;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (RequireAuth)
+        {
+            isAuthenticated = await AuthService.IsAuthenticatedAsync();
+            if (!isAuthenticated)
+            {
+                // Redirigir automáticamente a login si no está autenticado
+                Navigation.NavigateTo("/login");
+                return;
+            }
+        }
+        else
+        {
+            isAuthenticated = true;
+        }
+        
+        isLoading = false;
+    }
+
+    private void RedirectToLogin()
+    {
+        Navigation.NavigateTo("/login");
+    }
+}

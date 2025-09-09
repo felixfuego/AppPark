@@ -1,0 +1,43 @@
+@page "/access-denied"
+@using Park.Front.Services
+@inject NavigationManager Navigation
+
+<PageTitle>Acceso Denegado - Park.Front</PageTitle>
+
+<div class="access-denied-container">
+    <div class="access-denied-card">
+        <div class="access-denied-icon">
+            <i class="bi bi-shield-exclamation"></i>
+        </div>
+        <h2>Acceso Denegado</h2>
+        <p>No tienes permisos para acceder a esta página.</p>
+        <p class="text-muted">Solo los administradores pueden crear nuevas cuentas.</p>
+        
+        <div class="access-denied-actions">
+            <button class="btn btn-primary" @onclick="GoToLogin">
+                <i class="bi bi-box-arrow-in-right"></i>
+                Ir a Login
+            </button>
+            <button class="btn btn-secondary" @onclick="GoHome">
+                <i class="bi bi-house"></i>
+                Ir al Inicio
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    
+</style>
+
+@code {
+    private void GoToLogin()
+    {
+        Navigation.NavigateTo("/login");
+    }
+
+    private void GoHome()
+    {
+        Navigation.NavigateTo("/");
+    }
+}

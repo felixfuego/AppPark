@@ -1,0 +1,23 @@
+﻿@page "/counter"
+
+<PageTitle>Counter</PageTitle>
+
+<div class="counter-container" style="max-width: 300px; padding: var(--spacing-lg); margin: 0 auto;">
+    <h1 style="font-size: 1.5rem;">Counter</h1>
+    <div class="counter-display" style="font-size: 2rem; padding: var(--spacing-md); background-color: var(--primary-light); border-radius: var(--border-radius); text-align: center; margin: var(--spacing-md) 0;">
+        @currentCount
+    </div>
+    <button class="btn btn-primary" @onclick="IncrementCount">
+        <i class="bi bi-plus"></i>
+        Incrementar
+    </button>
+</div>
+
+@code {
+    private int currentCount = 42;
+
+    private void IncrementCount()
+    {
+        currentCount++;
+    }
+}

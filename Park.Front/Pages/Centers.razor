@@ -1,0 +1,423 @@
+@page "/centers"
+@using Park.Front.Services
+@using Park.Comun.DTOs
+@using Park.Front.Components
+@using System.ComponentModel.DataAnnotations
+@inject IJSRuntime JSRuntime
+@inject ZonaService ZonaService
+@inject CentroService CentroService
+
+<PageTitle>Gestión de Centros (Puertas) - Park.Front</PageTitle>
+
+<RoleGuard RequiredRole="Admin">
+
+<div class="centers-container">
+    <div class="page-header">
+        <div class="page-title">
+            <h1>Gestión de Centros (Puertas)</h1>
+            <p>Administra los centros de control y puertas del sistema</p>
+        </div>
+        <div class="page-actions">
+            <button class="btn btn-primary" @onclick="ShowCreateModal">
+                <i class="bi bi-plus-circle"></i>
+                Nuevo Centro
+            </button>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="loading-container">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-3">Cargando centros...</p>
+        </div>
+    }
+    else
+    {
+        <div class="centers-table-container">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Descripción</th>
+                            <th>Zona</th>
+                            <th>Tipo</th>
+                            <th>Estado</th>
+                            <th>Fecha Creación</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var center in centers)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="center-info">
+                                        <strong>@center.Nombre</strong>
+                                    </div>
+                                </td>
+                                <td>@center.Localidad</td>
+                                <td>@(center.Zona?.Nombre ?? "N/A")</td>
+                                <td>
+                                    <span class="badge bg-info">
+                                        Centro
+                                    </span>
+                                </td>
+                                <td>
+                                    @if (center.IsActive)
+                                    {
+                                        <span class="badge bg-success">Activo</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">Inactivo</span>
+                                    }
+                                </td>
+                                <td>@center.CreatedAt.ToString("dd/MM/yyyy")</td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn btn-sm btn-outline-primary" @onclick="() => ShowEditModal(center)" title="Editar">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        @if (center.IsActive)
+                                        {
+                                            <button class="btn btn-sm btn-outline-warning" @onclick="() => DeactivateCenter(center.Id)" title="Desactivar">
+                                                <i class="bi bi-pause-circle"></i>
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn btn-sm btn-outline-success" @onclick="() => ActivateCenter(center.Id)" title="Activar">
+                                                <i class="bi bi-play-circle"></i>
+                                            </button>
+                                        }
+                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteCenter(center.Id)" title="Eliminar">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Modal para crear/editar centro -->
+@if (showModal)
+{
+    <div class="modal-backdrop show" @onclick="HideModal"></div>
+    <div class="modal show d-block" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(isEditing ? "Editar Centro" : "Nuevo Centro")</h5>
+                    <button type="button" class="btn-close" @onclick="HideModal"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="@currentCenter" OnValidSubmit="@HandleSave">
+                        <DataAnnotationsValidator />
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="name">Nombre del Centro</label>
+                                    <InputText id="name" @bind-Value="currentCenter.Name" class="form-control" />
+                                    <ValidationMessage For="@(() => currentCenter.Name)" class="text-danger" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="type">Tipo</label>
+                                    <InputSelect id="type" @bind-Value="currentCenter.Type" class="form-control">
+                                        <option value="">Seleccionar tipo...</option>
+                                        <option value="Entrada">Entrada</option>
+                                        <option value="Salida">Salida</option>
+                                        <option value="Mixto">Mixto</option>
+                                    </InputSelect>
+                                    <ValidationMessage For="@(() => currentCenter.Type)" class="text-danger" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="description">Descripción</label>
+                            <InputTextArea id="description" @bind-Value="currentCenter.Description" class="form-control" rows="3" />
+                            <ValidationMessage For="@(() => currentCenter.Description)" class="text-danger" />
+                        </div>
+
+                        <div class="form-group">
+                            <label for="zoneId">Zona</label>
+                            <InputSelect id="zoneId" @bind-Value="currentCenter.ZoneId" class="form-control">
+                                <option value="">Seleccionar zona...</option>
+                                @foreach (var zone in availableZones)
+                                {
+                                    <option value="@zone.Id">@zone.Nombre</option>
+                                }
+                            </InputSelect>
+                            <ValidationMessage For="@(() => currentCenter.ZoneId)" class="text-danger" />
+                        </div>
+
+                        @if (isEditing)
+                        {
+                            <div class="form-group">
+                                <div class="form-check">
+                                    <InputCheckbox id="isActive" @bind-Value="currentCenter.IsActive" class="form-check-input" />
+                                    <label for="isActive" class="form-check-label">Centro Activo</label>
+                                </div>
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrEmpty(errorMessage))
+                        {
+                            <div class="alert alert-danger" role="alert">
+                                @errorMessage
+                            </div>
+                        }
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" @onclick="HideModal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary" disabled="@isSaving">
+                                @if (isSaving)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                }
+                                @(isEditing ? "Actualizar" : "Crear")
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+</RoleGuard>
+
+@code {
+    private List<CentroDto> centers = new();
+    private List<ZonaDto> availableZones = new();
+    private bool isLoading = true;
+    private bool showModal = false;
+    private bool isEditing = false;
+    private bool isSaving = false;
+    private string errorMessage = string.Empty;
+    private CenterModel currentCenter = new();
+    private int editingCenterId = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            isLoading = true;
+            
+            // Cargar zonas reales desde el API
+            availableZones = await ZonaService.GetAllZonasAsync();
+            
+            // Cargar centros reales desde el API
+            centers = await CentroService.GetAllCentrosAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error cargando centros: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void ShowCreateModal()
+    {
+        currentCenter = new CenterModel();
+        isEditing = false;
+        showModal = true;
+        errorMessage = string.Empty;
+    }
+
+    private void ShowEditModal(CentroDto center)
+    {
+        editingCenterId = center.Id;
+        currentCenter = new CenterModel
+        {
+            Name = center.Nombre,
+            Description = center.Localidad,
+            ZoneId = center.IdZona,
+            Type = "Centro", // Valor por defecto
+            IsActive = center.IsActive
+        };
+        isEditing = true;
+        showModal = true;
+        errorMessage = string.Empty;
+    }
+
+    private void HideModal()
+    {
+        showModal = false;
+        errorMessage = string.Empty;
+    }
+
+    private async Task HandleSave()
+    {
+        try
+        {
+            isSaving = true;
+            errorMessage = string.Empty;
+
+            if (isEditing)
+            {
+                var updateDto = new UpdateCentroDto
+                {
+                    Id = editingCenterId,
+                    Nombre = currentCenter.Name,
+                    Localidad = currentCenter.Description,
+                    IdZona = currentCenter.ZoneId,
+                    IsActive = currentCenter.IsActive
+                };
+                
+                await CentroService.UpdateCentroAsync(updateDto);
+                await JSRuntime.InvokeVoidAsync("appUtils.showAlert", "Centro actualizado exitosamente", "success");
+            }
+            else
+            {
+                var createDto = new CreateCentroDto
+                {
+                    Nombre = currentCenter.Name,
+                    Localidad = currentCenter.Description,
+                    IdZona = currentCenter.ZoneId
+                };
+                
+                await CentroService.CreateCentroAsync(createDto);
+                await JSRuntime.InvokeVoidAsync("appUtils.showAlert", "Centro creado exitosamente", "success");
+            }
+
+            await LoadData();
+            HideModal();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error guardando centro: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task ActivateCenter(int centerId)
+    {
+        try
+        {
+            var center = centers.FirstOrDefault(c => c.Id == centerId);
+            if (center != null)
+            {
+                center.IsActive = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error activando centro: {ex.Message}";
+        }
+    }
+
+    private async Task DeactivateCenter(int centerId)
+    {
+        try
+        {
+            var center = centers.FirstOrDefault(c => c.Id == centerId);
+            if (center != null)
+            {
+                center.IsActive = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error desactivando centro: {ex.Message}";
+        }
+    }
+
+    private async Task DeleteCenter(int centerId)
+    {
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "¿Estás seguro de que quieres eliminar este centro?");
+        if (confirmed)
+        {
+            try
+            {
+                centers.RemoveAll(c => c.Id == centerId);
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Error eliminando centro: {ex.Message}";
+            }
+        }
+    }
+
+    private string GetTypeBadgeClass(string type)
+    {
+        return type switch
+        {
+            "Entrada" => "bg-success",
+            "Salida" => "bg-warning",
+            "Mixto" => "bg-info",
+            _ => "bg-secondary"
+        };
+    }
+
+    private string GetTypeDisplayName(string type)
+    {
+        return type switch
+        {
+            "Entrada" => "Entrada",
+            "Salida" => "Salida",
+            "Mixto" => "Mixto",
+            _ => "Desconocido"
+        };
+    }
+
+    // Modelos temporales
+    public class CenterDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public int ZoneId { get; set; }
+        public string ZoneName { get; set; } = string.Empty;
+        public string Type { get; set; } = string.Empty;
+        public bool IsActive { get; set; }
+        public DateTime CreatedAt { get; set; }
+    }
+
+    public class CenterModel
+    {
+        [Required(ErrorMessage = "El nombre del centro es requerido")]
+        [StringLength(100, ErrorMessage = "El nombre no puede exceder 100 caracteres")]
+        public string Name { get; set; } = string.Empty;
+
+        [StringLength(500, ErrorMessage = "La descripción no puede exceder 500 caracteres")]
+        public string Description { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Debe seleccionar una zona")]
+        public int ZoneId { get; set; }
+
+        [Required(ErrorMessage = "Debe seleccionar un tipo")]
+        public string Type { get; set; } = string.Empty;
+
+        public bool IsActive { get; set; } = true;
+    }
+
+    public class ZoneDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+    }
+}

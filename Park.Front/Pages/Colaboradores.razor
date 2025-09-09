@@ -1,0 +1,686 @@
+@page "/colaboradores"
+@using Park.Front.Services
+@using Park.Comun.DTOs
+@using Park.Front.Components
+@using System.ComponentModel.DataAnnotations
+@inject IJSRuntime JSRuntime
+@inject ColaboradorService ColaboradorService
+@inject CompanyService CompanyService
+@inject SitioService SitioService
+@inject ZonaService ZonaService
+@inject CentroService CentroService
+
+<PageTitle>Gestión de Colaboradores - Park.Front</PageTitle>
+
+<RoleGuard RequiredRole="Admin">
+
+<div class="colaboradores-container">
+    <div class="page-header">
+        <div class="page-title">
+            <h1>Gestión de Colaboradores</h1>
+            <p>Administra los colaboradores del sistema</p>
+        </div>
+        <div class="page-actions">
+            <button class="btn btn-primary" @onclick="ShowCreateModal">
+                <i class="bi bi-plus-circle"></i>
+                Nuevo Colaborador
+            </button>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="loading-container">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-3">Cargando colaboradores...</p>
+        </div>
+    }
+    else
+    {
+        <div class="colaboradores-table-container">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Identidad</th>
+                            <th>Nombre</th>
+                            <th>Puesto</th>
+                            <th>Compañía</th>
+                            <th>Teléfono</th>
+                            <th>Email</th>
+                            <th>Estado</th>
+                            <th>Lista Negra</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var colaborador in filteredColaboradores)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="colaborador-info">
+                                        <strong>@colaborador.Identidad</strong>
+                                    </div>
+                                </td>
+                                <td>@colaborador.Nombre</td>
+                                <td>@colaborador.Puesto</td>
+                                <td>@colaborador.Compania?.Name</td>
+                                <td>@colaborador.Tel1</td>
+                                <td>@colaborador.Email</td>
+                                <td>
+                                    @if (colaborador.IsActive)
+                                    {
+                                        <span class="badge bg-success">Activo</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-danger">Inactivo</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (colaborador.IsBlackList)
+                                    {
+                                        <span class="badge bg-warning">Lista Negra</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Normal</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn btn-sm btn-outline-primary" @onclick="() => ShowEditModal(colaborador)" title="Editar">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        @if (colaborador.IsActive)
+                                        {
+                                            <button class="btn btn-sm btn-outline-warning" @onclick="() => DeactivateColaborador(colaborador.Id)" title="Desactivar">
+                                                <i class="bi bi-pause-circle"></i>
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn btn-sm btn-outline-success" @onclick="() => ActivateColaborador(colaborador.Id)" title="Activar">
+                                                <i class="bi bi-play-circle"></i>
+                                            </button>
+                                        }
+                                        <button class="btn btn-sm btn-outline-info" @onclick="() => ToggleBlackList(colaborador.Id)" title="Toggle Lista Negra">
+                                            <i class="bi bi-shield-exclamation"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteColaborador(colaborador.Id)" title="Eliminar">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger" role="alert">
+            @errorMessage
+        </div>
+    }
+</div>
+
+<!-- Modal para crear/editar colaborador -->
+@if (showModal)
+{
+    <div class="modal-backdrop show" @onclick="HideModal"></div>
+    <div class="modal show d-block" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(isEditing ? "Editar Colaborador" : "Nuevo Colaborador")</h5>
+                    <button type="button" class="btn-close" @onclick="HideModal"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="@currentColaborador" OnValidSubmit="@HandleSave">
+                        <DataAnnotationsValidator />
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="sitio">Sitio *</label>
+                                    <InputSelect id="sitio" @bind-Value="currentColaborador.IdSitio" @onchange="OnSitioChanged" class="form-control">
+                                        <option value="">Seleccionar sitio...</option>
+                                        @foreach (var sitio in availableSites)
+                                        {
+                                            <option value="@sitio.Id">@sitio.Nombre</option>
+                                        }
+                                    </InputSelect>
+                                    <ValidationMessage For="@(() => currentColaborador.IdSitio)" class="text-danger" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="compania">Compañía *</label>
+                                    <InputSelect id="compania" @bind-Value="currentColaborador.IdCompania" class="form-control">
+                                        <option value="">Seleccionar compañía...</option>
+                                        @foreach (var compania in availableCompanies)
+                                        {
+                                            <option value="@compania.Id">@compania.Name</option>
+                                        }
+                                    </InputSelect>
+                                    <ValidationMessage For="@(() => currentColaborador.IdCompania)" class="text-danger" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="zona">Zona *</label>
+                                    <InputSelect id="zona" @bind-Value="currentColaborador.IdZona" @onchange="OnZonaChanged" class="form-control">
+                                        <option value="">Seleccionar zona...</option>
+                                        @foreach (var zona in availableZonas)
+                                        {
+                                            <option value="@zona.Id">@zona.Nombre</option>
+                                        }
+                                    </InputSelect>
+                                    <ValidationMessage For="@(() => currentColaborador.IdZona)" class="text-danger" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="identidad">Identidad *</label>
+                                    <InputText id="identidad" @bind-Value="currentColaborador.Identidad" class="form-control" />
+                                    <ValidationMessage For="@(() => currentColaborador.Identidad)" class="text-danger" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="nombre">Nombre *</label>
+                                    <InputText id="nombre" @bind-Value="currentColaborador.Nombre" class="form-control" />
+                                    <ValidationMessage For="@(() => currentColaborador.Nombre)" class="text-danger" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="puesto">Puesto *</label>
+                                    <InputText id="puesto" @bind-Value="currentColaborador.Puesto" class="form-control" />
+                                    <ValidationMessage For="@(() => currentColaborador.Puesto)" class="text-danger" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="email">Email</label>
+                                    <InputText id="email" @bind-Value="currentColaborador.Email" type="email" class="form-control" />
+                                    <ValidationMessage For="@(() => currentColaborador.Email)" class="text-danger" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="tel1">Teléfono Principal *</label>
+                                    <InputText id="tel1" @bind-Value="currentColaborador.Tel1" class="form-control" />
+                                    <ValidationMessage For="@(() => currentColaborador.Tel1)" class="text-danger" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="tel2">Teléfono Secundario</label>
+                                    <InputText id="tel2" @bind-Value="currentColaborador.Tel2" class="form-control" />
+                                    <ValidationMessage For="@(() => currentColaborador.Tel2)" class="text-danger" />
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="tel3">Teléfono Adicional</label>
+                                    <InputText id="tel3" @bind-Value="currentColaborador.Tel3" class="form-control" />
+                                    <ValidationMessage For="@(() => currentColaborador.Tel3)" class="text-danger" />
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="placa">Placa Vehículo</label>
+                                    <InputText id="placa" @bind-Value="currentColaborador.PlacaVehiculo" class="form-control" />
+                                    <ValidationMessage For="@(() => currentColaborador.PlacaVehiculo)" class="text-danger" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="comentario">Comentario</label>
+                            <InputTextArea id="comentario" @bind-Value="currentColaborador.Comentario" class="form-control" rows="3" />
+                            <ValidationMessage For="@(() => currentColaborador.Comentario)" class="text-danger" />
+                        </div>
+
+                        <div class="form-group">
+                            <label>Centros/Puertas de Acceso</label>
+                            @if (availableCentros.Any())
+                            {
+                                <div class="centros-selection">
+                                    @foreach (var centro in availableCentros)
+                                    {
+                                        <div class="form-check">
+                                            <input type="checkbox" 
+                                                   id="@($"centro_{centro.Id}")" 
+                                                   @onchange="@((e) => OnCentroChanged(centro.Id, e))"
+                                                   checked="@GetCentroSelected(centro.Id)"
+                                                   class="form-check-input" />
+                                            <label for="@($"centro_{centro.Id}")" class="form-check-label">
+                                                @centro.Nombre (@centro.Zona?.Nombre)
+                                            </label>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <p class="text-muted">Selecciona una zona para ver los centros disponibles</p>
+                            }
+                        </div>
+
+                        @if (isEditing)
+                        {
+                            <div class="form-group">
+                                <div class="form-check">
+                                    <InputCheckbox id="isActive" @bind-Value="currentColaborador.IsActive" class="form-check-input" />
+                                    <label for="isActive" class="form-check-label">Colaborador Activo</label>
+                                </div>
+                            </div>
+                        }
+
+                        <div class="form-group">
+                            <div class="form-check">
+                                <InputCheckbox id="isBlackList" @bind-Value="currentColaborador.IsBlackList" class="form-check-input" />
+                                <label for="isBlackList" class="form-check-label">Lista Negra</label>
+                            </div>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" @onclick="HideModal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary" disabled="@isSaving">
+                                @if (isSaving)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                }
+                                @(isEditing ? "Actualizar" : "Crear")
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+</RoleGuard>
+
+@code {
+    private List<ColaboradorDto> colaboradores = new();
+    private List<ColaboradorDto> filteredColaboradores = new();
+    private List<CompanyDto> availableCompanies = new();
+    private List<SitioDto> availableSites = new();
+    private List<ZonaDto> availableZonas = new();
+    private List<CentroDto> availableCentros = new();
+    private List<int> selectedCentros = new();
+    private bool isLoading = true;
+    private bool showModal = false;
+    private bool isEditing = false;
+    private bool isSaving = false;
+    private string errorMessage = string.Empty;
+    private ColaboradorModel currentColaborador = new();
+    private int editingColaboradorId = 0;
+
+    // Filtros
+    private string filterCompania = string.Empty;
+    private bool filterActivos = true;
+    private bool filterListaNegra = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            isLoading = true;
+            
+            // Cargar datos reales
+            colaboradores = await ColaboradorService.GetAllColaboradoresAsync();
+            availableCompanies = await CompanyService.GetAllCompaniesAsync();
+            availableSites = await SitioService.GetAllSitiosAsync();
+            
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error cargando colaboradores: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void ApplyFilters()
+    {
+        var query = colaboradores.AsEnumerable();
+
+        // Filtrar por compañía
+        if (!string.IsNullOrEmpty(filterCompania) && int.TryParse(filterCompania, out int companiaId))
+        {
+            query = query.Where(c => c.IdCompania == companiaId);
+        }
+
+        // Filtrar por estado activo
+        if (filterActivos)
+        {
+            query = query.Where(c => c.IsActive);
+        }
+
+        // Filtrar por lista negra
+        if (filterListaNegra)
+        {
+            query = query.Where(c => c.IsBlackList);
+        }
+
+        filteredColaboradores = query.ToList();
+    }
+
+    private void ShowCreateModal()
+    {
+        currentColaborador = new ColaboradorModel();
+        selectedCentros.Clear();
+        availableZonas.Clear();
+        availableCentros.Clear();
+        isEditing = false;
+        showModal = true;
+        errorMessage = string.Empty;
+    }
+
+    private async void ShowEditModal(ColaboradorDto colaborador)
+    {
+        editingColaboradorId = colaborador.Id;
+        currentColaborador = new ColaboradorModel
+        {
+            IdSitio = colaborador.Compania?.IdSitio ?? 0,
+            IdCompania = colaborador.IdCompania,
+            IdZona = 0, // Se cargará cuando se seleccione el sitio
+            Identidad = colaborador.Identidad,
+            Nombre = colaborador.Nombre,
+            Puesto = colaborador.Puesto,
+            Email = colaborador.Email,
+            Tel1 = colaborador.Tel1,
+            Tel2 = colaborador.Tel2,
+            Tel3 = colaborador.Tel3,
+            PlacaVehiculo = colaborador.PlacaVehiculo,
+            Comentario = colaborador.Comentario,
+            IsActive = colaborador.IsActive,
+            IsBlackList = colaborador.IsBlackList
+        };
+        
+        // Cargar datos dependientes si hay sitio seleccionado
+        if (currentColaborador.IdSitio > 0)
+        {
+            await OnSitioChanged(new ChangeEventArgs { Value = currentColaborador.IdSitio.ToString() });
+        }
+        
+        isEditing = true;
+        showModal = true;
+        errorMessage = string.Empty;
+    }
+
+    private void HideModal()
+    {
+        showModal = false;
+        errorMessage = string.Empty;
+    }
+
+    private async Task OnSitioChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int sitioId) && sitioId > 0)
+        {
+            // Cargar empresas del sitio seleccionado
+            availableCompanies = (await CompanyService.GetAllCompaniesAsync())
+                .Where(c => c.IdSitio == sitioId).ToList();
+            
+            // Cargar zonas del sitio seleccionado
+            var allZonas = await ZonaService.GetAllZonasAsync();
+            availableZonas = allZonas.Where(z => z.IdSitio == sitioId).ToList();
+        }
+        else
+        {
+            availableCompanies.Clear();
+            availableZonas.Clear();
+        }
+        
+        // Limpiar selecciones dependientes
+        currentColaborador.IdCompania = 0;
+        currentColaborador.IdZona = 0;
+        availableCentros.Clear();
+        selectedCentros.Clear();
+        StateHasChanged();
+    }
+
+    private async Task OnZonaChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int zonaId) && zonaId > 0)
+        {
+            // Cargar centros de la zona seleccionada
+            var allCentros = await CentroService.GetAllCentrosAsync();
+            availableCentros = allCentros.Where(c => c.IdZona == zonaId).ToList();
+        }
+        else
+        {
+            availableCentros.Clear();
+        }
+        
+        selectedCentros.Clear();
+        StateHasChanged();
+    }
+
+    private bool GetCentroSelected(int centroId)
+    {
+        return selectedCentros.Contains(centroId);
+    }
+
+    private void OnCentroChanged(int centroId, ChangeEventArgs e)
+    {
+        bool isSelected = (bool)(e.Value ?? false);
+        if (isSelected && !selectedCentros.Contains(centroId))
+        {
+            selectedCentros.Add(centroId);
+        }
+        else if (!isSelected && selectedCentros.Contains(centroId))
+        {
+            selectedCentros.Remove(centroId);
+        }
+    }
+
+    private async Task HandleSave()
+    {
+        try
+        {
+            isSaving = true;
+            errorMessage = string.Empty;
+
+            if (isEditing)
+            {
+                var updateDto = new UpdateColaboradorDto
+                {
+                    Id = editingColaboradorId,
+                    IdCompania = currentColaborador.IdCompania,
+                    Identidad = currentColaborador.Identidad,
+                    Nombre = currentColaborador.Nombre,
+                    Puesto = currentColaborador.Puesto,
+                    Email = currentColaborador.Email,
+                    Tel1 = currentColaborador.Tel1,
+                    Tel2 = currentColaborador.Tel2,
+                    Tel3 = currentColaborador.Tel3,
+                    PlacaVehiculo = currentColaborador.PlacaVehiculo,
+                    Comentario = currentColaborador.Comentario,
+                    IsActive = currentColaborador.IsActive,
+                    IsBlackList = currentColaborador.IsBlackList
+                };
+                await ColaboradorService.UpdateColaboradorAsync(updateDto);
+                
+                // TODO: Implementar asignación de centros al colaborador
+                // await AsignarCentrosAColaborador(editingColaboradorId, selectedCentros);
+            }
+            else
+            {
+                var createDto = new CreateColaboradorDto
+                {
+                    IdCompania = currentColaborador.IdCompania,
+                    Identidad = currentColaborador.Identidad,
+                    Nombre = currentColaborador.Nombre,
+                    Puesto = currentColaborador.Puesto,
+                    Email = currentColaborador.Email,
+                    Tel1 = currentColaborador.Tel1,
+                    Tel2 = currentColaborador.Tel2,
+                    Tel3 = currentColaborador.Tel3,
+                    PlacaVehiculo = currentColaborador.PlacaVehiculo,
+                    Comentario = currentColaborador.Comentario,
+                    IsBlackList = currentColaborador.IsBlackList
+                };
+                var nuevoColaborador = await ColaboradorService.CreateColaboradorAsync(createDto);
+                
+                // TODO: Implementar asignación de centros al colaborador
+                // await AsignarCentrosAColaborador(nuevoColaborador.Id, selectedCentros);
+            }
+
+            await LoadData();
+            HideModal();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error guardando colaborador: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task ActivateColaborador(int id)
+    {
+        try
+        {
+            await ColaboradorService.ActivateColaboradorAsync(id);
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error activando colaborador: {ex.Message}";
+        }
+    }
+
+    private async Task DeactivateColaborador(int id)
+    {
+        try
+        {
+            await ColaboradorService.DeactivateColaboradorAsync(id);
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error desactivando colaborador: {ex.Message}";
+        }
+    }
+
+    private async Task ToggleBlackList(int id)
+    {
+        try
+        {
+            await ColaboradorService.ToggleBlackListAsync(id);
+            await LoadData();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error cambiando estado de lista negra: {ex.Message}";
+        }
+    }
+
+    private async Task DeleteColaborador(int id)
+    {
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "¿Estás seguro de que quieres eliminar este colaborador?");
+        if (confirmed)
+        {
+            try
+            {
+                await ColaboradorService.DeleteColaboradorAsync(id);
+                await LoadData();
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Error eliminando colaborador: {ex.Message}";
+            }
+        }
+    }
+
+    public class ColaboradorModel
+    {
+        [Required(ErrorMessage = "El sitio es requerido")]
+        [Range(1, int.MaxValue, ErrorMessage = "Debe seleccionar un sitio")]
+        public int IdSitio { get; set; }
+
+        [Required(ErrorMessage = "La compañía es requerida")]
+        [Range(1, int.MaxValue, ErrorMessage = "Debe seleccionar una compañía")]
+        public int IdCompania { get; set; }
+
+        [Required(ErrorMessage = "La zona es requerida")]
+        [Range(1, int.MaxValue, ErrorMessage = "Debe seleccionar una zona")]
+        public int IdZona { get; set; }
+
+        [Required(ErrorMessage = "La identidad es requerida")]
+        [StringLength(20, MinimumLength = 10, ErrorMessage = "La identidad debe tener entre 10 y 20 caracteres")]
+        [RegularExpression("^[0-9]+$", ErrorMessage = "La identidad solo puede contener números")]
+        public string Identidad { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "El nombre es requerido")]
+        [StringLength(100, MinimumLength = 2, ErrorMessage = "El nombre debe tener entre 2 y 100 caracteres")]
+        [RegularExpression("^[a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]+$", ErrorMessage = "El nombre solo puede contener letras y espacios")]
+        public string Nombre { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "El puesto es requerido")]
+        [StringLength(100, MinimumLength = 2, ErrorMessage = "El puesto debe tener entre 2 y 100 caracteres")]
+        public string Puesto { get; set; } = string.Empty;
+
+        [EmailAddress(ErrorMessage = "El formato del email no es válido")]
+        [StringLength(100, ErrorMessage = "El email no puede exceder 100 caracteres")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "El teléfono principal es requerido")]
+        [StringLength(20, MinimumLength = 8, ErrorMessage = "El teléfono debe tener entre 8 y 20 caracteres")]
+        [RegularExpression("^[0-9\\+\\-\\(\\)\\s]+$", ErrorMessage = "El teléfono solo puede contener números, espacios, paréntesis, guiones y el símbolo +")]
+        public string Tel1 { get; set; } = string.Empty;
+
+        [StringLength(20, MinimumLength = 8, ErrorMessage = "El teléfono secundario debe tener entre 8 y 20 caracteres")]
+        [RegularExpression("^[0-9\\+\\-\\(\\)\\s]+$", ErrorMessage = "El teléfono secundario solo puede contener números, espacios, paréntesis, guiones y el símbolo +")]
+        public string Tel2 { get; set; } = string.Empty;
+
+        [StringLength(20, MinimumLength = 8, ErrorMessage = "El teléfono adicional debe tener entre 8 y 20 caracteres")]
+        [RegularExpression("^[0-9\\+\\-\\(\\)\\s]+$", ErrorMessage = "El teléfono adicional solo puede contener números, espacios, paréntesis, guiones y el símbolo +")]
+        public string Tel3 { get; set; } = string.Empty;
+
+        [StringLength(20, ErrorMessage = "La placa del vehículo no puede exceder 20 caracteres")]
+        [RegularExpression("^[a-zA-Z0-9\\-\\s]*$", ErrorMessage = "La placa solo puede contener letras, números, guiones y espacios")]
+        public string PlacaVehiculo { get; set; } = string.Empty;
+
+        [StringLength(500, ErrorMessage = "El comentario no puede exceder 500 caracteres")]
+        public string Comentario { get; set; } = string.Empty;
+
+        public bool IsActive { get; set; } = true;
+        public bool IsBlackList { get; set; } = false;
+    }
+}

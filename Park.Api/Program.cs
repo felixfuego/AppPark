@@ -10,6 +10,9 @@ using Park.Api.Services.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.Mvc;
+using FluentValidation;
+using Park.Api.Validators;
+using Park.Comun.DTOs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -109,12 +112,38 @@ builder.Services.AddDbContext<ParkDbContext>(options =>
         builder.Services.AddScoped<IRoleService, RoleService>();
         
         // Register Park Industrial Services
-        builder.Services.AddScoped<IZoneService, ZoneService>();
         builder.Services.AddScoped<ICompanyService, CompanyService>();
-        builder.Services.AddScoped<IGateService, GateService>();
-        builder.Services.AddScoped<IVisitorService, VisitorService>();
-        builder.Services.AddScoped<IVisitService, VisitService>();
-        builder.Services.AddScoped<IQRService, QRService>();
+        
+        // Register Bulk Import Services
+        builder.Services.AddScoped<IBulkImportService, BulkImportService>();
+        builder.Services.AddScoped<IFileProcessingService, FileProcessingService>();
+
+        // Nuevos servicios para el modelo de datos actualizado
+        builder.Services.AddScoped<ISitioService, SitioService>();
+        builder.Services.AddScoped<IZonaService, ZonaService>();
+        builder.Services.AddScoped<ICentroService, CentroService>();
+        builder.Services.AddScoped<IColaboradorService, ColaboradorService>();
+        builder.Services.AddScoped<IVisitaService, VisitaService>();
+        builder.Services.AddScoped<IReportService, ReportService>();
+        builder.Services.AddScoped<INotificationService, NotificationService>();
+        builder.Services.AddScoped<IAuditService, AuditService>();
+        builder.Services.AddScoped<IFileService, FileService>();
+
+        // Register Validators
+        builder.Services.AddScoped<IValidator<CreateVisitaDto>, CreateVisitaValidator>();
+        builder.Services.AddScoped<IValidator<UpdateVisitaDto>, UpdateVisitaValidator>();
+        builder.Services.AddScoped<IValidator<VisitaCheckInDto>, VisitaCheckInValidator>();
+        builder.Services.AddScoped<IValidator<VisitaCheckOutDto>, VisitaCheckOutValidator>();
+        builder.Services.AddScoped<IValidator<CreateColaboradorDto>, CreateColaboradorValidator>();
+        builder.Services.AddScoped<IValidator<UpdateColaboradorDto>, UpdateColaboradorValidator>();
+        builder.Services.AddScoped<IValidator<CreateCompanyDto>, CreateCompanyValidator>();
+        builder.Services.AddScoped<IValidator<UpdateCompanyDto>, UpdateCompanyValidator>();
+        builder.Services.AddScoped<IValidator<CreateSitioDto>, CreateSitioValidator>();
+        builder.Services.AddScoped<IValidator<UpdateSitioDto>, UpdateSitioValidator>();
+        builder.Services.AddScoped<IValidator<CreateZonaDto>, CreateZonaValidator>();
+        builder.Services.AddScoped<IValidator<UpdateZonaDto>, UpdateZonaValidator>();
+        builder.Services.AddScoped<IValidator<CreateCentroDto>, CreateCentroValidator>();
+        builder.Services.AddScoped<IValidator<UpdateCentroDto>, UpdateCentroValidator>();
 
 var app = builder.Build();
 

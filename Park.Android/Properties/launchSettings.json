@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "Park.Android": {
-      "commandName": "Project",
-      "remoteDebugEnabled": false
-    }
-  }
-}

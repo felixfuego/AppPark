@@ -130,54 +130,46 @@ namespace Park.Api.Controllers
             }
         }
 
-        [HttpGet("zone/{zoneId}")]
-        public async Task<ActionResult<IEnumerable<CompanyDto>>> GetCompaniesByZone(int zoneId)
-        {
-            var companies = await _companyService.GetCompaniesByZoneAsync(zoneId);
-            return Ok(companies);
-        }
-
-        [HttpGet("{id}/users")]
-        public async Task<ActionResult<IEnumerable<UserDto>>> GetCompanyUsers(int id)
-        {
-            var users = await _companyService.GetCompanyUsersAsync(id);
-            return Ok(users);
-        }
-
-        [HttpPost("{id}/users/{userId}")]
-        [Authorize(Roles = "Admin")]
-        public async Task<ActionResult> AssignUserToCompany(int id, int userId)
+        [HttpGet("centros-by-sitio/{idSitio}")]
+        [Authorize]
+        public async Task<ActionResult<IEnumerable<CentroDto>>> GetCentrosBySitio(int idSitio)
         {
             try
             {
-                var result = await _companyService.AssignUserToCompanyAsync(userId, id);
-                
-                if (!result)
-                {
-                    return NotFound("Usuario o empresa no encontrada");
-                }
-
-                return Ok("Usuario asignado correctamente");
+                var centros = await _companyService.GetCentrosBySitioAsync(idSitio);
+                return Ok(centros);
             }
-            catch (InvalidOperationException ex)
+            catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return StatusCode(500, $"Error interno del servidor: {ex.Message}");
             }
         }
 
-        [HttpDelete("{id}/users/{userId}")]
-        [Authorize(Roles = "Admin")]
-        public async Task<ActionResult> RemoveUserFromCompany(int id, int userId)
+        [HttpGet("debug-data")]
+        [Authorize]
+        public async Task<ActionResult<object>> GetDebugData()
         {
-            var result = await _companyService.RemoveUserFromCompanyAsync(userId, id);
-            
-            if (!result)
+            try
             {
-                return NotFound("Asignación no encontrada");
+                // Este endpoint es temporal para debuggear los datos
+                var sitios = await _companyService.GetAllCompaniesAsync();
+                var centros = await _companyService.GetCentrosBySitioAsync(1); // Probar con sitio ID 1
+                
+                return Ok(new 
+                { 
+                    message = "Datos de debug",
+                    sitiosCount = sitios.Count(),
+                    centrosCount = centros.Count(),
+                    centros = centros.Select(c => new { c.Id, c.Nombre, c.IdZona })
+                });
             }
-
-            return Ok("Usuario removido correctamente");
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
         }
+
+
     }
 
 

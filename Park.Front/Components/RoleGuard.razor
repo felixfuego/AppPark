@@ -1,0 +1,92 @@
+@using Park.Front.Services
+@inject RoleService RoleService
+
+@if (isLoading)
+{
+    <div class="loading-container">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Verificando permisos...</span>
+        </div>
+    </div>
+}
+else if (hasAccess)
+{
+    @ChildContent
+}
+else
+{
+    <div class="access-denied-container">
+        <div class="access-denied-card">
+            <div class="access-denied-icon">
+                <i class="bi bi-shield-exclamation"></i>
+            </div>
+            <h3>Acceso Denegado</h3>
+            <p>No tienes permisos para acceder a esta sección.</p>
+            <p class="text-muted">Tu rol actual no permite ver este contenido.</p>
+            
+            <div class="access-denied-actions">
+                <a href="/" class="btn btn-primary">
+                    <i class="bi bi-house"></i>
+                    Ir al Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public string? RequiredRole { get; set; }
+    [Parameter] public string[]? RequiredRoles { get; set; }
+    [Parameter] public string? RequiredSection { get; set; }
+    [Parameter] public string? RequiredPage { get; set; }
+
+    private bool hasAccess = false;
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CheckAccess();
+    }
+
+    private async Task CheckAccess()
+    {
+        try
+        {
+            // Verificar acceso por rol específico
+            if (!string.IsNullOrEmpty(RequiredRole))
+            {
+                hasAccess = await RoleService.HasRoleAsync(RequiredRole);
+            }
+            // Verificar acceso por múltiples roles
+            else if (RequiredRoles != null && RequiredRoles.Length > 0)
+            {
+                hasAccess = await RoleService.HasAnyRoleAsync(RequiredRoles);
+            }
+            // Verificar acceso por sección
+            else if (!string.IsNullOrEmpty(RequiredSection))
+            {
+                hasAccess = await RoleService.CanAccessSectionAsync(RequiredSection);
+            }
+            // Verificar acceso por página
+            else if (!string.IsNullOrEmpty(RequiredPage))
+            {
+                hasAccess = await RoleService.CanAccessPageAsync(RequiredPage);
+            }
+            else
+            {
+                // Si no se especifica ningún requisito, permitir acceso
+                hasAccess = true;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error verificando acceso: {ex.Message}");
+            hasAccess = false;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

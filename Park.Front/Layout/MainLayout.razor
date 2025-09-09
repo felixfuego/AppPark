@@ -1,0 +1,111 @@
+﻿@inherits LayoutComponentBase
+@inject IJSRuntime JSRuntime
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+
+<div class="page">
+    <!-- Overlay para móviles -->
+    @if (sidebarVisible)
+    {
+        <div class="sidebar-overlay d-md-none" @onclick="ToggleSidebarVisibility"></div>
+    }
+    
+    <!-- Sidebar -->
+    <div class="sidebar @GetSidebarClasses()">
+        <!-- Header del Sidebar -->
+        <div class="navbar">
+            <a href="/" class="navbar-brand">
+                @if (!string.IsNullOrEmpty(LogoImageUrl))
+                {
+                    <img src="@LogoImageUrl" alt="Logo" class="logo" />
+                }
+                else
+                {
+                    <i class="bi bi-building"></i>
+                }
+                <span class="brand-text">Parkes Industriales</span>
+            </a>
+            @* Botón del sidebar oculto - se maneja desde la barra superior *@
+        </div>
+        
+        <!-- Menú de Navegación -->
+        <div class="nav-scrollable">
+            <NavMenu />
+        </div>
+    </div>
+
+    <!-- Contenido Principal -->
+    <main class="@(sidebarCollapsed ? "sidebar-collapsed" : "")">
+        <!-- Header Superior -->
+        <div class="top-row">
+            <div class="d-flex justify-content-between align-items-center w-100">
+                <div class="d-flex align-items-center gap-3">
+                    <button class="btn btn-sm d-md-none" style="background-color: var(--bg-tertiary); color: var(--text-secondary);" @onclick="ToggleSidebarVisibility" title="@(sidebarVisible ? "Ocultar menú" : "Mostrar menú")">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    <button class="btn btn-sm d-none d-md-inline-flex" style="background-color: var(--bg-tertiary); color: var(--text-secondary);" @onclick="ToggleSidebar" title="@(sidebarCollapsed ? "Mostrar menú" : "Ocultar menú")">
+                        <i class="bi bi-list"></i>
+                    </button>
+                    <h2 class="mb-0">Administración Parques</h2>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn" style="background-color: var(--bg-tertiary); color: var(--text-secondary);" title="Configuración">
+                        <i class="bi bi-gear"></i>
+                    </button>
+                    <button class="btn" style="background-color: var(--bg-tertiary); color: var(--text-secondary);" title="Cerrar Sesión" @onclick="HandleLogout">
+                        <i class="bi bi-box-arrow-right"></i>
+                    </button>
+                </div>
+            </div> 
+        </div>
+
+        <!-- Contenido de la Página -->
+        <div class="content w-100">
+            @Body
+        </div>
+    </main>
+</div>
+
+@code {
+    private bool sidebarCollapsed = false;
+    private bool sidebarVisible = false;
+
+    // Propiedad para la imagen del logo
+    [Parameter] public string? LogoImageUrl { get; set; }
+
+    private async Task ToggleSidebar()
+    {
+        sidebarCollapsed = !sidebarCollapsed;
+        await JSRuntime.InvokeVoidAsync("layoutManager.toggleSidebar", sidebarCollapsed);
+    }
+
+    private async Task ToggleSidebarVisibility()
+    {
+        sidebarVisible = !sidebarVisible;
+        // En móvil, cuando se muestra el menú, también se debe expandir
+        if (sidebarVisible)
+        {
+            sidebarCollapsed = false;
+        }
+        await JSRuntime.InvokeVoidAsync("layoutManager.showMobileSidebar", sidebarVisible);
+    }
+
+    private string GetSidebarClasses()
+    {
+        var classes = new List<string>();
+        
+        if (sidebarCollapsed)
+            classes.Add("collapsed");
+            
+        if (sidebarVisible)
+            classes.Add("show");
+            
+        return string.Join(" ", classes);
+    }
+
+    private async Task HandleLogout()
+    {
+        await AuthService.LogoutAsync();
+        Navigation.NavigateTo("/login");
+    }
+}

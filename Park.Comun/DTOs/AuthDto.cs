@@ -9,6 +9,8 @@ namespace Park.Comun.DTOs
         
         [Required(ErrorMessage = "La contraseña es requerida")]
         public string Password { get; set; } = string.Empty;
+        
+        public bool RememberMe { get; set; } = false;
     }
 
     public class RegisterDto
@@ -39,6 +41,8 @@ namespace Park.Comun.DTOs
         
         [Required(ErrorMessage = "Debe seleccionar al menos un rol")]
         public List<int> RoleIds { get; set; } = new List<int>();
+        
+        public bool IsActive { get; set; } = true;
     }
 
     public class AuthResponseDto
@@ -62,14 +66,20 @@ namespace Park.Comun.DTOs
         public string Password { get; set; } = string.Empty;
         public List<RoleDto> Roles { get; set; } = new List<RoleDto>();
         public List<CompanyDto> AssignedCompanies { get; set; } = new List<CompanyDto>();
-        public List<ZoneDto> AssignedZones { get; set; } = new List<ZoneDto>();
-        public List<GateDto> AssignedGates { get; set; } = new List<GateDto>();
         public bool IsActive { get; set; }
         public bool IsLocked { get; set; }
         public DateTime? LastLogin { get; set; }
         public DateTime? LastLoginDate { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
+        
+        // Nuevas propiedades para el nuevo modelo
+        public int? IdColaborador { get; set; }
+        public int? IdCompania { get; set; }
+        
+        // Propiedades de navegación
+        public ColaboradorDto? Colaborador { get; set; }
+        public CompanyDto? Compania { get; set; }
     }
 
     public class RefreshTokenDto
@@ -101,21 +111,27 @@ namespace Park.Comun.DTOs
         public CompanyDto Company { get; set; } = null!;
     }
 
-
-
-    public class AssignUserToZoneDto
+    public class UpdateUserDto
     {
-        public int UserId { get; set; }
-        public int ZoneId { get; set; }
+        [Required(ErrorMessage = "El nombre de usuario es requerido")]
+        [StringLength(50, MinimumLength = 3, ErrorMessage = "El nombre de usuario debe tener entre 3 y 50 caracteres")]
+        public string Username { get; set; } = string.Empty;
+        
+        [Required(ErrorMessage = "El email es requerido")]
+        [EmailAddress(ErrorMessage = "El formato del email no es válido")]
+        public string Email { get; set; } = string.Empty;
+        
+        [Required(ErrorMessage = "El nombre es requerido")]
+        [StringLength(50, ErrorMessage = "El nombre no puede exceder 50 caracteres")]
+        public string FirstName { get; set; } = string.Empty;
+        
+        [Required(ErrorMessage = "El apellido es requerido")]
+        [StringLength(50, ErrorMessage = "El apellido no puede exceder 50 caracteres")]
+        public string LastName { get; set; } = string.Empty;
+        
+        public bool IsActive { get; set; } = true;
     }
 
-    public class UserZoneDto
-    {
-        public int Id { get; set; }
-        public int UserId { get; set; }
-        public int ZoneId { get; set; }
-        public bool IsActive { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public ZoneDto Zone { get; set; } = null!;
-    }
+
+
 }

@@ -1,0 +1,68 @@
+﻿@page "/weather"
+@inject HttpClient Http
+
+<PageTitle>Weather</PageTitle>
+
+<div class="weather-container" style="padding: var(--spacing-lg);">
+    <div class="weather-header" style="margin-bottom: var(--spacing-md);">
+        <i class="bi bi-cloud-sun-fill" style="font-size: 1.5rem; color: var(--primary-color); margin-right: var(--spacing-sm);"></i>
+        <h1 style="font-size: 1.5rem;">Weather</h1>
+    </div>
+    <p class="text-muted mb-3" style="font-size: 0.875rem;">Información del clima actual</p>
+    
+    @if (forecasts == null)
+    {
+        <div class="text-center" style="padding: var(--spacing-xl);">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-2 text-muted">Cargando datos del clima...</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">Fecha</th>
+                        <th style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">Temp. (°C)</th>
+                        <th style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">Temp. (°F)</th>
+                        <th style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">Resumen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var forecast in forecasts)
+                    {
+                        <tr>
+                            <td style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">@forecast.Date.ToShortDateString()</td>
+                            <td style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">@forecast.TemperatureC</td>
+                            <td style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">@forecast.TemperatureF</td>
+                            <td style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">@forecast.Summary</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private WeatherForecast[]? forecasts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("sample-data/weather.json");
+    }
+
+    public class WeatherForecast
+    {
+        public DateOnly Date { get; set; }
+
+        public int TemperatureC { get; set; }
+
+        public string? Summary { get; set; }
+
+        public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+    }
+}

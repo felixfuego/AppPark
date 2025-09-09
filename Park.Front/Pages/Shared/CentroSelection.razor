@@ -1,0 +1,151 @@
+@using Park.Comun.DTOs
+@using Park.Front.Services
+
+@inject CompanyService CompanyService
+
+<div class="form-group">
+    <label>Centros/Puertas de Acceso</label>
+    
+    @if (IdSitio > 0)
+    {
+        @if (isLoading)
+        {
+            <div class="text-center">
+                <div class="spinner-border spinner-border-sm" role="status">
+                    <span class="visually-hidden">Cargando centros...</span>
+                </div>
+                <span class="ms-2">Cargando centros del sitio...</span>
+            </div>
+        }
+        else if (availableCentros.Any())
+        {
+            <div class="centros-selection">
+                <div class="row">
+                    @foreach (var centro in availableCentros)
+                    {
+                        <div class="col-md-6 mb-2">
+                            <div class="form-check">
+                                <input type="checkbox" 
+                                       id="@($"centro_{centro.Id}")" 
+                                       @onchange="@((e) => OnCentroChanged(centro.Id, e))"
+                                       checked="@GetCentroSelected(centro.Id)"
+                                       class="form-check-input" />
+                                <label for="@($"centro_{centro.Id}")" class="form-check-label">
+                                    <strong>@centro.Nombre</strong>
+                                    @if (centro.Zona != null)
+                                    {
+                                        <small class="text-muted d-block">Zona: @centro.Zona.Nombre</small>
+                                    }
+                                    @if (!string.IsNullOrEmpty(centro.Localidad))
+                                    {
+                                        <small class="text-muted d-block">Localidad: @centro.Localidad</small>
+                                    }
+                                </label>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-warning" role="alert">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                No hay centros disponibles para este sitio. Asegúrate de que el sitio tenga zonas y centros configurados.
+            </div>
+        }
+    }
+    else
+    {
+        <div class="alert alert-info" role="alert">
+            <i class="fas fa-info-circle me-2"></i>
+            Selecciona un sitio para ver los centros disponibles
+        </div>
+    }
+    
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger mt-2" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            @errorMessage
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public int IdSitio { get; set; }
+    [Parameter] public List<int> SelectedCentroIds { get; set; } = new();
+    [Parameter] public EventCallback<List<int>> SelectedCentroIdsChanged { get; set; }
+    [Parameter] public EventCallback<string> ErrorMessageChanged { get; set; }
+
+    private List<CentroDto> availableCentros = new();
+    private bool isLoading = false;
+    private string errorMessage = string.Empty;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (IdSitio > 0)
+        {
+            await LoadCentrosForSitio();
+        }
+        else
+        {
+            availableCentros.Clear();
+            errorMessage = string.Empty;
+        }
+    }
+
+    private async Task LoadCentrosForSitio()
+    {
+        if (IdSitio <= 0) return;
+
+        try
+        {
+            isLoading = true;
+            errorMessage = string.Empty;
+            StateHasChanged();
+
+            // Cargar centros del sitio seleccionado
+            availableCentros = await CompanyService.GetCentrosBySitioAsync(IdSitio);
+            
+            if (!availableCentros.Any())
+            {
+                errorMessage = "No hay centros disponibles para este sitio. Asegúrate de que el sitio tenga zonas y centros configurados.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error cargando centros: {ex.Message}";
+            availableCentros.Clear();
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private bool GetCentroSelected(int centroId)
+    {
+        return SelectedCentroIds.Contains(centroId);
+    }
+
+    private async Task OnCentroChanged(int centroId, ChangeEventArgs e)
+    {
+        var isChecked = (bool)(e.Value ?? false);
+        
+        if (isChecked)
+        {
+            if (!SelectedCentroIds.Contains(centroId))
+            {
+                SelectedCentroIds.Add(centroId);
+            }
+        }
+        else
+        {
+            SelectedCentroIds.Remove(centroId);
+        }
+
+        await SelectedCentroIdsChanged.InvokeAsync(SelectedCentroIds);
+    }
+}

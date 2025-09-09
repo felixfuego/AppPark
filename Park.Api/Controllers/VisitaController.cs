@@ -1,0 +1,392 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Park.Api.Services.Interfaces;
+using Park.Comun.DTOs;
+using Park.Comun.Enums;
+
+namespace Park.Api.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    [Authorize]
+    public class VisitaController : ControllerBase
+    {
+        private readonly IVisitaService _visitaService;
+        private readonly ILogger<VisitaController> _logger;
+
+        public VisitaController(IVisitaService visitaService, ILogger<VisitaController> logger)
+        {
+            _visitaService = visitaService;
+            _logger = logger;
+        }
+
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<VisitaDto>>> GetAllVisitas()
+        {
+            try
+            {
+                var visitas = await _visitaService.GetAllVisitasAsync();
+                return Ok(visitas);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener todas las visitas");
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        /// <summary>
+        /// Buscar visitas con filtros avanzados y paginación
+        /// </summary>
+        /// <param name="searchDto">Parámetros de búsqueda y paginación</param>
+        /// <returns>Lista paginada de visitas</returns>
+        [HttpPost("search")]
+        public async Task<ActionResult<PagedResultDto<VisitaDto>>> SearchVisitas(VisitaSearchDto searchDto)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+
+                var result = await _visitaService.SearchVisitasAsync(searchDto);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al buscar visitas");
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        [HttpGet("active")]
+        public async Task<ActionResult<IEnumerable<VisitaDto>>> GetVisitasActivas()
+        {
+            try
+            {
+                var visitas = await _visitaService.GetVisitasActivasAsync();
+                return Ok(visitas);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener visitas activas");
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        [HttpGet("expiradas")]
+        public async Task<ActionResult<IEnumerable<VisitaDto>>> GetVisitasExpiradas()
+        {
+            try
+            {
+                var visitas = await _visitaService.GetVisitasExpiradasAsync();
+                return Ok(visitas);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener visitas expiradas");
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        [HttpGet("estado/{estado}")]
+        public async Task<ActionResult<IEnumerable<VisitaDto>>> GetVisitasByEstado(VisitStatus estado)
+        {
+            try
+            {
+                var visitas = await _visitaService.GetVisitasByEstadoAsync(estado);
+                return Ok(visitas);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener visitas con estado {Estado}", estado);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        [HttpGet("fecha/{fecha:datetime}")]
+        public async Task<ActionResult<IEnumerable<VisitaDto>>> GetVisitasByFecha(DateTime fecha)
+        {
+            try
+            {
+                var visitas = await _visitaService.GetVisitasByFechaAsync(fecha);
+                return Ok(visitas);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener visitas de la fecha {Fecha}", fecha);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        [HttpGet("rango-fechas")]
+        public async Task<ActionResult<IEnumerable<VisitaDto>>> GetVisitasByRangoFechas(
+            [FromQuery] DateTime fechaInicio, 
+            [FromQuery] DateTime fechaFin)
+        {
+            try
+            {
+                var visitas = await _visitaService.GetVisitasByRangoFechasAsync(fechaInicio, fechaFin);
+                return Ok(visitas);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener visitas del rango de fechas {FechaInicio} - {FechaFin}", fechaInicio, fechaFin);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        [HttpGet("compania/{idCompania}")]
+        public async Task<ActionResult<IEnumerable<VisitaDto>>> GetVisitasByCompania(int idCompania)
+        {
+            try
+            {
+                var visitas = await _visitaService.GetVisitasByCompaniaAsync(idCompania);
+                return Ok(visitas);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener visitas de la compañía {IdCompania}", idCompania);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        [HttpGet("colaborador/{idColaborador}")]
+        public async Task<ActionResult<IEnumerable<VisitaDto>>> GetVisitasByColaborador(int idColaborador)
+        {
+            try
+            {
+                var visitas = await _visitaService.GetVisitasByColaboradorAsync(idColaborador);
+                return Ok(visitas);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener visitas del colaborador {IdColaborador}", idColaborador);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        [HttpGet("centro/{idCentro}")]
+        public async Task<ActionResult<IEnumerable<VisitaDto>>> GetVisitasByCentro(int idCentro)
+        {
+            try
+            {
+                var visitas = await _visitaService.GetVisitasByCentroAsync(idCentro);
+                return Ok(visitas);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener visitas del centro {IdCentro}", idCentro);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        [HttpGet("{id}")]
+        public async Task<ActionResult<VisitaDto>> GetVisita(int id)
+        {
+            try
+            {
+                var visita = await _visitaService.GetVisitaByIdAsync(id);
+                if (visita == null)
+                {
+                    return NotFound($"Visita con ID {id} no encontrada");
+                }
+                return Ok(visita);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener visita con ID {Id}", id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        [HttpGet("numero-solicitud/{numeroSolicitud}")]
+        public async Task<ActionResult<VisitaDto>> GetVisitaByNumeroSolicitud(string numeroSolicitud)
+        {
+            try
+            {
+                var visita = await _visitaService.GetVisitaByNumeroSolicitudAsync(numeroSolicitud);
+                if (visita == null)
+                {
+                    return NotFound($"Visita con número de solicitud {numeroSolicitud} no encontrada");
+                }
+                return Ok(visita);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener visita con número de solicitud {NumeroSolicitud}", numeroSolicitud);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        [HttpPost]
+        [Authorize(Roles = "Admin,Operador")]
+        public async Task<ActionResult<VisitaDto>> CreateVisita(CreateVisitaDto createVisitaDto)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+
+                var visita = await _visitaService.CreateVisitaAsync(createVisitaDto);
+                return CreatedAtAction(nameof(GetVisita), new { id = visita.Id }, visita);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al crear visita");
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        [HttpPut("{id}")]
+        [Authorize(Roles = "Admin,Operador")]
+        public async Task<ActionResult<VisitaDto>> UpdateVisita(int id, UpdateVisitaDto updateVisitaDto)
+        {
+            try
+            {
+                if (id != updateVisitaDto.Id)
+                {
+                    return BadRequest("El ID de la URL no coincide con el ID del cuerpo de la solicitud");
+                }
+
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+
+                var visita = await _visitaService.UpdateVisitaAsync(updateVisitaDto);
+                return Ok(visita);
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al actualizar visita con ID {Id}", id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        [HttpDelete("{id}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult> DeleteVisita(int id)
+        {
+            try
+            {
+                var result = await _visitaService.DeleteVisitaAsync(id);
+                if (!result)
+                {
+                    return NotFound($"Visita con ID {id} no encontrada");
+                }
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al eliminar visita con ID {Id}", id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        [HttpPost("checkin")]
+        [Authorize(Roles = "Admin,Operador,Guardia")]
+        public async Task<ActionResult<VisitaDto>> CheckInVisita(VisitaCheckInDto checkInDto)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+
+                var visita = await _visitaService.CheckInVisitaAsync(checkInDto);
+                return Ok(visita);
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al realizar check-in para visita con ID {Id}", checkInDto.Id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        [HttpPost("checkout")]
+        [Authorize(Roles = "Admin,Operador,Guardia")]
+        public async Task<ActionResult<VisitaDto>> CheckOutVisita(VisitaCheckOutDto checkOutDto)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+
+                var visita = await _visitaService.CheckOutVisitaAsync(checkOutDto);
+                return Ok(visita);
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al realizar check-out para visita con ID {Id}", checkOutDto.Id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        [HttpPatch("{id}/cancelar")]
+        [Authorize(Roles = "Admin,Operador")]
+        public async Task<ActionResult> CancelarVisita(int id)
+        {
+            try
+            {
+                var result = await _visitaService.CancelarVisitaAsync(id);
+                if (!result)
+                {
+                    return NotFound($"Visita con ID {id} no encontrada");
+                }
+                return Ok(new { message = "Visita cancelada exitosamente" });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al cancelar visita con ID {Id}", id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        [HttpPost("expirar")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult> ExpirarVisitas()
+        {
+            try
+            {
+                var result = await _visitaService.ExpirarVisitasAsync();
+                return Ok(new { message = "Visitas expiradas procesadas exitosamente" });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al expirar visitas");
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+    }
+}

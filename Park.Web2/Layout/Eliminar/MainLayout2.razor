@@ -1,0 +1,54 @@
+﻿@inherits LayoutComponentBase
+@using Park.Web2.Services;
+@inject DxThemesService ThemesService
+
+<div class="page">
+    <DxDrawer PanelWidth="250px" 
+              CssClass="navigation-drawer" 
+              Mode="@DrawerMode.Shrink" 
+              IsOpen="@(!ToggledSidebar)"
+              HeaderTemplate="@DrawerHeader"
+              FooterTemplate="@DrawerFooter">
+        <BodyTemplate>
+            <NavMenu />
+        </BodyTemplate>
+        <TargetContent>
+            <div class="nav-buttons-container">
+                <DxButton RenderStyle="@(ThemesService.IsActiveThemeDark ? ButtonRenderStyle.Light : ButtonRenderStyle.Dark)" 
+                         RenderStyleMode="@ButtonRenderStyleMode.Text" 
+                         CssClass="menu-button" 
+                         IconCssClass="icon icon-menu"
+                         Click="ToggleSidebar">
+                </DxButton>
+            </div>
+            <div class="p-4">
+                @Body
+            </div>
+        </TargetContent>
+    </DxDrawer>
+</div>
+
+@code {
+    [SupplyParameterFromQuery(Name = "toggledSidebar")]
+    public bool ToggledSidebar { get; set; }
+
+    private RenderFragment DrawerHeader => @<div class="navigation-drawer-header">
+        <img class="logo" src="images/logo.svg" alt="Park.Web2 logo" />
+        <h4>Park.Web2</h4>
+    </div>;
+
+    private RenderFragment DrawerFooter => @<div>
+        <DxButton Text="Documentación" 
+                 RenderStyleMode="@ButtonRenderStyleMode.Text" 
+                 CssClass="footer-button" 
+                 RenderStyle="ButtonRenderStyle.Light" 
+                 IconCssClass="icon docs-icon"
+                 NavigateUrl="https://docs.devexpress.com/Blazor/">
+        </DxButton>
+    </div>;
+
+    private void ToggleSidebar()
+    {
+        ToggledSidebar = !ToggledSidebar;
+    }
+}

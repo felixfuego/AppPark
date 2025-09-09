@@ -1,0 +1,87 @@
+﻿@page "/"
+
+<PageTitle>Home</PageTitle>
+
+<h1>Bienvenido a Park.Front</h1>
+<p class="text-muted mb-4">Sistema de gestión de parqueo industrial</p>
+
+<!-- Tarjetas de Resumen -->
+<div class="row mb-3">
+    <div class="col-md-3 mb-2">
+        <div class="card">
+            <div class="card-body text-center" style="padding: var(--spacing-md);">
+                <i class="bi bi-people-fill" style="font-size: 1.5rem; color: var(--primary-color);"></i>
+                <h3 class="mt-1 mb-1" style="font-size: 1.5rem;">1,234</h3>
+                <p class="text-muted mb-0" style="font-size: 0.875rem;">Usuarios Activos</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-2">
+        <div class="card">
+            <div class="card-body text-center" style="padding: var(--spacing-md);">
+                <i class="bi bi-calendar-check-fill" style="font-size: 1.5rem; color: #059669;"></i>
+                <h3 class="mt-1 mb-1" style="font-size: 1.5rem;">567</h3>
+                <p class="text-muted mb-0" style="font-size: 0.875rem;">Visitas Hoy</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-2">
+        <div class="card">
+            <div class="card-body text-center" style="padding: var(--spacing-md);">
+                <i class="bi bi-building" style="font-size: 1.5rem; color: #d97706;"></i>
+                <h3 class="mt-1 mb-1" style="font-size: 1.5rem;">89</h3>
+                <p class="text-muted mb-0" style="font-size: 0.875rem;">Empresas</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-2">
+        <div class="card">
+            <div class="card-body text-center" style="padding: var(--spacing-md);">
+                <i class="bi bi-shield-check" style="font-size: 1.5rem; color: #0891b2;"></i>
+                <h3 class="mt-1 mb-1" style="font-size: 1.5rem;">98%</h3>
+                <p class="text-muted mb-0" style="font-size: 0.875rem;">Seguridad</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Actividad Reciente -->
+<div class="card">
+    <div class="card-header" style="padding: var(--spacing-md);">
+        <h3 class="mb-0" style="font-size: 1.125rem;">Actividad Reciente</h3>
+    </div>
+    <div class="card-body" style="padding: var(--spacing-md);">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">Usuario</th>
+                        <th style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">Empresa</th>
+                        <th style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">Hora</th>
+                        <th style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">Juan Pérez</td>
+                        <td style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">TechCorp</td>
+                        <td style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">14:30</td>
+                        <td style="padding: var(--spacing-sm) var(--spacing-md);"><span style="background-color: #059669; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">Entrada</span></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">María García</td>
+                        <td style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">InnovateLab</td>
+                        <td style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">14:25</td>
+                        <td style="padding: var(--spacing-sm) var(--spacing-md);"><span style="background-color: #d97706; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">Salida</span></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">Carlos López</td>
+                        <td style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">DataSoft</td>
+                        <td style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">14:20</td>
+                        <td style="padding: var(--spacing-sm) var(--spacing-md);"><span style="background-color: #059669; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">Entrada</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

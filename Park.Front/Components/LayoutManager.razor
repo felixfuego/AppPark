@@ -1,0 +1,25 @@
+@using Microsoft.AspNetCore.Components.Web
+@inject IJSRuntime JSRuntime
+
+<div class="layout-manager">
+    @ChildContent
+</div>
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+    [Parameter] public bool IsSidebarCollapsed { get; set; }
+    [Parameter] public EventCallback<bool> OnSidebarToggle { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JSRuntime.InvokeVoidAsync("layoutManager.init");
+        }
+    }
+
+    public async Task ToggleSidebar()
+    {
+        await OnSidebarToggle.InvokeAsync(!IsSidebarCollapsed);
+    }
+}

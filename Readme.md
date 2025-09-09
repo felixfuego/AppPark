@@ -1,788 +1,803 @@
-# 🏭 Sistema de Gestión de Parque Industrial
+# 🏭 Park Management System API
 
-Sistema completo de gestión de parque industrial con autenticación JWT, roles de usuario, gestión de empresas, zonas, puertas, visitas y sistema de autorización granular.
+Sistema de gestión de parques industriales con API REST completa para el manejo de visitas, colaboradores, centros y reportes.
 
-## 📋 Descripción
+## 📋 Tabla de Contenidos
 
-Este proyecto implementa un sistema integral de gestión de parque industrial con las siguientes características:
+- [Características](#-características)
+- [Arquitectura](#-arquitectura)
+- [Tecnologías](#-tecnologías)
+- [Instalación](#-instalación)
+- [Configuración](#-configuración)
+- [Autenticación](#-autenticación)
+- [Endpoints](#-endpoints)
+- [Modelos de Datos](#-modelos-de-datos)
+- [Validaciones](#-validaciones)
+- [Reportes](#-reportes)
+- [Notificaciones](#-notificaciones)
+- [Auditoría](#-auditoría)
+- [Gestión de Archivos](#-gestión-de-archivos)
+- [Configuración del Sistema](#-configuración-del-sistema)
+- [Ejemplos de Uso](#-ejemplos-de-uso)
+- [Desarrollo Frontend](#-desarrollo-frontend)
+- [Desarrollo Móvil](#-desarrollo-móvil)
+- [Despliegue](#-despliegue)
+- [Contribución](#-contribución)
 
-- **Autenticación JWT** con refresh tokens y manejo de expiración
-- **Autorización granular** basada en roles y asignaciones de empresas
-- **API REST** con Entity Framework Core y SQL Server
-- **Frontend Blazor WebAssembly** con interfaz moderna y responsiva
-- **Aplicación móvil .NET MAUI** para guardias (en desarrollo)
-- **Gestión completa** de empresas, zonas, puertas, usuarios y visitas
-- **Sistema de visitas** con códigos QR y check-in/check-out
-- **Dashboard en tiempo real** con estadísticas actuales
-- **Arquitectura escalable** con separación de responsabilidades
+## 🚀 Características
 
-## 🏗️ Arquitectura del Proyecto
+- **Autenticación JWT** con roles (Admin, Operador, Guardia)
+- **CRUD completo** para todas las entidades
+- **Validaciones robustas** con FluentValidation y Data Annotations
+- **Sistema de reportes** con estadísticas y exportación
+- **Búsqueda avanzada** con paginación y filtros
+- **Sistema de notificaciones** en tiempo real
+- **Logging de auditoría** completo
+- **Gestión de archivos** con validación de tipos
+- **Configuración del sistema** dinámica
+- **Documentación automática** con Swagger/OpenAPI
+
+## 🏗️ Arquitectura
 
 ```
-Park.sln
-├── Park.Api (Backend - API Web)
-├── Park.Web (Frontend - Blazor WASM)  
-├── Park.Comun (Compartido - Modelos y DTOs)
-└── Park.Android (Móvil - .NET MAUI) [EN DESARROLLO]
+Park.Api/                    # API REST
+├── Controllers/            # Controladores de endpoints
+├── Services/              # Lógica de negocio
+├── Data/                  # Contexto de base de datos
+├── Validators/            # Validadores FluentValidation
+├── Configuration/         # Configuración JWT
+└── Program.cs             # Configuración de la aplicación
+
+Park.Comun/                 # Capa común
+├── DTOs/                  # Data Transfer Objects
+├── Models/                # Entidades del dominio
+├── Enums/                 # Enumeraciones
+└── BaseEntity.cs          # Entidad base
 ```
 
-### **Park.Api** - Backend
-- **Framework**: ASP.NET Core 9.0
-- **Base de datos**: SQL Server con Entity Framework Core
-- **Autenticación**: JWT Bearer Tokens con refresh tokens
-- **Documentación**: Swagger/OpenAPI
-- **CORS**: Configurado para Blazor WebAssembly y MAUI
+## 🛠️ Tecnologías
 
-### **Park.Web** - Frontend
-- **Framework**: Blazor WebAssembly 9.0
-- **Autenticación**: JWT con CustomAuthenticationStateProvider
-- **UI**: Bootstrap 5 con FontAwesome
-- **Componentes**: Modales, formularios, tablas responsivas
-- **Autorización**: Componentes personalizados basados en roles
+- **.NET 9.0** - Framework principal
+- **ASP.NET Core** - API REST
+- **Entity Framework Core** - ORM
+- **SQL Server** - Base de datos
+- **JWT Bearer** - Autenticación
+- **FluentValidation** - Validaciones
+- **Swagger/OpenAPI** - Documentación
+- **Serilog** - Logging estructurado
 
-### **Park.Comun** - Compartido
-- **Modelos**: Entidades del dominio (User, Company, Zone, Gate, Visit, Visitor)
-- **DTOs**: Objetos de transferencia de datos
-- **Enums**: Estados y tipos del sistema
-- **Clases base**: BaseEntity para auditoría
-
-### **Park.Android** - Aplicación Móvil (EN DESARROLLO)
-- **Framework**: .NET MAUI 9.0
-- **Plataforma**: Android (iOS y Windows en el futuro)
-- **Autenticación**: JWT con SecureStorage
-- **UI**: XAML con estilos personalizados
-- **Funcionalidad**: Panel de guardia móvil optimizado
-- **Características**: Escáner QR, check-in/out, notificaciones
-
-## 🚀 Características Implementadas
-
-### 🔐 Seguridad y Autenticación
-- ✅ Autenticación JWT con refresh tokens
-- ✅ Hash de contraseñas con SHA256
-- ✅ Bloqueo de cuentas por intentos fallidos
-- ✅ Autorización granular por roles y empresas
-- ✅ Validación automática de tokens expirados
-- ✅ Redirección automática al login
-- ✅ CORS configurado para desarrollo y producción
-- ✅ **Acceso restringido por roles** con middleware de navegación
-- ✅ **Confirmaciones de seguridad** para acciones críticas
-- ✅ **Prevención de errores** accidentales en check-in/out
-
-### 👥 Gestión de Usuarios
-- ✅ Registro y login de usuarios
-- ✅ Cambio y restablecimiento de contraseña
-- ✅ Bloqueo/Desbloqueo de usuarios
-- ✅ Roles: SuperAdmin, EmpAdmin, GestorVisitas, Guardia
-- ✅ **Asignación de usuarios a empresas** con roles específicos
-- ✅ Gestión de permisos por empresa y puerta
-
-### 🏢 Gestión de Empresas
-- ✅ CRUD completo de empresas
-- ✅ Asignación de empresas a zonas
-- ✅ Información de contacto y ubicación
-- ✅ Estados activo/inactivo
-- ✅ Estadísticas de visitas por empresa
-
-### 🗺️ Gestión de Zonas
-- ✅ CRUD completo de zonas
-- ✅ Tipos de zona (Industrial, Comercial, etc.)
-- ✅ Capacidad configurable
-- ✅ Asignación de empresas a zonas
-- ✅ Estadísticas de puertas y empresas
-
-### 🚪 Gestión de Puertas
-- ✅ CRUD completo de puertas
-- ✅ Asignación de puertas a zonas
-- ✅ Estados activo/inactivo
-- ✅ Asignación de guardias a puertas
-- ✅ Control de acceso por puerta
-
-### 👤 Gestión de Visitantes
-- ✅ CRUD completo de visitantes
-- ✅ Información personal y de contacto
-- ✅ Tipos de documento
-- ✅ Estados activo/inactivo
-- ✅ **Creación rápida desde modal** en formulario de visitas
-
-### 📅 Sistema de Visitas
-- ✅ Creación y gestión de visitas
-- ✅ Estados: Pendiente, En Progreso, Completada, Cancelada
-- ✅ **Códigos QR** para identificación
-- ✅ **Check-in y Check-out** por puerta
-- ✅ Programación de fechas y horarios
-- ✅ Notas y propósitos de visita
-- ✅ **Modal integrado para crear visitantes** durante la creación de visitas
-- ✅ **Confirmaciones obligatorias** para check-in/out
-- ✅ **Panel especializado para guardias** con vista móvil optimizada
-- ✅ **Acceso restringido** para guardias solo a su panel
-
-### 🎯 Sistema de Autorización Granular
-- ✅ **AuthorizationService**: Control centralizado de permisos
-- ✅ **Componente AuthorizeView**: Autorización en componentes
-- ✅ **GuardiaNavigationMiddleware**: Control de navegación para guardias
-- ✅ **Permisos por rol y empresa**:
-  - SuperAdmin: Acceso completo a todo el sistema
-  - EmpAdmin: Solo sus empresas asignadas
-  - GestorVisitas: Solo visitas que creó en sus empresas
-  - Guardia: Ver todas las visitas y hacer check-in/out en cualquier puerta
-- ✅ **Redirección automática** por roles después del login
-- ✅ **Acceso restringido** para guardias solo a su panel especializado
-
-### 📊 Dashboard en Tiempo Real
-- ✅ **Estadísticas actuales** de empresas, zonas, visitas y puertas
-- ✅ **Datos reales** desde la base de datos (no hardcodeados)
-- ✅ **Carga asíncrona** con indicador visual
-- ✅ **Manejo de errores** robusto
-- ✅ **Logging detallado** para debugging
-
-### 📱 Experiencia Móvil y Responsive
-- ✅ **Menú responsive** con soporte completo para móviles
-- ✅ **Middleware de navegación** que detecta cambios de pantalla
-- ✅ **Overlay para móviles** que se cierra al hacer clic
-- ✅ **Cierre automático del menú** al navegar en móviles
-- ✅ **Vista especializada para guardias** optimizada para dispositivos táctiles
-- ✅ **Botones grandes** para uso en móviles
-- ✅ **Confirmaciones de seguridad** adaptadas para pantallas táctiles
-
-## 🔧 Mejoras Recientes Implementadas
-
-### **✅ Problema 1: Guardias no veían visitas para check-in/out**
-**Solución implementada:**
-- **Modificada lógica de carga de visitas** en `Index.razor`
-- **Actualizado AuthorizationService** para permitir que guardias vean todas las visitas
-- **Permitido check-in/out en cualquier puerta** para guardias
-- **Resultado**: Los guardias ahora pueden ver todas las visitas y hacer check-in/out correctamente
-
-### **✅ Problema 2: Dashboard con datos hardcodeados**
-**Solución implementada:**
-- **Agregados servicios necesarios**: `ICompanyService`, `IZoneService`, `IVisitService`, `IGateService`
-- **Reemplazados datos hardcodeados** con llamadas a servicios reales
-- **Implementado indicador de carga** con spinner
-- **Agregado manejo de errores** robusto
-- **Resultado**: Dashboard muestra estadísticas reales en tiempo real
-
-### **✅ Problema 3: Creación de visitantes desde modal**
-**Solución implementada:**
-- **Modal integrado** en la página de crear visitas
-- **Botón "Nuevo Visitante"** junto al selector de visitantes
-- **Formulario completo** con validación
-- **Auto-selección** del visitante creado
-- **JavaScript para control de modales**
-- **Resultado**: Experiencia de usuario mejorada al crear visitas
-
-### **✅ Problema 4: Menú móvil no funcional**
-**Solución implementada:**
-- **Middleware de navegación responsive** para detectar cambios de pantalla
-- **JavaScript para manejo de eventos** de redimensionamiento
-- **Overlay para móviles** que se cierra al hacer clic
-- **Cierre automático del menú** al navegar en móviles
-- **Resultado**: Menú móvil completamente funcional y responsive
-
-### **✅ Problema 5: Acceso restringido para guardias**
-**Solución implementada:**
-- **Middleware de navegación** (`GuardiaNavigationMiddleware`) que intercepta todas las navegaciones
-- **Redirección automática** de guardias a `/guardia` si intentan acceder a otras páginas
-- **Layout simplificado** para guardias sin menú lateral
-- **Indicador visual** "Panel de Guardia" en la barra superior
-- **Resultado**: Los guardias solo pueden acceder a su vista especializada
-
-### **✅ Problema 6: Confirmaciones de seguridad para check-in/out**
-**Solución implementada:**
-- **Modales de confirmación** para check-in y check-out
-- **Información detallada** del visitante y empresa en la confirmación
-- **Advertencias de seguridad** "Esta acción no se puede deshacer"
-- **Botones grandes** para uso en móviles
-- **Prevención de errores** accidentales
-- **Resultado**: Sistema seguro que evita acciones no intencionales
-
-## 📦 Paquetes NuGet Utilizados
-
-### Park.Api
-```xml
-<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.8" />
-<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.8" />
-<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.8" />
-<PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.3.0" />
-<PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.8" />
-<PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.1.0" />
-```
-
-### Park.Web
-```xml
-<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.8" />
-<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Authentication" Version="9.0.8" />
-<PackageReference Include="Blazored.LocalStorage" Version="4.5.0" />
-<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.8" />
-```
-
-### Park.Android (MAUI)
-```xml
-<PackageReference Include="Microsoft.Maui.Controls" Version="9.0.0-preview.5.24307.10" />
-<PackageReference Include="Microsoft.Maui.Controls.Compatibility" Version="9.0.0-preview.5.24307.10" />
-<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.0-preview.5.24306.7" />
-<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-<PackageReference Include="CommunityToolkit.Maui" Version="8.0.0" />
-```
-
-### Archivos JavaScript Personalizados
-- `js/responsive.js` - Manejo de navegación responsive
-- `js/modal.js` - Control de modales Bootstrap
-- `js/charts.js` - Gráficos para dashboard
-- `js/qr-scanner.js` - Escáner QR (pendiente de implementar)
-
-## 🔧 Configuración
-
-### 1. Base de Datos
-```json
-{
-  "ConnectionStrings": {
-    "LiveData": "Data Source=172.20.11.5;Initial Catalog=AppPark;TrustServerCertificate=True;Persist security info =True;User=sa;Password=D9AXv85t;Connect Timeout=600;"
-  }
-}
-```
-
-### 2. JWT Settings
-```json
-{
-  "JwtSettings": {
-    "Key": "tu-clave-secreta-muy-larga-y-segura",
-    "Issuer": "ParkApi",
-    "Audience": "ParkWeb",
-    "ExpirationHours": 24,
-    "RefreshTokenExpirationDays": 7
-  }
-}
-```
-
-## 📡 Endpoints de la API
-
-### 🔐 Autenticación (`/api/auth`)
-| Método | Endpoint | Descripción | Autenticación | Roles |
-|--------|----------|-------------|---------------|-------|
-| POST | `/login` | Iniciar sesión | No | Todos |
-| POST | `/register` | Registrar usuario | No | Todos |
-| POST | `/refresh-token` | Renovar token | No | Todos |
-| POST | `/validate-token` | Validar token | No | Todos |
-| POST | `/logout` | Cerrar sesión | No | Todos |
-
-### 👥 Usuarios (`/api/user`)
-| Método | Endpoint | Descripción | Roles |
-|--------|----------|-------------|-------|
-| GET | `/` | Obtener todos los usuarios | SuperAdmin |
-| GET | `/{id}` | Obtener usuario por ID | Todos |
-| POST | `/` | Crear usuario | SuperAdmin |
-| PUT | `/{id}` | Actualizar usuario | SuperAdmin |
-| DELETE | `/{id}` | Eliminar usuario | SuperAdmin |
-| POST | `/{userId}/change-password` | Cambiar contraseña | Todos |
-| POST | `/reset-password` | Restablecer contraseña | Público |
-| POST | `/{userId}/lock` | Bloquear usuario | SuperAdmin |
-| POST | `/{userId}/unlock` | Desbloquear usuario | SuperAdmin |
-| POST | `/{userId}/assign-company` | Asignar empresa | SuperAdmin |
-| DELETE | `/{userId}/remove-company/{companyId}` | Remover empresa | SuperAdmin |
-| GET | `/{userId}/companies` | Obtener empresas del usuario | Todos |
-
-### 🏢 Empresas (`/api/company`)
-| Método | Endpoint | Descripción | Roles |
-|--------|----------|-------------|-------|
-| GET | `/` | Obtener todas las empresas | SuperAdmin |
-| GET | `/{id}` | Obtener empresa por ID | Todos |
-| POST | `/` | Crear empresa | SuperAdmin |
-| PUT | `/{id}` | Actualizar empresa | SuperAdmin |
-| DELETE | `/{id}` | Eliminar empresa | SuperAdmin |
-| GET | `/{id}/users` | Obtener usuarios de la empresa | SuperAdmin |
-
-### 🗺️ Zonas (`/api/zone`)
-| Método | Endpoint | Descripción | Roles |
-|--------|----------|-------------|-------|
-| GET | `/` | Obtener todas las zonas | SuperAdmin |
-| GET | `/{id}` | Obtener zona por ID | Todos |
-| POST | `/` | Crear zona | SuperAdmin |
-| PUT | `/{id}` | Actualizar zona | SuperAdmin |
-| DELETE | `/{id}` | Eliminar zona | SuperAdmin |
-
-### 🚪 Puertas (`/api/gate`)
-| Método | Endpoint | Descripción | Roles |
-|--------|----------|-------------|-------|
-| GET | `/` | Obtener todas las puertas | SuperAdmin |
-| GET | `/{id}` | Obtener puerta por ID | Todos |
-| POST | `/` | Crear puerta | SuperAdmin |
-| PUT | `/{id}` | Actualizar puerta | SuperAdmin |
-| DELETE | `/{id}` | Eliminar puerta | SuperAdmin |
-| POST | `/{id}/assign-guard/{userId}` | Asignar guardia | SuperAdmin |
-
-### 📅 Visitas (`/api/visit`)
-| Método | Endpoint | Descripción | Roles |
-|--------|----------|-------------|-------|
-| GET | `/` | Obtener todas las visitas | Según permisos |
-| GET | `/{id}` | Obtener visita por ID | Según permisos |
-| POST | `/` | Crear visita | Según permisos |
-| PUT | `/{id}` | Actualizar visita | Según permisos |
-| DELETE | `/{id}` | Eliminar visita | SuperAdmin |
-| POST | `/check-in` | Realizar check-in | Guardia |
-| POST | `/check-out` | Realizar check-out | Guardia |
-| GET | `/by-company/{companyId}` | Visitas por empresa | Según permisos |
-| GET | `/by-gate/{gateId}` | Visitas por puerta | Según permisos |
-| GET | `/qr-code/{visitId}` | Generar QR | Según permisos |
-
-### 🛡️ Panel de Guardia (`/guardia`)
-| Funcionalidad | Descripción | Características |
-|---------------|-------------|-----------------|
-| **Vista especializada** | Panel optimizado para guardias | Móvil-first, botones grandes |
-| **Acceso restringido** | Solo guardias pueden acceder | Middleware de navegación |
-| **Confirmaciones** | Obligatorias para check-in/out | Modales de seguridad |
-| **Estadísticas rápidas** | Visitas pendientes, en progreso, completadas | Cards informativas |
-| **Búsqueda y filtros** | Por visitante, empresa, estado | Interfaz simplificada |
-
-## 🎨 Roles y Permisos Detallados
-
-### **SuperAdmin**
-- ✅ Acceso completo a todas las funcionalidades
-- ✅ Gestión de usuarios, empresas, zonas y puertas
-- ✅ Asignación de usuarios a empresas
-- ✅ Reportes y estadísticas completas
-- ✅ Configuración del sistema
-- ✅ **Crear visitas sin restricciones**
-
-### **EmpAdmin (Administrador de Empresa)**
-- ❌ No puede gestionar usuarios/empresas del sistema
-- ✅ Solo puede gestionar visitas de sus empresas asignadas
-- ✅ Crear visitas en sus empresas asignadas
-- ✅ Ver estadísticas de su empresa
-- ✅ Acceso limitado a empresas asignadas
-
-### **GestorVisitas**
-- ❌ No puede gestionar usuarios/empresas
-- ✅ Crear visitas en empresas asignadas
-- ✅ **Gestionar solo las visitas que él creó**
-- ✅ Ver visitas de su empresa
-- ✅ Acceso limitado a empresas asignadas
-
-### **Guardia**
-- ❌ No puede crear visitas
-- ✅ **Ver todas las visitas (solo lectura)**
-- ✅ **Hacer check-in/check-out en cualquier puerta**
-- ✅ Ver información de visitas de otras puertas (solo lectura)
-- ✅ **Acceso completo a funcionalidad de check-in/out**
-- ✅ **Acceso restringido solo a panel de guardia** (`/guardia`)
-- ✅ **Confirmaciones obligatorias** para check-in/out
-- ✅ **Vista móvil optimizada** para uso en dispositivos táctiles
-
-## 🔒 Sistema de Autorización Implementado
-
-### **AuthorizationService**
-```csharp
-// Verificar permisos de gestión
-await authorizationService.CanManageUsersAsync(userId);
-await authorizationService.CanManageCompaniesAsync(userId);
-await authorizationService.CanManageVisitsAsync(userId, companyId);
-
-// Verificar permisos de visitas
-await authorizationService.CanCreateVisitsAsync(userId, companyId);
-await authorizationService.CanManageVisitAsync(userId, visitId);
-await authorizationService.CanCheckInOutVisitAsync(userId, visitId, gateId);
-
-// Verificar acceso a recursos
-await authorizationService.CanAccessCompanyAsync(userId, companyId);
-await authorizationService.GetAccessibleCompanyIdsAsync(userId);
-await authorizationService.GetAccessibleGateIdsAsync(userId);
-```
-
-### **Componente AuthorizeView**
-```razor
-<Park.Web.Shared.AuthorizeView RequiredPermission="CreateVisits" CompanyId="@companyId">
-    <ChildContent>
-        <button class="btn btn-primary">Crear Visita</button>
-    </ChildContent>
-    <NotAuthorized>
-        <div class="text-muted">No tienes permisos para crear visitas</div>
-    </NotAuthorized>
-</Park.Web.Shared.AuthorizeView>
-```
-
-## 📊 Estructura de Base de Datos
-
-### **Tablas Principales**
-- `Users` - Usuarios del sistema
-- `Companies` - Empresas del parque industrial
-- `Zones` - Zonas del parque
-- `Gates` - Puertas de acceso
-- `Visitors` - Visitantes
-- `Visits` - Visitas programadas
-- `UserCompanies` - Asignación de usuarios a empresas
-- `UserGates` - Asignación de guardias a puertas
-
-### **Relaciones**
-- Un usuario puede estar asignado a múltiples empresas
-- Una empresa pertenece a una zona
-- Una zona tiene múltiples puertas
-- Un guardia puede estar asignado a múltiples puertas
-- Una visita pertenece a una empresa y una puerta
-- Un visitante puede tener múltiples visitas
-
-## 🚀 Funcionalidades del Frontend
-
-### **Páginas Implementadas**
-- ✅ **Login/Logout** con manejo de tokens
-- ✅ **Dashboard** con estadísticas en tiempo real
-- ✅ **Gestión de Usuarios** con asignación a empresas
-- ✅ **Gestión de Empresas** con filtros y búsqueda
-- ✅ **Gestión de Zonas** con tipos y capacidad
-- ✅ **Gestión de Puertas** con asignación de guardias
-- ✅ **Gestión de Visitas** con autorización granular
-- ✅ **Gestión de Visitantes** con información completa
-- ✅ **Panel de Guardia** (`/guardia`) - Vista especializada para guardias
-- ✅ **Redirección automática** por roles después del login
-
-### **Componentes Reutilizables**
-- ✅ **UserCompanyAssignmentModal**: Asignación de usuarios a empresas
-- ✅ **AuthorizeView**: Control de acceso en componentes
-- ✅ **GuardiaNavigationMiddleware**: Control de navegación para guardias
-- ✅ **Tablas responsivas** con paginación y filtros
-- ✅ **Formularios** con validación
-- ✅ **Modales** para acciones específicas
-- ✅ **Modal de creación de visitantes** integrado en visitas
-- ✅ **Modales de confirmación** para check-in/out
-- ✅ **Menú responsive** con soporte móvil
-
-### **Características de UX**
-- ✅ **Interfaz moderna** con Bootstrap 5
-- ✅ **Iconos FontAwesome** para mejor UX
-- ✅ **Mensajes de feedback** para el usuario
-- ✅ **Estados de carga** con spinners
-- ✅ **Validación en tiempo real**
-- ✅ **Navegación intuitiva**
-- ✅ **Creación rápida de visitantes** desde modal
-- ✅ **Menú responsive** con soporte móvil completo
-- ✅ **Confirmaciones de seguridad** para acciones críticas
-- ✅ **Vista especializada para guardias** optimizada para móviles
-- ✅ **Redirección automática** basada en roles de usuario
-
-## 🛠️ Instalación y Configuración
+## 📦 Instalación
 
 ### Prerrequisitos
+
 - .NET 9.0 SDK
 - SQL Server 2019 o superior
 - Visual Studio 2022 o VS Code
-- **Para desarrollo móvil**: .NET MAUI workload instalado
 
-### Pasos de Instalación
+### Pasos de instalación
 
 1. **Clonar el repositorio**
 ```bash
-git clone <url-del-repositorio>
+git clone <repository-url>
 cd Park2
 ```
 
-2. **Configurar la base de datos**
+2. **Restaurar paquetes NuGet**
 ```bash
-cd Park.Api
-dotnet ef database update
+dotnet restore
 ```
 
-3. **Ejecutar la aplicación**
+3. **Configurar la base de datos**
 ```bash
-# Terminal 1 - API
-cd Park.Api
-dotnet run
-
-# Terminal 2 - Web
-cd Park.Web
-dotnet run
+# Actualizar connection string en appsettings.json
+# Ejecutar migraciones
+dotnet ef database update --project Park.Api
 ```
 
-4. **Acceder a la aplicación**
-- API: https://localhost:7001
-- Swagger: https://localhost:7001/swagger
-- Web: https://localhost:7002
-
-5. **Ejecutar aplicación móvil (MAUI)**
+4. **Ejecutar la aplicación**
 ```bash
-# Terminal 3 - Aplicación móvil
-cd Park.Android
-dotnet build
-dotnet run
+dotnet run --project Park.Api
 ```
 
-## 🔍 Casos de Uso Implementados
-
-### **1. SuperAdmin del Sistema**
-- Gestiona usuarios, empresas, zonas y puertas
-- Asigna usuarios a empresas con roles específicos
-- Monitorea todas las visitas del parque
-- Genera reportes completos
-- **Crea visitas sin restricciones**
-
-### **2. Administrador de Empresa (EmpAdmin)**
-- Gestiona visitas de su empresa
-- Crea visitas para sus empleados/visitantes
-- Ve estadísticas de su empresa
-- No puede acceder a otras empresas
-
-### **3. Gestor de Visitas**
-- Crea visitas en su empresa asignada
-- Solo gestiona las visitas que él creó
-- Ve visitas de su empresa
-- No puede gestionar visitas de otros gestores
-
-### **4. Guardia**
-- **Ve todas las visitas (solo lectura)**
-- **Hace check-in/check-out en cualquier puerta**
-- Escanea códigos QR para verificar visitas
-- No puede crear ni modificar visitas
-- **Acceso completo a funcionalidad de check-in/out**
-- **Acceso restringido solo a panel de guardia** (`/guardia`)
-- **Confirmaciones obligatorias** para todas las acciones de check-in/out
-- **Vista móvil optimizada** para uso en dispositivos táctiles
-- **Prevención de errores** con confirmaciones de seguridad
-
-## 📱 Aplicación Móvil .NET MAUI (EN DESARROLLO)
-
-### **🏗️ Arquitectura del Proyecto MAUI**
-
-El proyecto `Park.Android` es una aplicación móvil desarrollada con .NET MAUI 9.0 específicamente diseñada para guardias del parque industrial.
-
-#### **Estructura del Proyecto**
+5. **Acceder a la documentación**
 ```
-Park.Android/
-├── Views/
-│   ├── LoginPage.xaml - Página de inicio de sesión
-│   └── MainPage.xaml - Panel principal de guardia
-├── Services/
-│   ├── IAuthService.cs - Interfaz de autenticación
-│   └── AuthService.cs - Implementación de autenticación
-├── Models/
-│   ├── LoginRequest.cs - Modelo de solicitud de login
-│   └── LoginResponse.cs - Modelo de respuesta de login
-├── Utils/
-│   └── Constants.cs - Constantes de la aplicación
-├── Resources/
-│   ├── Styles/ - Estilos XAML
-│   ├── AppIcon/ - Iconos de la aplicación
-│   └── Splash/ - Pantalla de carga
-└── App.xaml - Configuración principal de la aplicación
+https://localhost:7001/swagger
 ```
 
-#### **Características Implementadas**
-- ✅ **Autenticación JWT** con SecureStorage para persistencia
-- ✅ **Interfaz de login** con validación de campos
-- ✅ **Panel principal** con estadísticas de visitas
-- ✅ **Navegación Shell** entre páginas
-- ✅ **Estilos personalizados** con tema Park Industrial
-- ✅ **Validación de roles** (solo guardias pueden usar la app)
-- ✅ **Manejo de errores** y mensajes de usuario
-- ✅ **Logout seguro** con limpieza de datos
+## ⚙️ Configuración
 
-#### **Funcionalidades Planificadas**
-- [ ] **Escáner QR** para códigos de visita
-- [ ] **Lista de visitas** con filtros y búsqueda
-- [ ] **Check-in/Check-out** con confirmaciones
-- [ ] **Notificaciones push** para visitas pendientes
-- [ ] **Modo offline** con sincronización
-- [ ] **Historial de acciones** del guardia
-- [ ] **Configuración de usuario** y preferencias
-- [ ] **Reportes móviles** de actividad
+### appsettings.json
 
-#### **Tecnologías Utilizadas**
-- **.NET MAUI 9.0** - Framework multiplataforma
-- **XAML** - Interfaz de usuario declarativa
-- **SecureStorage** - Almacenamiento seguro de tokens
-- **HttpClient** - Comunicación con la API
-- **Newtonsoft.Json** - Serialización JSON
-- **CommunityToolkit.Maui** - Componentes adicionales
-
-#### **Configuración de Desarrollo**
-```xml
-<!-- Park.Android.csproj -->
-<TargetFrameworks>net9.0-android</TargetFrameworks>
-<UseMaui>true</UseMaui>
-<SingleProject>true</SingleProject>
-<ApplicationId>com.park.guardia</ApplicationId>
+```json
+{
+  "ConnectionStrings": {
+    "LiveData": "Server=localhost;Database=ParkDB;Trusted_Connection=true;TrustServerCertificate=true;"
+  },
+  "JwtSettings": {
+    "Key": "tu-clave-secreta-muy-larga-y-segura",
+    "Issuer": "ParkManagementSystem",
+    "Audience": "ParkManagementSystem",
+    "ExpiryInMinutes": 60
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  }
+}
 ```
 
-#### **Permisos Android Requeridos**
-```xml
-<uses-permission android:name="android.permission.INTERNET" />
-<uses-permission android:name="android.permission.CAMERA" />
-<uses-permission android:name="android.permission.VIBRATE" />
-<uses-permission android:name="android.permission.WAKE_LOCK" />
+### Variables de entorno
+
+```bash
+ASPNETCORE_ENVIRONMENT=Development
+ASPNETCORE_URLS=https://localhost:7001;http://localhost:5001
 ```
 
-#### **Estado Actual del Desarrollo**
-- ✅ **Migración de Xamarin.Android a .NET MAUI** completada
-- ✅ **Estructura base** del proyecto configurada
-- ✅ **Autenticación** implementada y funcional
-- ✅ **Interfaz de usuario** básica creada
-- ⏳ **Escáner QR** - En desarrollo
-- ⏳ **Funcionalidades de guardia** - Pendientes
-- ⏳ **Testing y depuración** - Pendientes
+## 🔐 Autenticación
 
-### **🚀 Próximos Pasos para MAUI**
-1. **Implementar escáner QR** con ZXing.Net.MAUI
-2. **Desarrollar lista de visitas** con filtros
-3. **Implementar check-in/check-out** móvil
-4. **Agregar notificaciones** en tiempo real
-5. **Testing en dispositivos** reales
-6. **Optimización de rendimiento** móvil
-7. **Publicación en Google Play Store**
+### Login
 
-## 🎯 Estado Actual del Sistema
-| Funcionalidad | Estado | Notas |
-|---------------|--------|-------|
-| **Guardias ven visitas** | ✅ Funcional | Pueden hacer check-in/out |
-| **Dashboard datos reales** | ✅ Funcional | Estadísticas en tiempo real |
-| **Permisos por rol** | ✅ Funcional | Sistema de autorización completo |
-| **Crear visitas** | ✅ Funcional | Modal de visitantes incluido |
-| **Sistema de autorización** | ✅ Funcional | Granular y seguro |
-| **Gestión de usuarios** | ✅ Funcional | Con asignación a empresas |
-| **Gestión de empresas** | ✅ Funcional | CRUD completo |
-| **Gestión de zonas** | ✅ Funcional | Con tipos y capacidad |
-| **Gestión de puertas** | ✅ Funcional | Con asignación de guardias |
-| **Gestión de visitantes** | ✅ Funcional | CRUD completo |
-| **Sistema de visitas** | ✅ Funcional | Con estados y check-in/out |
-| **Menú móvil responsive** | ✅ Funcional | Soporte completo para móviles |
-| **Acceso restringido guardias** | ✅ Funcional | Solo pueden acceder a `/guardia` |
-| **Confirmaciones de seguridad** | ✅ Funcional | Para check-in/out obligatorias |
-| **Redirección automática por rol** | ✅ Funcional | Después del login |
-| **Panel de guardia especializado** | ✅ Funcional | Vista móvil optimizada |
-| **Aplicación móvil MAUI** | ⏳ En desarrollo | Autenticación implementada |
-| **Escáner QR móvil** | ⏳ Pendiente | ZXing.Net.MAUI |
-| **Check-in/out móvil** | ⏳ Pendiente | Funcionalidades de guardia |
+```http
+POST /api/auth/login
+Content-Type: application/json
 
-### **⏳ Funcionalidades Pendientes**
-- [ ] **QR Scanner** - Componente de lectura QR para guardias
-- [ ] **Notificaciones en tiempo real** con SignalR
-- [ ] **Reportes avanzados** con gráficos
-- [ ] **Exportación de datos** (Excel, PDF)
-- [ ] **Dashboard personalizado** por rol
-- [ ] **Auditoría completa** de acciones
-- [ ] **Historial de acciones** de guardias
-- [ ] **Notificaciones push** para visitas pendientes
+{
+  "username": "admin",
+  "password": "password123"
+}
+```
 
-## 📝 Notas de Desarrollo
+**Respuesta:**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refreshToken": "refresh-token-here",
+  "expiresAt": "2024-01-01T12:00:00Z",
+  "user": {
+    "id": 1,
+    "username": "admin",
+    "email": "admin@park.com",
+    "firstName": "Admin",
+    "lastName": "User",
+    "roles": ["Admin"]
+  }
+}
+```
 
-### **Buenas Prácticas Implementadas**
-- ✅ **Arquitectura limpia** con separación de responsabilidades
-- ✅ **Inyección de dependencias** en toda la aplicación
-- ✅ **Interfaces** para todos los servicios
-- ✅ **DTOs** para transferencia de datos
-- ✅ **Validación** con Data Annotations
-- ✅ **Manejo de errores** centralizado
-- ✅ **Logging** estructurado
-- ✅ **Documentación** con comentarios XML
+### Uso del token
 
-### **Patrones de Diseño**
-- **Repository Pattern** (implícito en servicios)
-- **Service Layer Pattern** para lógica de negocio
-- **DTO Pattern** para transferencia de datos
-- **Factory Pattern** para creación de tokens
-- **Observer Pattern** para notificaciones
-- **Strategy Pattern** para autorización
+```http
+GET /api/visitas
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
 
-### **Tecnologías Utilizadas**
-- **Backend**: ASP.NET Core 9.0, Entity Framework Core, JWT
-- **Frontend**: Blazor WebAssembly, Bootstrap 5, FontAwesome
-- **Base de Datos**: SQL Server
-- **Autenticación**: JWT con refresh tokens
-- **Autorización**: Roles y permisos granulares
+### Roles disponibles
 
-## 🚀 Próximos Pasos
+- **Admin**: Acceso completo al sistema
+- **Operador**: Gestión de visitas y colaboradores
+- **Guardia**: Check-in/out de visitas
 
-### **Funcionalidades Pendientes - Web**
-- [ ] **Página de escaneo QR** para guardias
-- [ ] **Notificaciones en tiempo real** con SignalR
-- [ ] **Reportes y estadísticas** avanzadas
-- [ ] **Exportación de datos** (Excel, PDF)
-- [ ] **Dashboard personalizado** por rol
-- [ ] **Auditoría completa** de acciones
-- [ ] **Backup automático** de base de datos
-- [ ] **Historial de acciones** de guardias
-- [ ] **Notificaciones push** para visitas pendientes
-- [ ] **Modo offline** para guardias
-- [ ] **Sincronización** de datos cuando hay conexión
+## 📡 Endpoints
 
-### **Funcionalidades Pendientes - Móvil (MAUI)**
-- [ ] **Escáner QR** con ZXing.Net.MAUI
-- [ ] **Lista de visitas** con filtros y búsqueda
-- [ ] **Check-in/Check-out** móvil con confirmaciones
-- [ ] **Notificaciones push** para visitas pendientes
-- [ ] **Modo offline** con sincronización automática
-- [ ] **Historial de acciones** del guardia
-- [ ] **Configuración de usuario** y preferencias
-- [ ] **Reportes móviles** de actividad diaria
-- [ ] **Vibración** para confirmaciones importantes
-- [ ] **Sonidos** de notificación para guardias
-- [ ] **Modo nocturno** para turnos nocturnos
-- [ ] **Sincronización en tiempo real** con la API
+### Autenticación
+- `POST /api/auth/login` - Iniciar sesión
+- `POST /api/auth/register` - Registrar usuario
+- `POST /api/auth/refresh` - Renovar token
+- `POST /api/auth/change-password` - Cambiar contraseña
 
-### **Mejoras de Seguridad**
-- [ ] **Rate limiting** para endpoints críticos
-- [ ] **Blacklist de tokens** revocados
-- [ ] **Autenticación de dos factores**
-- [ ] **Políticas de contraseñas** más estrictas
-- [ ] **Logs de seguridad** detallados
+### Usuarios
+- `GET /api/users` - Listar usuarios
+- `GET /api/users/{id}` - Obtener usuario
+- `POST /api/users` - Crear usuario
+- `PUT /api/users/{id}` - Actualizar usuario
+- `DELETE /api/users/{id}` - Eliminar usuario
 
-### **Mejoras de UX**
-- [ ] **Tema oscuro** opcional
-- [ ] **Responsive design** mejorado
-- [ ] **Accesibilidad** (WCAG 2.1)
-- [ ] **Internacionalización** (i18n)
-- [ ] **PWA** (Progressive Web App)
-- [ ] **Vibración** en dispositivos móviles para confirmaciones
-- [ ] **Sonidos** de notificación para guardias
-- [ ] **Modo nocturno** para guardias en turnos nocturnos
+### Visitas
+- `GET /api/visitas` - Listar visitas
+- `GET /api/visitas/{id}` - Obtener visita
+- `POST /api/visitas` - Crear visita
+- `PUT /api/visitas/{id}` - Actualizar visita
+- `DELETE /api/visitas/{id}` - Eliminar visita
+- `POST /api/visitas/search` - Buscar visitas con filtros
+- `POST /api/visitas/{id}/checkin` - Check-in
+- `POST /api/visitas/{id}/checkout` - Check-out
+- `POST /api/visitas/{id}/cancel` - Cancelar visita
 
-## 📋 Roadmap del Proyecto
+### Colaboradores
+- `GET /api/colaboradores` - Listar colaboradores
+- `GET /api/colaboradores/{id}` - Obtener colaborador
+- `POST /api/colaboradores` - Crear colaborador
+- `PUT /api/colaboradores/{id}` - Actualizar colaborador
+- `DELETE /api/colaboradores/{id}` - Eliminar colaborador
+- `POST /api/colaboradores/{id}/activate` - Activar colaborador
+- `POST /api/colaboradores/{id}/deactivate` - Desactivar colaborador
+- `POST /api/colaboradores/{id}/blacklist` - Toggle lista negra
 
-### **Fase 1: Sistema Web Completo** ✅
-- [x] API REST con autenticación JWT
-- [x] Frontend Blazor WebAssembly
-- [x] Sistema de autorización granular
-- [x] Gestión completa de entidades
-- [x] Panel de guardia especializado
-- [x] Dashboard en tiempo real
+### Compañías
+- `GET /api/companies` - Listar compañías
+- `GET /api/companies/{id}` - Obtener compañía
+- `POST /api/companies` - Crear compañía
+- `PUT /api/companies/{id}` - Actualizar compañía
+- `DELETE /api/companies/{id}` - Eliminar compañía
 
-### **Fase 2: Aplicación Móvil MAUI** 🚧
-- [x] Migración de Xamarin.Android a .NET MAUI
-- [x] Autenticación móvil implementada
-- [x] Interfaz básica de guardia
-- [ ] Escáner QR funcional
-- [ ] Check-in/check-out móvil
-- [ ] Notificaciones push
-- [ ] Modo offline
-- [ ] Publicación en Google Play Store
+### Centros
+- `GET /api/centros` - Listar centros
+- `GET /api/centros/{id}` - Obtener centro
+- `POST /api/centros` - Crear centro
+- `PUT /api/centros/{id}` - Actualizar centro
+- `DELETE /api/centros/{id}` - Eliminar centro
 
-### **Fase 3: Funcionalidades Avanzadas** 📋
-- [ ] Notificaciones en tiempo real (SignalR)
-- [ ] Reportes avanzados con gráficos
-- [ ] Exportación de datos (Excel, PDF)
-- [ ] Auditoría completa de acciones
-- [ ] Backup automático de base de datos
-- [ ] Dashboard personalizado por rol
+### Zonas
+- `GET /api/zonas` - Listar zonas
+- `GET /api/zonas/{id}` - Obtener zona
+- `POST /api/zonas` - Crear zona
+- `PUT /api/zonas/{id}` - Actualizar zona
+- `DELETE /api/zonas/{id}` - Eliminar zona
 
-### **Fase 4: Optimización y Escalabilidad** 📋
-- [ ] Optimización de rendimiento
-- [ ] Caché distribuido (Redis)
-- [ ] Microservicios
-- [ ] Docker y Kubernetes
-- [ ] CI/CD pipeline
-- [ ] Monitoreo y alertas
+### Sitios
+- `GET /api/sitios` - Listar sitios
+- `GET /api/sitios/{id}` - Obtener sitio
+- `POST /api/sitios` - Crear sitio
+- `PUT /api/sitios/{id}` - Actualizar sitio
+- `DELETE /api/sitios/{id}` - Eliminar sitio
+
+### Reportes
+- `GET /api/report/dashboard` - Estadísticas del dashboard
+- `GET /api/report/visitas-por-periodo` - Visitas por período
+- `GET /api/report/colaboradores-por-compania` - Colaboradores por compañía
+- `GET /api/report/centros-mas-visitados` - Centros más visitados
+- `GET /api/report/tipos-transporte` - Estadísticas de transporte
+- `GET /api/report/tipos-visita` - Estadísticas de visitas
+- `GET /api/report/actividad-por-hora` - Actividad por hora
+- `GET /api/report/visitantes-frecuentes` - Visitantes frecuentes
+- `GET /api/report/rendimiento-sistema` - Rendimiento del sistema
+- `POST /api/report/exportar-visitas` - Exportar reporte de visitas
+- `POST /api/report/exportar-colaboradores` - Exportar reporte de colaboradores
+
+### Configuración
+- `GET /api/settings/system` - Configuración del sistema
+- `PUT /api/settings/system` - Actualizar configuración
+- `GET /api/settings/visitas` - Configuración de visitas
+- `PUT /api/settings/visitas` - Actualizar configuración de visitas
+- `GET /api/settings/security` - Configuración de seguridad
+- `GET /api/settings/backup` - Configuración de backup
+- `GET /api/settings/email` - Configuración de email
+- `GET /api/settings/health` - Estado del sistema
+
+## 📊 Modelos de Datos
+
+### Visita
+```json
+{
+  "id": 1,
+  "numeroSolicitud": "VIS-2024-01-15-0001",
+  "fecha": "2024-01-15T10:00:00Z",
+  "estado": "Programada",
+  "tipoVisita": "Trabajo",
+  "procedencia": "Empresa ABC",
+  "destino": "Centro de Producción",
+  "identidadVisitante": "1234567890",
+  "nombreCompleto": "Juan Pérez",
+  "tipoTransporte": "Vehiculo",
+  "motivoVisita": "Mantenimiento de equipos",
+  "placaVehiculo": "ABC-123",
+  "fechaLlegada": null,
+  "fechaSalida": null,
+  "idSolicitante": 1,
+  "idCompania": 1,
+  "idRecibidoPor": 2,
+  "idCentro": 1,
+  "solicitante": { /* ColaboradorDto */ },
+  "compania": { /* CompanyDto */ },
+  "recibidoPor": { /* ColaboradorDto */ },
+  "centro": { /* CentroDto */ }
+}
+```
+
+### Colaborador
+```json
+{
+  "id": 1,
+  "idCompania": 1,
+  "identidad": "1234567890",
+  "nombre": "Juan Pérez",
+  "puesto": "Técnico",
+  "email": "juan.perez@empresa.com",
+  "tel1": "555-0123",
+  "tel2": "555-0124",
+  "tel3": "555-0125",
+  "placaVehiculo": "ABC-123",
+  "comentario": "Colaborador confiable",
+  "isActive": true,
+  "isBlackList": false,
+  "compania": { /* CompanyDto */ }
+}
+```
+
+### Compañía
+```json
+{
+  "id": 1,
+  "name": "Empresa ABC S.A.",
+  "description": "Empresa de tecnología",
+  "address": "Av. Principal 123",
+  "phone": "555-0000",
+  "email": "info@empresa.com",
+  "contactPerson": "María García",
+  "contactPhone": "555-0001",
+  "contactEmail": "maria@empresa.com",
+  "idSitio": 1,
+  "isActive": true,
+  "sitio": { /* SitioDto */ }
+}
+```
+
+### Centro
+```json
+{
+  "id": 1,
+  "idZona": 1,
+  "nombre": "Centro de Producción A",
+  "localidad": "Zona Industrial Norte",
+  "isActive": true,
+  "zona": { /* ZonaDto */ }
+}
+```
+
+### Zona
+```json
+{
+  "id": 1,
+  "idSitio": 1,
+  "nombre": "Zona Industrial Norte",
+  "descripcion": "Zona dedicada a producción",
+  "isActive": true,
+  "sitio": { /* SitioDto */ }
+}
+```
+
+### Sitio
+```json
+{
+  "id": 1,
+  "nombre": "Parque Industrial Central",
+  "descripcion": "Parque industrial principal",
+  "isActive": true
+}
+```
+
+## ✅ Validaciones
+
+### Visita
+- **Número de solicitud**: Obligatorio, 1-50 caracteres
+- **Fecha**: Obligatoria, no puede ser anterior a hoy
+- **Identidad visitante**: Obligatoria, 10-20 caracteres, solo números
+- **Nombre completo**: Obligatorio, 5-100 caracteres, solo letras y espacios
+- **Motivo de visita**: Obligatorio, 5-500 caracteres
+- **Placa vehículo**: Opcional, máximo 20 caracteres
+
+### Colaborador
+- **Identidad**: Obligatoria, 10-20 caracteres, solo números
+- **Nombre**: Obligatorio, 2-100 caracteres, solo letras y espacios
+- **Email**: Opcional, formato válido
+- **Teléfono**: Obligatorio, 8-20 caracteres
+
+### Compañía
+- **Nombre**: Obligatorio, 2-100 caracteres
+- **Email**: Obligatorio, formato válido
+- **Dirección**: Obligatoria, 5-200 caracteres
+- **Teléfono**: Obligatorio, 8-20 caracteres
+
+## 📈 Reportes
+
+### Dashboard
+```http
+GET /api/report/dashboard
+```
+
+**Respuesta:**
+```json
+{
+  "totalVisitas": 1250,
+  "visitasActivas": 45,
+  "visitasExpiradas": 12,
+  "visitasHoy": 23,
+  "totalColaboradores": 156,
+  "totalCompanias": 25,
+  "totalCentros": 8,
+  "colaboradoresBlackList": 3,
+  "ultimaActualizacion": "2024-01-15T10:00:00Z"
+}
+```
+
+### Visitas por Período
+```http
+GET /api/report/visitas-por-periodo?fechaInicio=2024-01-01&fechaFin=2024-01-31
+```
+
+### Centros Más Visitados
+```http
+GET /api/report/centros-mas-visitados?top=10
+```
+
+## 🔔 Notificaciones
+
+### Tipos de Notificaciones
+- **Info**: Información general
+- **Warning**: Advertencias
+- **Error**: Errores del sistema
+- **Success**: Operaciones exitosas
+- **VisitaProxima**: Visita próxima a comenzar
+- **VisitaExpirada**: Visita expirada
+- **CheckIn**: Check-in realizado
+- **CheckOut**: Check-out realizado
+- **ColaboradorBlackList**: Colaborador en lista negra
+- **Sistema**: Notificaciones del sistema
+
+### Prioridades
+- **Baja**: Información general
+- **Media**: Advertencias importantes
+- **Alta**: Errores críticos
+- **Crítica**: Fallos del sistema
+
+## 📝 Auditoría
+
+### Acciones Auditadas
+- **CREATE**: Creación de entidades
+- **UPDATE**: Actualización de entidades
+- **DELETE**: Eliminación de entidades
+- **LOGIN**: Inicio de sesión
+- **LOGOUT**: Cierre de sesión
+- **FAILED_LOGIN**: Intento de login fallido
+- **PASSWORD_CHANGE**: Cambio de contraseña
+- **PERMISSION_CHANGE**: Cambio de permisos
+
+### Entidades Auditadas
+- User, Role, Sitio, Zona, Centro, Company, Colaborador, Visita, Notification, System
+
+## 📁 Gestión de Archivos
+
+### Tipos de Archivo Permitidos
+- **Imagen**: .jpg, .jpeg, .png, .gif, .bmp, .webp
+- **Documento**: .pdf, .doc, .docx, .xls, .xlsx, .ppt, .pptx, .txt
+- **Video**: .mp4, .avi, .mov, .wmv, .flv, .webm
+- **Audio**: .mp3, .wav, .ogg, .aac, .flac
+- **Archivo**: .zip, .rar, .7z, .tar, .gz
+
+### Subida de Archivos
+```http
+POST /api/files/upload
+Content-Type: multipart/form-data
+
+{
+  "archivo": [archivo],
+  "tipo": "Documento",
+  "descripcion": "Documento de identidad",
+  "idEntidad": 1,
+  "entidad": "Colaborador"
+}
+```
+
+## ⚙️ Configuración del Sistema
+
+### Configuración General
+```json
+{
+  "nombreSistema": "Park Management System",
+  "version": "1.0.0",
+  "descripcion": "Sistema de gestión de parques industriales",
+  "contactoEmail": "admin@park.com",
+  "contactoTelefono": "+1-555-0123",
+  "direccion": "Parque Industrial, Zona 1",
+  "logoUrl": "/images/logo.png",
+  "colorPrimario": "#1976d2",
+  "colorSecundario": "#424242",
+  "mantenimientoActivo": false
+}
+```
+
+### Configuración de Visitas
+```json
+{
+  "tiempoExpiracionVisitas": 24,
+  "tiempoAntesNotificacion": 30,
+  "permitirVisitasFuturas": true,
+  "diasMaximoAnticipacion": 30,
+  "requerirAprobacionVisitas": false,
+  "permitirCheckInAnticipado": true,
+  "minutosAntesCheckIn": 15,
+  "requerirFotoVisitante": false,
+  "generarQRVisitas": true,
+  "formatoNumeroSolicitud": "VIS-{YYYY}-{MM}-{DD}-{####}"
+}
+```
+
+## 💻 Ejemplos de Uso
+
+### Crear una Visita
+```javascript
+const response = await fetch('/api/visitas', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`
+  },
+  body: JSON.stringify({
+    numeroSolicitud: 'VIS-2024-01-15-0001',
+    fecha: '2024-01-15T10:00:00Z',
+    idSolicitante: 1,
+    idCompania: 1,
+    tipoVisita: 'Trabajo',
+    procedencia: 'Empresa ABC',
+    idRecibidoPor: 2,
+    destino: 'Centro de Producción',
+    identidadVisitante: '1234567890',
+    tipoTransporte: 'Vehiculo',
+    motivoVisita: 'Mantenimiento de equipos',
+    nombreCompleto: 'Juan Pérez',
+    placaVehiculo: 'ABC-123',
+    idCentro: 1
+  })
+});
+```
+
+### Buscar Visitas con Filtros
+```javascript
+const response = await fetch('/api/visitas/search', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`
+  },
+  body: JSON.stringify({
+    page: 1,
+    pageSize: 10,
+    fechaInicio: '2024-01-01',
+    fechaFin: '2024-01-31',
+    estado: 'EnProgreso',
+    idCompania: 1,
+    sortBy: 'fecha',
+    sortDescending: true
+  })
+});
+```
+
+### Obtener Estadísticas del Dashboard
+```javascript
+const response = await fetch('/api/report/dashboard', {
+  headers: {
+    'Authorization': `Bearer ${token}`
+  }
+});
+const stats = await response.json();
+```
+
+## 🌐 Desarrollo Frontend
+
+### Tecnologías Recomendadas
+- **React** con TypeScript
+- **Angular** con TypeScript
+- **Vue.js** con TypeScript
+- **Blazor** (para .NET)
+
+### Configuración de CORS
+El API ya está configurado para aceptar requests desde cualquier origen en desarrollo:
+
+```csharp
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
+});
+```
+
+### Manejo de Autenticación
+```javascript
+// Interceptor para agregar token a todas las requests
+axios.interceptors.request.use(config => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Interceptor para manejar respuestas 401
+axios.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response?.status === 401) {
+      // Redirigir al login
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+```
+
+### Componentes Recomendados
+1. **Dashboard** - Estadísticas generales
+2. **Gestión de Visitas** - CRUD con filtros
+3. **Gestión de Colaboradores** - CRUD con búsqueda
+4. **Reportes** - Gráficos y exportación
+5. **Configuración** - Panel de administración
+6. **Notificaciones** - Centro de notificaciones
+
+## 📱 Desarrollo Móvil
+
+### Tecnologías Recomendadas
+- **React Native** con TypeScript
+- **Flutter** con Dart
+- **Xamarin** con C#
+- **Ionic** con Angular/React
+
+### Funcionalidades Móviles Principales
+1. **Check-in/Check-out** de visitas
+2. **Consulta de visitas** del día
+3. **Búsqueda de colaboradores**
+4. **Notificaciones push**
+5. **Cámara** para fotos de visitantes
+6. **Escáner QR** para visitas
+
+### Ejemplo de Check-in Móvil
+```javascript
+const checkIn = async (visitaId, guardiaId) => {
+  const response = await fetch(`/api/visitas/${visitaId}/checkin`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({
+      id: visitaId,
+      fechaLlegada: new Date().toISOString(),
+      idGuardia: guardiaId
+    })
+  });
+  
+  if (response.ok) {
+    // Mostrar confirmación
+    showSuccess('Check-in realizado exitosamente');
+  }
+};
+```
+
+### Configuración de Notificaciones Push
+```javascript
+// Registrar para notificaciones push
+const registerForPushNotifications = async () => {
+  const permission = await Notification.requestPermission();
+  if (permission === 'granted') {
+    const token = await getPushToken();
+    // Enviar token al servidor
+    await fetch('/api/notifications/register-push', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ pushToken: token })
+    });
+  }
+};
+```
+
+## 🚀 Despliegue
+
+### Docker
+```dockerfile
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
+WORKDIR /app
+EXPOSE 80
+EXPOSE 443
+
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+WORKDIR /src
+COPY ["Park.Api/Park.Api.csproj", "Park.Api/"]
+COPY ["Park.Comun/Park.Comun.csproj", "Park.Comun/"]
+RUN dotnet restore "Park.Api/Park.Api.csproj"
+COPY . .
+WORKDIR "/src/Park.Api"
+RUN dotnet build "Park.Api.csproj" -c Release -o /app/build
+
+FROM build AS publish
+RUN dotnet publish "Park.Api.csproj" -c Release -o /app/publish
+
+FROM base AS final
+WORKDIR /app
+COPY --from=publish /app/publish .
+ENTRYPOINT ["dotnet", "Park.Api.dll"]
+```
+
+### Docker Compose
+```yaml
+version: '3.8'
+services:
+  api:
+    build: .
+    ports:
+      - "5000:80"
+      - "5001:443"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__LiveData=Server=db;Database=ParkDB;User Id=sa;Password=YourPassword123!;TrustServerCertificate=true;
+    depends_on:
+      - db
+
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=YourPassword123!
+    ports:
+      - "1433:1433"
+    volumes:
+      - db_data:/var/opt/mssql
+
+volumes:
+  db_data:
+```
+
+### Azure App Service
+```bash
+# Crear grupo de recursos
+az group create --name ParkRG --location "East US"
+
+# Crear App Service Plan
+az appservice plan create --name ParkPlan --resource-group ParkRG --sku B1
+
+# Crear App Service
+az webapp create --name ParkAPI --resource-group ParkRG --plan ParkPlan
+
+# Configurar connection string
+az webapp config connection-string set --name ParkAPI --resource-group ParkRG --connection-string-type SQLServer --settings LiveData="Server=tcp:your-server.database.windows.net,1433;Initial Catalog=ParkDB;Persist Security Info=False;User ID=your-user;Password=your-password;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;"
+```
 
 ## 🤝 Contribución
 
-1. Fork el proyecto
-2. Crea una rama para tu feature (`git checkout -b feature/AmazingFeature`)
-3. Commit tus cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
+### Flujo de trabajo
+1. Fork del repositorio
+2. Crear rama feature (`git checkout -b feature/nueva-funcionalidad`)
+3. Commit de cambios (`git commit -am 'Agregar nueva funcionalidad'`)
+4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
+5. Crear Pull Request
+
+### Estándares de código
+- Usar C# 12 features
+- Seguir convenciones de naming
+- Documentar métodos públicos
+- Escribir tests unitarios
+- Usar async/await para operaciones I/O
+
+### Estructura de commits
+```
+feat: agregar nueva funcionalidad
+fix: corregir bug en validación
+docs: actualizar documentación
+style: formatear código
+refactor: refactorizar servicio
+test: agregar tests unitarios
+chore: actualizar dependencias
+```
+
+## 📞 Soporte
+
+Para soporte técnico o preguntas sobre el API:
+
+- **Email**: soporte@park.com
+- **Documentación**: https://localhost:7001/swagger
+- **Issues**: GitHub Issues
 
 ## 📄 Licencia
 
 Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
 
-## 👨‍💻 Autor
-
-**Desarrollado con ❤️ para la gestión de parques industriales**
-
 ---
 
-**¡Disfruta del sistema de gestión de parque industrial! 🏭**
+**Desarrollado con ❤️ para la gestión eficiente de parques industriales**

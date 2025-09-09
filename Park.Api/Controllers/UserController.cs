@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Park.Api.Services.Interfaces;
 using Park.Comun.DTOs;
+using System.Security.Claims;
 
 namespace Park.Api.Controllers
 {
@@ -128,7 +129,7 @@ namespace Park.Api.Controllers
         /// <returns>Usuario actualizado</returns>
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<UserDto>> UpdateUser(int id, [FromBody] UserDto userDto)
+        public async Task<ActionResult<UserDto>> UpdateUser(int id, [FromBody] UpdateUserDto updateUserDto)
         {
             if (!ModelState.IsValid)
             {
@@ -137,7 +138,7 @@ namespace Park.Api.Controllers
 
             try
             {
-                var user = await _userService.UpdateUserAsync(id, userDto);
+                var user = await _userService.UpdateUserAsync(id, updateUserDto);
                 return Ok(user);
             }
             catch (InvalidOperationException ex)
@@ -180,7 +181,7 @@ namespace Park.Api.Controllers
                 return BadRequest(ModelState);
             }
 
-            var result = await _userService.ChangePasswordAsync(userId, changePasswordDto.CurrentPassword, changePasswordDto.NewPassword);
+            var result = await _userService.ChangePasswordAsync(userId, changePasswordDto);
             
             if (!result)
             {
@@ -190,23 +191,6 @@ namespace Park.Api.Controllers
             return Ok(result);
         }
 
-        /// <summary>
-        /// Restablecer contraseña
-        /// </summary>
-        /// <param name="email">Email del usuario</param>
-        /// <returns>True si se restableció correctamente</returns>
-        [HttpPost("reset-password")]
-        [AllowAnonymous]
-        public async Task<ActionResult<bool>> ResetPassword([FromBody] string email)
-        {
-            if (string.IsNullOrEmpty(email))
-            {
-                return BadRequest("Email no puede estar vacío");
-            }
-
-            var result = await _userService.ResetPasswordAsync(email);
-            return Ok(result);
-        }
 
         /// <summary>
         /// Bloquear usuario
@@ -312,68 +296,40 @@ namespace Park.Api.Controllers
 
 
 
+
+
         /// <summary>
-        /// Asignar usuario a zona
+        /// Obtener empresas asignadas al usuario actual (solo sus propias empresas)
         /// </summary>
-        /// <param name="userId">ID del usuario</param>
-        /// <param name="assignmentDto">Datos de asignación</param>
-        /// <returns>True si se asignó correctamente</returns>
-        [HttpPost("{userId}/assign-zone")]
-        [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<bool>> AssignUserToZone(int userId, [FromBody] AssignUserToZoneDto assignmentDto)
+        /// <returns>Lista de empresas asignadas al usuario actual</returns>
+        [HttpGet("my-companies")]
+        [Authorize]
+        public async Task<ActionResult<IEnumerable<CompanyDto>>> GetMyCompanies()
         {
-            if (!ModelState.IsValid)
+            // Obtener el ID del usuario actual desde el token
+            var currentUserId = GetCurrentUserId();
+            if (currentUserId == null)
             {
-                return BadRequest(ModelState);
+                return Unauthorized("Usuario no autenticado");
             }
 
-            if (userId != assignmentDto.UserId)
-            {
-                return BadRequest("El ID del usuario no coincide");
-            }
-
-            try
-            {
-                var result = await _userService.AssignUserToZoneAsync(userId, assignmentDto.ZoneId);
-                return Ok(result);
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(ex.Message);
-            }
+            var companies = await _userService.GetUserCompaniesAsync(currentUserId.Value);
+            return Ok(companies);
         }
 
+
         /// <summary>
-        /// Remover usuario de zona
+        /// Obtener el ID del usuario actual desde el token JWT
         /// </summary>
-        /// <param name="userId">ID del usuario</param>
-        /// <param name="zoneId">ID de la zona</param>
-        /// <returns>True si se removió correctamente</returns>
-        [HttpDelete("{userId}/zones/{zoneId}")]
-        [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<bool>> RemoveUserFromZone(int userId, int zoneId)
+        /// <returns>ID del usuario o null si no se puede obtener</returns>
+        private int? GetCurrentUserId()
         {
-            var result = await _userService.RemoveUserFromZoneAsync(userId, zoneId);
-            
-            if (!result)
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (int.TryParse(userIdClaim, out int userId))
             {
-                return NotFound("Asignación no encontrada");
+                return userId;
             }
-
-            return Ok(result);
-        }
-
-        /// <summary>
-        /// Obtener zonas asignadas a un usuario
-        /// </summary>
-        /// <param name="userId">ID del usuario</param>
-        /// <returns>Lista de zonas asignadas</returns>
-        [HttpGet("{userId}/zones")]
-        [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<IEnumerable<ZoneDto>>> GetUserZones(int userId)
-        {
-            var zones = await _userService.GetUserZonesAsync(userId);
-            return Ok(zones);
+            return null;
         }
     }
 

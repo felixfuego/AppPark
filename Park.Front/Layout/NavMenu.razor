@@ -1,0 +1,103 @@
+﻿@using Park.Front.Services
+@using Park.Front.Components
+@inject RoleService RoleService
+
+<nav class="nav flex-column">
+    <!-- Dashboard -->
+    <div class="nav-item">
+        <NavLink class="nav-link" href="" Match="NavLinkMatch.All" title="Dashboard">
+            <i class="bi bi-speedometer2"></i>
+            <span>Dashboard</span>
+        </NavLink>
+    </div>
+
+    <!-- Configuración (Admin) -->
+    <RoleGuard RequiredSection="configuracion">
+        <div class="nav-section">
+            <div class="nav-section-header">
+                <i class="bi bi-gear-fill"></i>
+                <span>Configuración</span>
+            </div>
+            <div class="nav-section-items">
+                <div class="nav-item">
+                    <NavLink class="nav-link" href="users" title="Usuarios">
+                        <i class="bi bi-people-fill"></i>
+                        <span>Usuarios</span>
+                    </NavLink>
+                </div>
+                <div class="nav-item">
+                    <NavLink class="nav-link" href="sites" title="Sitios">
+                        <i class="bi bi-building"></i>
+                        <span>Sitios</span>
+                    </NavLink>
+                </div>
+                <div class="nav-item">
+                    <NavLink class="nav-link" href="zones" title="Zonas">
+                        <i class="bi bi-grid-3x3-gap-fill"></i>
+                        <span>Zonas</span>
+                    </NavLink>
+                </div>
+                <div class="nav-item">
+                    <NavLink class="nav-link" href="centers" title="Centros (Puertas)">
+                        <i class="bi bi-door-open-fill"></i>
+                        <span>Centros (Puertas)</span>
+                    </NavLink>
+                </div>
+                <div class="nav-item">
+                    <NavLink class="nav-link" href="companies" title="Empresas">
+                        <i class="bi bi-building-fill"></i>
+                        <span>Empresas</span>
+                    </NavLink>
+                </div>
+                <div class="nav-item">
+                    <NavLink class="nav-link" href="colaboradores" title="Colaboradores">
+                        <i class="bi bi-person-badge-fill"></i>
+                        <span>Colaboradores</span>
+                    </NavLink>
+                </div>
+            </div>
+        </div>
+    </RoleGuard>
+
+    <!-- Gestión (Admin, Operador) -->
+    <RoleGuard RequiredSection="gestion">
+        <div class="nav-section">
+            <div class="nav-section-header">
+                <i class="bi bi-clipboard-data-fill"></i>
+                <span>Gestión</span>
+            </div>
+            <div class="nav-section-items">
+                <div class="nav-item">
+                    <NavLink class="nav-link" href="visits" title="Visitas">
+                        <i class="bi bi-calendar-check-fill"></i>
+                        <span>Visitas</span>
+                    </NavLink>
+                </div>
+                <div class="nav-item">
+                    <NavLink class="nav-link" href="visitors" title="Visitantes">
+                        <i class="bi bi-person-badge-fill"></i>
+                        <span>Visitantes</span>
+                    </NavLink>
+                </div>
+            </div>
+        </div>
+    </RoleGuard>
+
+    <!-- Vigilancia (Admin, Operador, Guardia) -->
+    <RoleGuard RequiredSection="vigilancia">
+        <div class="nav-section">
+            <div class="nav-section-header">
+                <i class="bi bi-shield-check-fill"></i>
+                <span>Vigilancia</span>
+            </div>
+            <div class="nav-section-items">
+                <div class="nav-item">
+                    <NavLink class="nav-link" href="guard-panel" title="Panel de Guardias">
+                        <i class="bi bi-camera-video-fill"></i>
+                        <span>Panel de Guardias</span>
+                    </NavLink>
+                </div>
+            </div>
+        </div>
+    </RoleGuard>
+</nav>

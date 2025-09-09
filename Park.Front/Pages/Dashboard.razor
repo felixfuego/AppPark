@@ -1,0 +1,277 @@
+@page "/dashboard"
+@using Park.Front.Services
+@using Park.Comun.DTOs
+@using Park.Front.Components
+@inject AuthService AuthService
+@inject RoleService RoleService
+
+<PageTitle>Dashboard - Park.Front</PageTitle>
+
+<div class="dashboard-container">
+    <div class="page-header">
+        <div class="page-title">
+            <h1>Dashboard</h1>
+            <p>Bienvenido al sistema de gestión de parqueo</p>
+        </div>
+        <div class="page-actions">
+            <div class="user-info">
+                @if (currentUser != null)
+                {
+                    <span class="user-name">@currentUser.FullName</span>
+                    <span class="user-role">@string.Join(", ", currentUser.Roles.Select(r => r.Name))</span>
+                }
+            </div>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="loading-container">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-3">Cargando dashboard...</p>
+        </div>
+    }
+    else
+    {
+        <!-- Estadísticas principales -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="bi bi-building"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>@totalSites</h3>
+                    <p>Sitios</p>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="bi bi-grid-3x3-gap"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>@totalZones</h3>
+                    <p>Zonas</p>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="bi bi-door-open"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>@totalCenters</h3>
+                    <p>Centros</p>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="bi bi-building-fill"></i>
+                </div>
+                <div class="stat-content">
+                    <h3>@totalCompanies</h3>
+                    <p>Empresas</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Secciones según el rol del usuario -->
+        <div class="dashboard-sections">
+            
+            <!-- Sección para Admin -->
+            <RoleGuard RequiredRole="Admin">
+                <div class="dashboard-section">
+                    <h2><i class="bi bi-gear-fill"></i> Configuración</h2>
+                    <div class="section-grid">
+                        <div class="section-card" @onclick="@(() => NavigateTo("/users"))">
+                            <div class="card-icon">
+                                <i class="bi bi-people-fill"></i>
+                            </div>
+                            <div class="card-content">
+                                <h4>Usuarios</h4>
+                                <p>Gestionar usuarios del sistema</p>
+                            </div>
+                        </div>
+                        
+                        <div class="section-card" @onclick="@(() => NavigateTo("/sites"))">
+                            <div class="card-icon">
+                                <i class="bi bi-building"></i>
+                            </div>
+                            <div class="card-content">
+                                <h4>Sitios</h4>
+                                <p>Administrar sitios del parque</p>
+                            </div>
+                        </div>
+                        
+                        <div class="section-card" @onclick="@(() => NavigateTo("/zones"))">
+                            <div class="card-icon">
+                                <i class="bi bi-grid-3x3-gap-fill"></i>
+                            </div>
+                            <div class="card-content">
+                                <h4>Zonas</h4>
+                                <p>Gestionar zonas de estacionamiento</p>
+                            </div>
+                        </div>
+                        
+                        <div class="section-card" @onclick="@(() => NavigateTo("/centers"))">
+                            <div class="card-icon">
+                                <i class="bi bi-door-open-fill"></i>
+                            </div>
+                            <div class="card-content">
+                                <h4>Centros</h4>
+                                <p>Administrar centros de control</p>
+                            </div>
+                        </div>
+                        
+                        <div class="section-card" @onclick="@(() => NavigateTo("/companies"))">
+                            <div class="card-icon">
+                                <i class="bi bi-building-fill"></i>
+                            </div>
+                            <div class="card-content">
+                                <h4>Empresas</h4>
+                                <p>Gestionar empresas registradas</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </RoleGuard>
+
+            <!-- Sección para Admin y Operador -->
+            <RoleGuard RequiredSection="gestion">
+                <div class="dashboard-section">
+                    <h2><i class="bi bi-clipboard-data-fill"></i> Gestión</h2>
+                    <div class="section-grid">
+                        <div class="section-card" @onclick="@(() => NavigateTo("/visits"))">
+                            <div class="card-icon">
+                                <i class="bi bi-calendar-check-fill"></i>
+                            </div>
+                            <div class="card-content">
+                                <h4>Visitas</h4>
+                                <p>Gestionar visitas al parque</p>
+                            </div>
+                        </div>
+                        
+                        <div class="section-card" @onclick="@(() => NavigateTo("/visitors"))">
+                            <div class="card-icon">
+                                <i class="bi bi-person-badge-fill"></i>
+                            </div>
+                            <div class="card-content">
+                                <h4>Visitantes</h4>
+                                <p>Administrar visitantes</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </RoleGuard>
+
+            <!-- Sección para Admin, Operador y Guardia -->
+            <RoleGuard RequiredSection="vigilancia">
+                <div class="dashboard-section">
+                    <h2><i class="bi bi-shield-check-fill"></i> Vigilancia</h2>
+                    <div class="section-grid">
+                        <div class="section-card" @onclick="@(() => NavigateTo("/guard-panel"))">
+                            <div class="card-icon">
+                                <i class="bi bi-camera-video-fill"></i>
+                            </div>
+                            <div class="card-content">
+                                <h4>Panel de Guardias</h4>
+                                <p>Control de acceso y vigilancia</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </RoleGuard>
+
+        </div>
+
+        <!-- Actividad reciente -->
+        <div class="dashboard-section">
+            <h2><i class="bi bi-clock-history"></i> Actividad Reciente</h2>
+            <div class="activity-list">
+                @foreach (var activity in recentActivities)
+                {
+                    <div class="activity-item">
+                        <div class="activity-icon">
+                            <i class="@activity.Icon"></i>
+                        </div>
+                        <div class="activity-content">
+                            <p>@activity.Description</p>
+                            <span class="activity-time">@activity.Time</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private UserDto? currentUser = null;
+    private bool isLoading = true;
+    private int totalSites = 0;
+    private int totalZones = 0;
+    private int totalCenters = 0;
+    private int totalCompanies = 0;
+    private List<ActivityItem> recentActivities = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDashboardData();
+    }
+
+    private async Task LoadDashboardData()
+    {
+        try
+        {
+            isLoading = true;
+            
+            // Obtener usuario actual
+            currentUser = await AuthService.GetStoredUserAsync();
+            
+            // TODO: Implementar llamadas al API para obtener estadísticas
+            // totalSites = await SiteService.GetTotalSitesAsync();
+            // totalZones = await ZoneService.GetTotalZonesAsync();
+            // totalCenters = await CenterService.GetTotalCentersAsync();
+            // totalCompanies = await CompanyService.GetTotalCompaniesAsync();
+            
+            // Datos de prueba
+            totalSites = 3;
+            totalZones = 8;
+            totalCenters = 12;
+            totalCompanies = 25;
+            
+            // Actividad reciente
+            recentActivities = new List<ActivityItem>
+            {
+                new ActivityItem { Icon = "bi bi-person-plus", Description = "Nuevo usuario registrado: Juan Pérez", Time = "Hace 5 minutos" },
+                new ActivityItem { Icon = "bi bi-building", Description = "Nuevo sitio creado: Sitio Norte", Time = "Hace 1 hora" },
+                new ActivityItem { Icon = "bi bi-calendar-check", Description = "Visita registrada: María González", Time = "Hace 2 horas" },
+                new ActivityItem { Icon = "bi bi-shield-check", Description = "Acceso autorizado: Empresa ABC", Time = "Hace 3 horas" }
+            };
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error cargando dashboard: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void NavigateTo(string url)
+    {
+        // TODO: Implementar navegación usando NavigationManager
+        Console.WriteLine($"Navegando a: {url}");
+    }
+
+    public class ActivityItem
+    {
+        public string Icon { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Time { get; set; } = string.Empty;
+    }
+}

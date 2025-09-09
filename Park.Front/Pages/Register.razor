@@ -1,0 +1,177 @@
+@page "/register"
+@using Park.Front.Services
+@using Park.Comun.DTOs
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Registro - Park.Front</PageTitle>
+
+@if (showAccessDenied)
+{
+    <div class="access-denied-container">
+        <div class="access-denied-card">
+            <div class="access-denied-icon">
+                <i class="bi bi-shield-exclamation"></i>
+            </div>
+            <h2>Acceso Denegado</h2>
+            <p>No tienes permisos para crear nuevas cuentas.</p>
+            <p class="text-muted">Solo los administradores pueden registrar nuevos usuarios.</p>
+            
+            <div class="access-denied-actions">
+                <button class="btn btn-primary" @onclick="GoToLogin">
+                    <i class="bi bi-box-arrow-in-right"></i>
+                    Ir a Login
+                </button>
+                <button class="btn btn-secondary" @onclick="GoHome">
+                    <i class="bi bi-house"></i>
+                    Ir al Inicio
+                </button>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="register-container">
+    <div class="register-card">
+        <div class="register-header">
+            <h2>Crear Cuenta</h2>
+            <p>Regístrate para acceder a Park.Front</p>
+        </div>
+
+        <EditForm Model="@registerModel" OnValidSubmit="@HandleRegister">
+            <DataAnnotationsValidator />
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="firstName">Nombre</label>
+                        <InputText id="firstName" @bind-Value="registerModel.FirstName" class="form-control" placeholder="Tu nombre" />
+                        <ValidationMessage For="@(() => registerModel.FirstName)" class="text-danger" />
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="lastName">Apellido</label>
+                        <InputText id="lastName" @bind-Value="registerModel.LastName" class="form-control" placeholder="Tu apellido" />
+                        <ValidationMessage For="@(() => registerModel.LastName)" class="text-danger" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="username">Nombre de Usuario</label>
+                <InputText id="username" @bind-Value="registerModel.Username" class="form-control" placeholder="Elige un nombre de usuario" />
+                <ValidationMessage For="@(() => registerModel.Username)" class="text-danger" />
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email</label>
+                <InputText id="email" @bind-Value="registerModel.Email" type="email" class="form-control" placeholder="tu@email.com" />
+                <ValidationMessage For="@(() => registerModel.Email)" class="text-danger" />
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="password">Contraseña</label>
+                        <InputText id="password" @bind-Value="registerModel.Password" type="password" class="form-control" placeholder="Mínimo 6 caracteres" />
+                        <ValidationMessage For="@(() => registerModel.Password)" class="text-danger" />
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirmar Contraseña</label>
+                        <InputText id="confirmPassword" @bind-Value="registerModel.ConfirmPassword" type="password" class="form-control" placeholder="Repite tu contraseña" />
+                        <ValidationMessage For="@(() => registerModel.ConfirmPassword)" class="text-danger" />
+                    </div>
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="alert alert-danger" role="alert">
+                    @errorMessage
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(successMessage))
+            {
+                <div class="alert alert-success" role="alert">
+                    @successMessage
+                </div>
+            }
+
+            <button type="submit" class="btn btn-primary w-100" disabled="@isLoading">
+                @if (isLoading)
+                {
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    <span>Creando cuenta...</span>
+                }
+                else
+                {
+                    <span>Crear Cuenta</span>
+                }
+            </button>
+        </EditForm>
+
+        <div class="register-footer">
+            <p class="text-center">
+                ¿Ya tienes cuenta? 
+                <a href="/login" class="text-primary">Inicia sesión aquí</a>
+            </p>
+        </div>
+    </div>
+</div>
+}
+@code {
+    private RegisterDto registerModel = new();
+    private bool isLoading = false;
+    private string errorMessage = string.Empty;
+    private string successMessage = string.Empty;
+    private bool showAccessDenied = true; // Siempre mostrar acceso denegado
+
+    private void GoToLogin()
+    {
+        Navigation.NavigateTo("/login");
+    }
+
+    private void GoHome()
+    {
+        Navigation.NavigateTo("/");
+    }
+
+    private async Task HandleRegister()
+    {
+        isLoading = true;
+        errorMessage = string.Empty;
+        successMessage = string.Empty;
+        StateHasChanged();
+
+        try
+        {
+            var result = await AuthService.RegisterAsync(registerModel);
+
+            if (result.Success)
+            {
+                successMessage = "¡Cuenta creada exitosamente!";
+                await Task.Delay(1000); // Pequeña pausa para mostrar el mensaje
+                Navigation.NavigateTo("/");
+            }
+            else
+            {
+                errorMessage = result.Message;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error inesperado: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+}

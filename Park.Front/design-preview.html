@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Park.Front - Preview del Diseño Minimalista</title>
+    <link rel="stylesheet" href="wwwroot/css/modern-minimalist.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+</head>
+<body>
+    <!-- Layout Principal -->
+    <div class="page">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <!-- Header del Sidebar -->
+            <div class="navbar">
+                <a href="#" class="navbar-brand">
+                    <i class="bi bi-building"></i>
+                    Park.Front
+                </a>
+                <button class="navbar-toggler" onclick="toggleSidebar()">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+            </div>
+            
+            <!-- Menú de Navegación -->
+            <div class="nav-scrollable">
+                <nav class="nav flex-column">
+                    <div class="nav-item">
+                        <a href="#" class="nav-link active">
+                            <i class="bi bi-house-door-fill"></i>
+                            Home
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="#" class="nav-link">
+                            <i class="bi bi-plus-square-fill"></i>
+                            Counter
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="#" class="nav-link">
+                            <i class="bi bi-cloud-sun-fill"></i>
+                            Weather
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="#" class="nav-link">
+                            <i class="bi bi-people-fill"></i>
+                            Usuarios
+                        </a>
+                    </div>
+                    <div class="nav-item">
+                        <a href="#" class="nav-link">
+                            <i class="bi bi-calendar-check-fill"></i>
+                            Visitas
+                        </a>
+                    </div>
+                </nav>
+            </div>
+        </div>
+        
+        <!-- Contenido Principal -->
+        <main>
+            <!-- Header Superior -->
+            <div class="top-row">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h2 class="mb-0">Dashboard</h2>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-primary">
+                            <i class="bi bi-plus"></i>
+                            Nuevo
+                        </button>
+                        <button class="btn" style="background-color: var(--bg-tertiary); color: var(--text-secondary);">
+                            <i class="bi bi-gear"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Contenido de la Página -->
+            <div class="content fade-in">
+                <!-- Página Home -->
+                <div id="home-content">
+                    <h1>Bienvenido a Park.Front</h1>
+                    <p class="text-muted mb-4">Sistema de gestión de parqueo industrial</p>
+                    
+                    <!-- Tarjetas de Resumen -->
+                    <div class="row mb-3">
+                        <div class="col-md-3 mb-2">
+                            <div class="card">
+                                <div class="card-body text-center" style="padding: var(--spacing-md);">
+                                    <i class="bi bi-people-fill" style="font-size: 1.5rem; color: var(--primary-color);"></i>
+                                    <h3 class="mt-1 mb-1" style="font-size: 1.5rem;">1,234</h3>
+                                    <p class="text-muted mb-0" style="font-size: 0.875rem;">Usuarios Activos</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <div class="card">
+                                <div class="card-body text-center" style="padding: var(--spacing-md);">
+                                    <i class="bi bi-calendar-check-fill" style="font-size: 1.5rem; color: #059669;"></i>
+                                    <h3 class="mt-1 mb-1" style="font-size: 1.5rem;">567</h3>
+                                    <p class="text-muted mb-0" style="font-size: 0.875rem;">Visitas Hoy</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <div class="card">
+                                <div class="card-body text-center" style="padding: var(--spacing-md);">
+                                    <i class="bi bi-building" style="font-size: 1.5rem; color: #d97706;"></i>
+                                    <h3 class="mt-1 mb-1" style="font-size: 1.5rem;">89</h3>
+                                    <p class="text-muted mb-0" style="font-size: 0.875rem;">Empresas</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 mb-2">
+                            <div class="card">
+                                <div class="card-body text-center" style="padding: var(--spacing-md);">
+                                    <i class="bi bi-shield-check" style="font-size: 1.5rem; color: #0891b2;"></i>
+                                    <h3 class="mt-1 mb-1" style="font-size: 1.5rem;">98%</h3>
+                                    <p class="text-muted mb-0" style="font-size: 0.875rem;">Seguridad</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Actividad Reciente -->
+                    <div class="card">
+                        <div class="card-header" style="padding: var(--spacing-md);">
+                            <h3 class="mb-0" style="font-size: 1.125rem;">Actividad Reciente</h3>
+                        </div>
+                        <div class="card-body" style="padding: var(--spacing-md);">
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">Usuario</th>
+                                            <th style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">Empresa</th>
+                                            <th style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">Hora</th>
+                                            <th style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">Estado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">Juan Pérez</td>
+                                            <td style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">TechCorp</td>
+                                            <td style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">14:30</td>
+                                            <td style="padding: var(--spacing-sm) var(--spacing-md);"><span style="background-color: #059669; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">Entrada</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">María García</td>
+                                            <td style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">InnovateLab</td>
+                                            <td style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">14:25</td>
+                                            <td style="padding: var(--spacing-sm) var(--spacing-md);"><span style="background-color: #d97706; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">Salida</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">Carlos López</td>
+                                            <td style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">DataSoft</td>
+                                            <td style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">14:20</td>
+                                            <td style="padding: var(--spacing-sm) var(--spacing-md);"><span style="background-color: #059669; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem;">Entrada</span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Página Counter (oculta por defecto) -->
+                <div id="counter-content" style="display: none;">
+                    <div class="counter-container" style="max-width: 300px; padding: var(--spacing-lg);">
+                        <h1 style="font-size: 1.5rem;">Counter</h1>
+                        <div class="counter-display" style="font-size: 2rem; padding: var(--spacing-md);">42</div>
+                        <button class="btn btn-primary">
+                            <i class="bi bi-plus"></i>
+                            Incrementar
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Página Weather (oculta por defecto) -->
+                <div id="weather-content" style="display: none;">
+                    <div class="weather-container" style="padding: var(--spacing-lg);">
+                        <div class="weather-header" style="margin-bottom: var(--spacing-md);">
+                            <i class="bi bi-cloud-sun-fill weather-icon"></i>
+                            <h1 style="font-size: 1.5rem;">Weather</h1>
+                        </div>
+                        <p class="text-muted mb-3" style="font-size: 0.875rem;">Información del clima actual</p>
+                        
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">Fecha</th>
+                                        <th style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">Temp. (°C)</th>
+                                        <th style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">Temp. (°F)</th>
+                                        <th style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">Resumen</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">15/01/2024</td>
+                                        <td style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">22</td>
+                                        <td style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">72</td>
+                                        <td style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">Parcialmente nublado</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">16/01/2024</td>
+                                        <td style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">25</td>
+                                        <td style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">77</td>
+                                        <td style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">Soleado</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">17/01/2024</td>
+                                        <td style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">18</td>
+                                        <td style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">64</td>
+                                        <td style="padding: var(--spacing-sm) var(--spacing-md); font-size: 0.875rem;">Lluvioso</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script>
+        // Funcionalidad básica para el preview
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            sidebar.classList.toggle('collapsed');
+        }
+        
+        // Navegación entre páginas
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Remover clase active de todos los enlaces
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                // Agregar clase active al enlace clickeado
+                this.classList.add('active');
+                
+                // Ocultar todos los contenidos
+                document.querySelectorAll('[id$="-content"]').forEach(content => {
+                    content.style.display = 'none';
+                });
+                
+                // Mostrar el contenido correspondiente
+                const text = this.textContent.trim();
+                if (text === 'Home') {
+                    document.getElementById('home-content').style.display = 'block';
+                } else if (text === 'Counter') {
+                    document.getElementById('counter-content').style.display = 'block';
+                } else if (text === 'Weather') {
+                    document.getElementById('weather-content').style.display = 'block';
+                }
+            });
+        });
+        
+        // Simular contador
+        let count = 42;
+        document.querySelector('.btn-primary').addEventListener('click', function() {
+            count++;
+            document.querySelector('.counter-display').textContent = count;
+        });
+    </script>
+</body>
+</html>

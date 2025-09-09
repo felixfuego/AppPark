@@ -1,0 +1,164 @@
+@using Park.Comun.DTOs
+
+<div class="modal fade" id="sitioDetailsModal" tabindex="-1" aria-labelledby="sitioDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="sitioDetailsModalLabel">
+                    <i class="bi bi-geo-alt me-2"></i>
+                    @sitio.Nombre
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <!-- Información básica -->
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    Información Básica
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-2">
+                                    <strong>ID:</strong>
+                                    <span class="badge bg-primary ms-2">@sitio.Id</span>
+                                </div>
+                                
+                                <div class="mb-2">
+                                    <strong>Estado:</strong>
+                                    <span class="badge @(sitio.GetEstadoColor() == "success" ? "bg-success" : "bg-danger") ms-2">
+                                        @sitio.GetEstado()
+                                    </span>
+                                </div>
+                                
+                                <div class="mb-2">
+                                    <strong>Creado:</strong>
+                                    <span class="ms-2">@sitio.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                                </div>
+                                
+                                @if (sitio.UpdatedAt.HasValue)
+                                {
+                                    <div class="mb-2">
+                                        <strong>Actualizado:</strong>
+                                        <span class="ms-2">@sitio.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Descripción -->
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-file-text me-2"></i>
+                                    Descripción
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="mb-0">@(string.IsNullOrWhiteSpace(sitio.Descripcion) ? "Sin descripción" : sitio.Descripcion)</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Zonas -->
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-map me-2"></i>
+                                    Zonas (@sitio.GetZonasCount())
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                @if (sitio.Zonas.Any())
+                                {
+                                    <div class="d-flex flex-wrap gap-1">
+                                        @foreach (var zona in sitio.Zonas.Take(5))
+                                        {
+                                            <span class="badge bg-info">@zona.Nombre</span>
+                                        }
+                                        @if (sitio.Zonas.Count > 5)
+                                        {
+                                            <span class="text-muted small">y @(sitio.Zonas.Count - 5) más...</span>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <p class="text-muted mb-0">No hay zonas asignadas</p>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Compañías -->
+                    <div class="col-md-6 mb-4">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-building me-2"></i>
+                                    Compañías (@sitio.GetCompaniasCount())
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                @if (sitio.Companias.Any())
+                                {
+                                    <div class="d-flex flex-wrap gap-1">
+                                        @foreach (var compania in sitio.Companias.Take(5))
+                                        {
+                                            <span class="badge bg-secondary">@compania.Name</span>
+                                        }
+                                        @if (sitio.Companias.Count > 5)
+                                        {
+                                            <span class="text-muted small">y @(sitio.Companias.Count - 5) más...</span>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <p class="text-muted mb-0">No hay compañías asignadas</p>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public SitioDto Sitio { get; set; } = null!;
+    
+    private SitioDto sitio => Sitio;
+
+    [Inject] private IJSRuntime JSRuntime { get; set; } = null!;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Asegurar que el modal se inicialice correctamente
+            await JSRuntime.InvokeVoidAsync("eval", @"
+                if (typeof bootstrap !== 'undefined') {
+                    const modalElement = document.getElementById('sitioDetailsModal');
+                    if (modalElement && !bootstrap.Modal.getInstance(modalElement)) {
+                        new bootstrap.Modal(modalElement, {
+                            backdrop: true,
+                            keyboard: true,
+                            focus: true
+                        });
+                    }
+                }
+            ");
+        }
+    }
+}

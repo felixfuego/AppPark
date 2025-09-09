@@ -1,0 +1,693 @@
+@page "/sites"
+@using Park.Comun.DTOs
+@using Park.Front.Services
+@inject SitioService SitioService
+@inject RoleService RoleService
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Sitios - Parque Industrial</PageTitle>
+
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">
+                <i class="bi bi-geo-alt me-2"></i>
+                Gestión de Sitios
+            </h2>
+
+            <!-- Barra de acciones -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-primary" @onclick="OpenCreateDialog" disabled="@(!CanCreate)">
+                                <i class="bi bi-plus-circle me-2"></i>
+                                Nuevo Sitio
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" @onclick="LoadSitios">
+                                <i class="bi bi-arrow-clockwise me-2"></i>
+                                Actualizar
+                            </button>
+                        </div>
+            
+            <div class="row align-items-center g-2">
+                <div class="col-auto">
+                    <label class="form-label">Filtrar por estado:</label>
+                    <select class="form-select" style="width: 150px;" @bind="FilterStatus">
+                        <option value="">Todos</option>
+                        <option value="true">Activos</option>
+                        <option value="false">Inactivos</option>
+                    </select>
+                </div>
+                
+                <div class="col-auto">
+                    <label class="form-label">Buscar:</label>
+                    <div class="input-group" style="width: 200px;">
+                        <span class="input-group-text">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" class="form-control" placeholder="Buscar..." @bind="SearchTerm" />
+                    </div>
+                </div>
+            </div>
+                    </div>
+                </div>
+            </div>
+
+    <!-- Tabla de sitios -->
+    <div class="card">
+        <div class="card-body">
+            @if (IsLoading)
+            {
+                <div class="text-center my-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p class="mt-2">Cargando sitios...</p>
+                </div>
+            }
+            else if (FilteredSitios.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Descripción</th>
+                                <th>Estado</th>
+                                <th>Zonas</th>
+                                <th>Compañías</th>
+                                <th>Fecha Creación</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var sitio in FilteredSitios)
+                            {
+                                <tr>
+                                    <td>@sitio.Id</td>
+                                    <td>@sitio.Nombre</td>
+                                    <td>@sitio.Descripcion</td>
+                                    <td>
+                                        <span class="badge @(sitio.GetEstadoColor() == "success" ? "bg-success" : "bg-danger")">
+                                            @sitio.GetEstado()
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">@sitio.GetZonasCount()</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">@sitio.GetCompaniasCount()</span>
+                                    </td>
+                                    <td>@sitio.CreatedAt.ToString("dd/MM/yyyy")</td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <button type="button" class="btn btn-sm btn-outline-info" 
+                                                    @onclick="@(() => OpenDetailsDialog(sitio))"
+                                                    title="Ver detalles">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-primary" 
+                                                    @onclick="@(() => OpenEditDialog(sitio))"
+                                                    disabled="@(!CanEdit)"
+                                                    title="Editar">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            @if (sitio.IsActive)
+                                            {
+                                                <button type="button" class="btn btn-sm btn-outline-warning" 
+                                                        @onclick="@(() => DeactivateSitio(sitio))"
+                                                        disabled="@(!CanEdit)"
+                                                        title="Desactivar">
+                                                    <i class="bi bi-pause"></i>
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button type="button" class="btn btn-sm btn-outline-success" 
+                                                        @onclick="@(() => ActivateSitio(sitio))"
+                                                        disabled="@(!CanEdit)"
+                                                        title="Activar">
+                                                    <i class="bi bi-play"></i>
+                                                </button>
+                                            }
+                                            <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                    @onclick="@(() => OpenDeleteDialog(sitio))"
+                                                    disabled="@(!CanDelete)"
+                                                    title="Eliminar">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info" role="alert">
+                    <i class="bi bi-info-circle me-2"></i>
+                    No se encontraron sitios.
+                </div>
+            }
+        </div>
+    </div>
+    </div>
+</div>
+</div>
+
+<!-- Modal para crear/editar sitio -->
+@if (showSitioModal)
+{
+    <div class="modal-backdrop show" @onclick="HideSitioModal"></div>
+    <div class="modal show d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(isEditMode ? "Editar Sitio" : "Nuevo Sitio")</h5>
+                    <button type="button" class="btn-close" @onclick="HideSitioModal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="sitioForm">
+                        <div class="mb-3">
+                            <label for="nombre" class="form-label">Nombre del Sitio <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="nombre" @bind="sitioNombre" maxlength="200" required>
+                            <div class="form-text">Máximo 200 caracteres</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="descripcion" class="form-label">Descripción</label>
+                            <textarea class="form-control" id="descripcion" @bind="sitioDescripcion" rows="3" maxlength="500"></textarea>
+                            <div class="form-text">Máximo 500 caracteres</div>
+                        </div>
+                        
+                        @if (isEditMode)
+                        {
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="isActive" @bind="sitioIsActive">
+                                    <label class="form-check-label" for="isActive">
+                                        Activo
+                                    </label>
+                                </div>
+                            </div>
+                        }
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="HideSitioModal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" @onclick="SaveSitio">
+                        @(isEditMode ? "Actualizar" : "Crear")
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Modal para detalles del sitio -->
+@if (showDetailsModal)
+{
+    <div class="modal-backdrop show" @onclick="HideDetailsModal"></div>
+    <div class="modal show d-block modal-lg" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-geo-alt me-2"></i>
+                        @selectedSitio.Nombre
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="HideDetailsModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <!-- Información básica -->
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-info-circle me-2"></i>
+                                        Información Básica
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-2">
+                                        <strong>ID:</strong>
+                                        <span class="badge bg-primary ms-2">@selectedSitio.Id</span>
+                                    </div>
+                                    
+                                    <div class="mb-2">
+                                        <strong>Estado:</strong>
+                                        <span class="badge @(selectedSitio.GetEstadoColor() == "success" ? "bg-success" : "bg-danger") ms-2">
+                                            @selectedSitio.GetEstado()
+                                        </span>
+                                    </div>
+                                    
+                                    <div class="mb-2">
+                                        <strong>Creado:</strong>
+                                        <span class="ms-2">@selectedSitio.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                                    </div>
+                                    
+                                    @if (selectedSitio.UpdatedAt.HasValue)
+                                    {
+                                        <div class="mb-2">
+                                            <strong>Actualizado:</strong>
+                                            <span class="ms-2">@selectedSitio.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Descripción -->
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-file-text me-2"></i>
+                                        Descripción
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <p class="mb-0">@(string.IsNullOrWhiteSpace(selectedSitio.Descripcion) ? "Sin descripción" : selectedSitio.Descripcion)</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Zonas -->
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-map me-2"></i>
+                                        Zonas (@selectedSitio.GetZonasCount())
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    @if (selectedSitio.Zonas.Any())
+                                    {
+                                        <div class="d-flex flex-wrap gap-1">
+                                            @foreach (var zona in selectedSitio.Zonas.Take(5))
+                                            {
+                                                <span class="badge bg-info">@zona.Nombre</span>
+                                            }
+                                            @if (selectedSitio.Zonas.Count > 5)
+                                            {
+                                                <span class="text-muted small">y @(selectedSitio.Zonas.Count - 5) más...</span>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <p class="text-muted mb-0">No hay zonas asignadas</p>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Compañías -->
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-building me-2"></i>
+                                        Compañías (@selectedSitio.GetCompaniasCount())
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    @if (selectedSitio.Companias.Any())
+                                    {
+                                        <div class="d-flex flex-wrap gap-1">
+                                            @foreach (var compania in selectedSitio.Companias.Take(5))
+                                            {
+                                                <span class="badge bg-secondary">@compania.Name</span>
+                                            }
+                                            @if (selectedSitio.Companias.Count > 5)
+                                            {
+                                                <span class="text-muted small">y @(selectedSitio.Companias.Count - 5) más...</span>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <p class="text-muted mb-0">No hay compañías asignadas</p>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="HideDetailsModal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Modal para eliminar sitio -->
+@if (showDeleteModal)
+{
+    <div class="modal-backdrop show" @onclick="HideDeleteModal"></div>
+    <div class="modal show d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-exclamation-triangle text-danger me-2"></i>
+                        Confirmar Eliminación
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="HideDeleteModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-4">
+                        <i class="bi bi-exclamation-triangle text-danger" style="font-size: 3rem;"></i>
+                        <h6 class="mt-3">¿Está seguro de que desea eliminar este sitio?</h6>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-6">
+                                    <strong>Nombre:</strong>
+                                    <p class="mb-0">@sitioToDelete.Nombre</p>
+                                </div>
+                                <div class="col-6">
+                                    <strong>ID:</strong>
+                                    <span class="badge bg-primary">@sitioToDelete.Id</span>
+                                </div>
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-6">
+                                    <strong>Zonas:</strong>
+                                    <span class="badge bg-info">@sitioToDelete.GetZonasCount()</span>
+                                </div>
+                                <div class="col-6">
+                                    <strong>Compañías:</strong>
+                                    <span class="badge bg-secondary">@sitioToDelete.GetCompaniasCount()</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (sitioToDelete.HasActiveDependencies())
+                    {
+                        <div class="alert alert-warning mt-3" role="alert">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            <strong>Advertencia:</strong> Este sitio tiene dependencias activas asociadas.
+                            @if (sitioToDelete.GetActiveZonasCount() > 0)
+                            {
+                                <text>Tiene @sitioToDelete.GetActiveZonasCount() zona(s) activa(s).</text>
+                            }
+                            @if (sitioToDelete.GetActiveCompaniasCount() > 0)
+                            {
+                                <text>Tiene @sitioToDelete.GetActiveCompaniasCount() compañía(s) activa(s).</text>
+                            }
+                            <br />
+                            <strong>No se podrá eliminar hasta que se eliminen o desactiven todas las dependencias activas.</strong>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-info mt-3" role="alert">
+                            <i class="bi bi-info-circle me-2"></i>
+                            Este sitio no tiene dependencias activas y puede ser eliminado de forma segura.
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="HideDeleteModal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" @onclick="DeleteSitio" disabled="@sitioToDelete.HasActiveDependencies()">
+                        <i class="bi bi-trash me-2"></i>
+                        Eliminar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<SitioDto> Sitios = new();
+    private List<SitioDto> FilteredSitios = new();
+    private bool IsLoading = true;
+    private string SearchTerm = string.Empty;
+    private string FilterStatus = string.Empty;
+    
+    // Permisos
+    private bool CanCreate = false;
+    private bool CanEdit = false;
+    private bool CanDelete = false;
+    
+    // Variables para modales
+    private object currentSitio = new CreateSitioDto();
+    private bool isEditMode = false;
+    private bool showSitioModal = false;
+    private bool showDetailsModal = false;
+    private bool showDeleteModal = false;
+    private SitioDto selectedSitio = new();
+    private SitioDto sitioToDelete = new();
+    
+    // Propiedades para el binding del formulario
+    private string sitioNombre = string.Empty;
+    private string sitioDescripcion = string.Empty;
+    private bool sitioIsActive = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CheckPermissions();
+        await LoadSitios();
+    }
+
+    private async Task CheckPermissions()
+    {
+        try
+        {
+            var userRoles = await RoleService.GetCurrentUserRolesAsync();
+            CanCreate = userRoles.Contains("Admin");
+            CanEdit = userRoles.Contains("Admin");
+            CanDelete = userRoles.Contains("Admin");
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("appUtils.showAlert", $"Error al verificar permisos: {ex.Message}", "error");
+        }
+    }
+
+    private async Task LoadSitios()
+    {
+        try
+        {
+            IsLoading = true;
+            StateHasChanged();
+            
+            Sitios = await SitioService.GetAllSitiosAsync();
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("appUtils.showAlert", $"Error al cargar sitios: {ex.Message}", "error");
+        }
+        finally
+        {
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ApplyFilters()
+    {
+        FilteredSitios = Sitios.ToList();
+
+        // Filtro por estado
+        if (!string.IsNullOrEmpty(FilterStatus))
+        {
+            if (bool.TryParse(FilterStatus, out bool status))
+            {
+                FilteredSitios = FilteredSitios.Where(s => s.IsActive == status).ToList();
+            }
+        }
+
+        // Filtro por búsqueda
+        if (!string.IsNullOrWhiteSpace(SearchTerm))
+        {
+            var searchLower = SearchTerm.ToLower();
+            FilteredSitios = FilteredSitios.Where(s => 
+                s.Nombre.ToLower().Contains(searchLower) ||
+                s.Descripcion.ToLower().Contains(searchLower)).ToList();
+        }
+
+        FilteredSitios = FilteredSitios.ToList();
+    }
+
+    private void OnSearchChanged()
+    {
+        ApplyFilters();
+        StateHasChanged();
+    }
+
+    private void OnFilterChanged()
+    {
+        ApplyFilters();
+        StateHasChanged();
+    }
+
+    private void OpenCreateDialog()
+    {
+        currentSitio = new CreateSitioDto();
+        isEditMode = false;
+        sitioNombre = string.Empty;
+        sitioDescripcion = string.Empty;
+        sitioIsActive = true;
+        showSitioModal = true;
+    }
+
+    private void OpenEditDialog(SitioDto sitio)
+    {
+        currentSitio = new UpdateSitioDto
+        {
+            Id = sitio.Id,
+            Nombre = sitio.Nombre,
+            Descripcion = sitio.Descripcion,
+            IsActive = sitio.IsActive
+        };
+        isEditMode = true;
+        sitioNombre = sitio.Nombre;
+        sitioDescripcion = sitio.Descripcion ?? string.Empty;
+        sitioIsActive = sitio.IsActive;
+        showSitioModal = true;
+    }
+
+    private void OpenDetailsDialog(SitioDto sitio)
+    {
+        selectedSitio = sitio;
+        showDetailsModal = true;
+    }
+
+    private void OpenDeleteDialog(SitioDto sitio)
+    {
+        sitioToDelete = sitio;
+        showDeleteModal = true;
+    }
+
+    private void HideSitioModal()
+    {
+        showSitioModal = false;
+    }
+
+    private void HideDetailsModal()
+    {
+        showDetailsModal = false;
+    }
+
+    private void HideDeleteModal()
+    {
+        showDeleteModal = false;
+    }
+
+
+    private async Task OnSitioDialogClose(bool result)
+    {
+        if (result)
+        {
+            await LoadSitios();
+        }
+        HideSitioModal();
+    }
+
+    private async Task OnDeleteDialogClose(bool result)
+    {
+        if (result)
+        {
+            await LoadSitios();
+        }
+        HideDeleteModal();
+    }
+
+    private async Task SaveSitio()
+    {
+        try
+        {
+            if (isEditMode)
+            {
+                var updateDto = (UpdateSitioDto)currentSitio;
+                updateDto.Nombre = sitioNombre;
+                updateDto.Descripcion = sitioDescripcion;
+                updateDto.IsActive = sitioIsActive;
+                
+                await SitioService.UpdateSitioAsync(updateDto);
+                await JSRuntime.InvokeVoidAsync("appUtils.showAlert", "Sitio actualizado exitosamente", "success");
+            }
+            else
+            {
+                var createDto = new CreateSitioDto
+                {
+                    Nombre = sitioNombre,
+                    Descripcion = sitioDescripcion
+                };
+                
+                await SitioService.CreateSitioAsync(createDto);
+                await JSRuntime.InvokeVoidAsync("appUtils.showAlert", "Sitio creado exitosamente", "success");
+            }
+
+            HideSitioModal();
+            await LoadSitios();
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("appUtils.showAlert", $"Error al guardar sitio: {ex.Message}", "error");
+        }
+    }
+
+    private async Task DeleteSitio()
+    {
+        try
+        {
+            await SitioService.DeleteSitioAsync(sitioToDelete.Id);
+            await JSRuntime.InvokeVoidAsync("appUtils.showAlert", $"Sitio '{sitioToDelete.Nombre}' eliminado exitosamente", "success");
+            
+            HideDeleteModal();
+            await LoadSitios();
+        }
+        catch (InvalidOperationException ex)
+        {
+            await JSRuntime.InvokeVoidAsync("appUtils.showAlert", ex.Message, "warning");
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("appUtils.showAlert", $"Error al eliminar sitio: {ex.Message}", "error");
+        }
+    }
+
+    private async Task ActivateSitio(SitioDto sitio)
+    {
+        try
+        {
+            await SitioService.ActivateSitioAsync(sitio.Id);
+            await JSRuntime.InvokeVoidAsync("appUtils.showAlert", $"Sitio '{sitio.Nombre}' activado exitosamente", "success");
+            await LoadSitios();
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("appUtils.showAlert", $"Error al activar sitio: {ex.Message}", "error");
+        }
+    }
+
+    private async Task DeactivateSitio(SitioDto sitio)
+    {
+        try
+        {
+            await SitioService.DeactivateSitioAsync(sitio.Id);
+            await JSRuntime.InvokeVoidAsync("appUtils.showAlert", $"Sitio '{sitio.Nombre}' desactivado exitosamente", "success");
+            await LoadSitios();
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("appUtils.showAlert", $"Error al desactivar sitio: {ex.Message}", "error");
+        }
+    }
+}

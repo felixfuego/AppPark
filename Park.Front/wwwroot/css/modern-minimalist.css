@@ -1,0 +1,865 @@
+/* ========================================
+   PARK.FRONT - DISEÑO MINIMALISTA MODERNO
+   ======================================== */
+
+/* Importar fuente moderna */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* Variables CSS para el tema empresarial */
+:root {
+    /* Colores empresariales profesionales */
+    --primary-color: #1e40af;
+    --primary-hover: #1e3a8a;
+    --primary-light: #eff6ff;
+    --primary-dark: #1e3a8a;
+    
+    /* Colores neutros empresariales */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f9fafb;
+    --bg-tertiary: #f3f4f6;
+    --bg-sidebar: #1f2937;
+    --text-primary: #111827;
+    --text-secondary: #374151;
+    --text-muted: #6b7280;
+    --text-sidebar: #d1d5db;
+    
+    /* Bordes y sombras más sutiles */
+    --border-color: #e5e7eb;
+    --border-radius: 6px;
+    --border-radius-sm: 4px;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 2px 4px -1px rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.06);
+    --shadow-lg: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -1px rgb(0 0 0 / 0.06);
+    
+    /* Espaciado más compacto */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 0.75rem;
+    --spacing-lg: 1rem;
+    --spacing-xl: 1.5rem;
+}
+
+/* Reset y configuración base */
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden; /* Prevenir scroll horizontal */
+    width: 100%;
+    max-width: 100%;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+    line-height: 1.6;
+    width: 100%;
+}
+
+/* ========================================
+   LAYOUT PRINCIPAL
+   ======================================== */
+
+.page {
+    display: flex;
+    min-height: 100vh;
+    background-color: var(--bg-secondary);
+    width: 100%;
+    overflow-x: hidden;
+}
+
+/* Sidebar empresarial compacto */
+.sidebar {
+    width: 240px;
+    background-color: var(--bg-sidebar);
+    border-right: 1px solid #374151;
+    box-shadow: var(--shadow-md);
+    position: fixed;
+    height: 100vh;
+    left: 0;
+    top: 0;
+    z-index: 900;
+    transition: width 0.3s ease, transform 0.3s ease;
+    margin: 0;
+    padding: 0;
+}
+
+.sidebar.collapsed {
+    transform: translateX(-100%);
+    width: 240px;
+}
+
+/* El sidebar colapsado se oculta completamente con transform */
+
+/* Contenido principal */
+main {
+    flex: 1;
+    margin-left: 240px;
+    min-height: 100vh;
+    transition: margin-left 0.3s ease, width 0.3s ease;
+    width: calc(100% - 240px);
+    box-sizing: border-box;
+    overflow-x: hidden;
+    margin-top: 0;
+    margin-bottom: 0;
+    margin-right: 0;
+}
+
+/* Contenido principal cuando sidebar está colapsado */
+main.sidebar-collapsed {
+    margin-left: 0;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-top: 0;
+    margin-bottom: 0;
+    display: flex;
+    flex-direction: column;
+    transition: margin-left 0.3s ease, width 0.3s ease;
+}
+
+/* Header superior */
+.top-row {
+    background-color: var(--bg-primary);
+    border-bottom: 1px solid var(--border-color);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
+    position: fixed;
+    top: 0;
+    left: 240px;
+    right: 0;
+    z-index: 1000;
+    box-sizing: border-box;
+    width: calc(100% - 240px);
+    margin: 0;
+    padding-top: var(--spacing-sm);
+    padding-bottom: var(--spacing-sm);
+}
+
+/* Ajustar el header cuando el menú está colapsado */
+main.sidebar-collapsed .top-row {
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    z-index: 1000;
+    transform: none;
+}
+
+/* Asegurar que el header se ajuste correctamente */
+.top-row .d-flex {
+    width: 100%;
+    justify-content: space-between;
+    align-items: center;
+    margin: 0;
+    padding: 0;
+}
+
+/* Asegurar que el header siempre esté por encima del sidebar */
+.top-row {
+    z-index: 1000 !important;
+}
+
+.top-row .d-flex > div {
+    display: flex;
+    align-items: center;
+    margin: 0;
+    padding: 0;
+}
+
+/* Botones del header superior más visibles */
+.top-row .btn {
+    min-height: 40px;
+    min-width: 40px;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: 1px solid transparent;
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border-radius: var(--border-radius-sm);
+    transition: all 0.2s ease;
+}
+
+.top-row .btn:hover {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.top-row .btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--primary-color);
+}
+
+.top-row .btn-primary:hover {
+    background-color: var(--primary-hover);
+    border-color: var(--primary-hover);
+}
+
+/* Contenido de las páginas más compacto */
+.content {
+    padding: var(--spacing-lg);
+    max-width: 100%;
+    margin: 0;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 60px; /* Espacio para el header fijo */
+    overflow-x: hidden;
+    min-height: calc(100vh - 60px);
+}
+
+/* Contenido cuando el sidebar está colapsado - expandir completamente */
+main.sidebar-collapsed .content {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: var(--spacing-lg);
+    padding-right: var(--spacing-lg);
+    box-sizing: border-box;
+}
+
+/* Asegurar que los elementos dentro del contenido también se expandan */
+main.sidebar-collapsed .content > * {
+    max-width: 100% !important;
+    box-sizing: border-box;
+}
+
+/* Asegurar que el contenedor page también permita expansión completa */
+.page:has(main.sidebar-collapsed) {
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+/* Regla adicional para forzar expansión completa */
+.sidebar-collapsed {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+/* ========================================
+   AJUSTES PRECISOS DE ESPACIADO
+   ======================================== */
+
+/* Asegurar que el top-row se alinee perfectamente con el contenido */
+.top-row {
+    border-left: none;
+    border-right: none;
+    margin: 0;
+    padding: 0;
+}
+
+/* Eliminar espacios entre segmentos del layout */
+.page {
+    margin: 0;
+    padding: 0;
+}
+
+.sidebar, main, .top-row, .content {
+    margin: 0;
+    padding: 0;
+}
+
+/* Reglas específicas para alineación perfecta */
+.sidebar {
+    margin: 0;
+    padding: 0;
+}
+
+/* ========================================
+   PREVENIR OVERFLOW HORIZONTAL
+   ======================================== */
+
+/* Asegurar que todos los elementos respeten el ancho del contenedor */
+.page {
+    width: 100%;
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+}
+
+/* Eliminar cualquier margen o padding que pueda causar espacios extra */
+.page > * {
+    margin-right: 0;
+    padding-right: 0;
+}
+
+/* Asegurar que no haya espacios extra en el lado derecho */
+.d-flex {
+    margin-right: 0;
+    padding-right: 0;
+}
+
+/* Tablas responsivas */
+.table-responsive {
+    overflow-x: auto;
+    max-width: 100%;
+}
+
+/* Cards y contenedores */
+.card, .dashboard-card {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+/* ========================================
+   NAVEGACIÓN
+   ======================================== */
+
+/* Header del sidebar */
+.navbar {
+    padding: var(--spacing-md);
+    border-bottom: 1px solid #374151;
+    background-color: var(--bg-sidebar);
+}
+
+.navbar-brand {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-sidebar);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.navbar-brand:hover {
+    color: var(--primary-hover);
+    text-decoration: none;
+}
+
+/* Botón del menú */
+.navbar-toggler {
+    background: none;
+    border: none;
+    padding: var(--spacing-sm);
+    border-radius: var(--border-radius-sm);
+    transition: background-color 0.2s ease;
+    color: var(--text-sidebar);
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    min-height: 40px;
+}
+
+.navbar-toggler:hover {
+    background-color: #374151;
+    color: white;
+}
+
+.navbar-toggler-icon {
+    width: 20px;
+    height: 20px;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28209, 213, 219, 1%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+}
+
+/* Logo del navbar */
+.navbar-brand {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.navbar-brand .logo {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--border-radius-sm);
+    object-fit: cover;
+}
+
+.navbar-brand .brand-text {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-sidebar);
+}
+
+/* Menú de navegación */
+.nav-scrollable {
+    padding: var(--spacing-sm) 0;
+}
+
+.nav {
+    padding: 0 var(--spacing-sm);
+}
+
+.nav-item {
+    margin-bottom: 2px;
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    color: var(--text-sidebar);
+    text-decoration: none;
+    border-radius: var(--border-radius-sm);
+    transition: all 0.2s ease;
+    font-weight: 500;
+    font-size: 0.875rem;
+    min-height: 40px;
+}
+
+.nav-link:hover {
+    background-color: #374151;
+    color: white;
+    text-decoration: none;
+}
+
+.nav-link.active {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+/* Iconos del menú */
+.nav-link .bi {
+    font-size: 1rem;
+    width: 20px;
+    height: 20px;
+    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* Secciones del menú */
+.nav-section {
+    margin-bottom: var(--spacing-lg);
+}
+
+.nav-section-header {
+    display: flex;
+    align-items: center;
+    padding: var(--spacing-sm) var(--spacing-lg);
+    color: var(--text-sidebar);
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    gap: var(--spacing-sm);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    margin-bottom: var(--spacing-sm);
+    opacity: 0.8;
+}
+
+.nav-section-header .bi {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.nav-section-items {
+    padding-left: var(--spacing-md);
+}
+
+.nav-section-items .nav-item {
+    margin-bottom: var(--spacing-xs);
+}
+
+.nav-section-items .nav-link {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: 0.85rem;
+    min-height: 36px;
+    margin-left: var(--spacing-sm);
+}
+
+.nav-section-items .nav-link .bi {
+    width: 18px;
+    height: 18px;
+}
+
+/* ========================================
+   COMPONENTES
+   ======================================== */
+
+/* Títulos más compactos */
+h1 {
+    font-size: 1.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-md);
+    line-height: 1.3;
+}
+
+h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-sm);
+}
+
+h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-sm);
+}
+
+/* Botones más compactos */
+.btn {
+    font-family: inherit;
+    font-weight: 500;
+    border-radius: var(--border-radius-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-size: 0.875rem;
+    min-height: 36px;
+    min-width: 36px;
+    justify-content: center;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+/* Tarjetas */
+.card {
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    transition: all 0.2s ease;
+}
+
+.card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.card-header {
+    background-color: var(--bg-tertiary);
+    padding: var(--spacing-md);
+    border-bottom: 1px solid var(--border-color);
+    font-weight: 600;
+}
+
+.card-body {
+    padding: var(--spacing-md);
+}
+
+/* Tablas */
+.table {
+    background-color: var(--bg-primary);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+}
+
+.table thead th {
+    background-color: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+    font-weight: 600;
+    color: var(--text-primary);
+    padding: var(--spacing-md);
+}
+
+.table tbody td {
+    padding: var(--spacing-md);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.table tbody tr:hover {
+    background-color: var(--bg-secondary);
+}
+
+/* ========================================
+   PÁGINA ESPECÍFICA - COUNTER
+   ======================================== */
+
+.counter-container {
+    background-color: var(--bg-primary);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-xl);
+    box-shadow: var(--shadow-sm);
+    text-align: center;
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.counter-display {
+    font-size: 3rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin: var(--spacing-lg) 0;
+    padding: var(--spacing-lg);
+    background-color: var(--primary-light);
+    border-radius: var(--border-radius);
+}
+
+/* ========================================
+   PÁGINA ESPECÍFICA - WEATHER
+   ======================================== */
+
+.weather-container {
+    background-color: var(--bg-primary);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.weather-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-md);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.weather-icon {
+    font-size: 1.5rem;
+    color: var(--primary-color);
+}
+
+/* ========================================
+   OVERLAY PARA MÓVILES
+   ======================================== */
+
+.sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    transition: opacity 0.3s ease;
+}
+
+/* ========================================
+   RESPONSIVE DESIGN
+   ======================================== */
+
+/* Pantallas medianas */
+@media (max-width: 1200px) {
+    main.sidebar-collapsed {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    
+    main.sidebar-collapsed .top-row {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    
+    main.sidebar-collapsed .content {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+}
+
+/* Pantallas pequeñas */
+@media (max-width: 992px) {
+    main.sidebar-collapsed {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    
+    main.sidebar-collapsed .top-row {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    
+    main.sidebar-collapsed .content {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        transform: translateX(-100%);
+        width: 240px !important;
+        z-index: 1000;
+    }
+    
+    .sidebar.show {
+        transform: translateX(0);
+    }
+    
+    /* En móvil, el sidebar se oculta por defecto */
+    .sidebar {
+        transform: translateX(-100%);
+    }
+    
+    /* En móvil, mostrar el sidebar cuando tiene la clase show */
+    .sidebar.show {
+        transform: translateX(0);
+        z-index: 1000;
+    }
+    
+    /* En móvil, asegurar que el sidebar visible tenga todos los elementos */
+    .sidebar.show .navbar,
+    .sidebar.show .navbar-brand,
+    .sidebar.show .nav-scrollable {
+        display: block !important;
+    }
+    
+    .sidebar.show .nav-link {
+        display: flex !important;
+    }
+    
+    .sidebar.show .nav-link span {
+        display: inline !important;
+    }
+    
+    /* En móvil, el comportamiento es el mismo que en desktop */
+    .sidebar.collapsed {
+        transform: translateX(-100%);
+    }
+    
+    main {
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
+    
+    main.sidebar-collapsed {
+        margin-left: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+    
+    /* Header en móvil - se extiende de izquierda a derecha */
+    .top-row {
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        padding: var(--spacing-sm) var(--spacing-md);
+        transform: none !important;
+        z-index: 1000 !important;
+    }
+    
+    main.sidebar-collapsed .top-row {
+        left: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        transform: none !important;
+        z-index: 1000 !important;
+    }
+    
+    main.sidebar-collapsed .content {
+        width: 100% !important;
+        max-width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+    
+    .content {
+        padding: var(--spacing-md);
+        margin-top: 60px; /* Espacio para el header fijo */
+    }
+    
+    h1 {
+        font-size: 1.5rem;
+    }
+    
+    h2 {
+        font-size: 1.25rem;
+    }
+    
+    .counter-display {
+        font-size: 2rem;
+    }
+    
+    .btn {
+        font-size: 0.8rem;
+        padding: var(--spacing-xs) var(--spacing-sm);
+    }
+}
+
+@media (max-width: 480px) {
+    .content {
+        padding: var(--spacing-sm);
+    }
+    
+    .counter-container {
+        padding: var(--spacing-lg);
+    }
+    
+    .weather-container {
+        padding: var(--spacing-md);
+    }
+}
+
+/* ========================================
+   ANIMACIONES Y TRANSICIONES
+   ======================================== */
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.fade-in {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* Loading states */
+.loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* Focus states para accesibilidad */
+.btn:focus,
+.nav-link:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* ========================================
+   UTILIDADES
+   ======================================== */
+
+.text-center { text-align: center; }
+.text-muted { color: var(--text-muted); }
+.mb-0 { margin-bottom: 0; }
+.mb-1 { margin-bottom: var(--spacing-xs); }
+.mb-2 { margin-bottom: var(--spacing-sm); }
+.mb-3 { margin-bottom: var(--spacing-md); }
+.mb-4 { margin-bottom: var(--spacing-lg); }
+.mb-5 { margin-bottom: var(--spacing-xl); }
+
+.p-0 { padding: 0; }
+.p-1 { padding: var(--spacing-xs); }
+.p-2 { padding: var(--spacing-sm); }
+.p-3 { padding: var(--spacing-md); }
+.p-4 { padding: var(--spacing-lg); }
+.p-5 { padding: var(--spacing-xl); }

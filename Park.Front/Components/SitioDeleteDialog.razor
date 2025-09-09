@@ -1,0 +1,151 @@
+@using Park.Comun.DTOs
+@using Park.Front.Services
+
+<div class="modal fade" id="sitioDeleteModal" tabindex="-1" aria-labelledby="sitioDeleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="sitioDeleteModalLabel">
+                    <i class="bi bi-exclamation-triangle text-danger me-2"></i>
+                    Confirmar Eliminación
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-4">
+                    <i class="bi bi-exclamation-triangle text-danger" style="font-size: 3rem;"></i>
+                    <h6 class="mt-3">¿Está seguro de que desea eliminar este sitio?</h6>
+                </div>
+                
+                <div class="card">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-6">
+                                <strong>Nombre:</strong>
+                                <p class="mb-0">@sitio.Nombre</p>
+                            </div>
+                            <div class="col-6">
+                                <strong>ID:</strong>
+                                <span class="badge bg-primary">@sitio.Id</span>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-6">
+                                <strong>Zonas:</strong>
+                                <span class="badge bg-info">@sitio.GetZonasCount()</span>
+                            </div>
+                            <div class="col-6">
+                                <strong>Compañías:</strong>
+                                <span class="badge bg-secondary">@sitio.GetCompaniasCount()</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @if (sitio.GetZonasCount() > 0 || sitio.GetCompaniasCount() > 0)
+                {
+                    <div class="alert alert-warning mt-3" role="alert">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        <strong>Advertencia:</strong> Este sitio tiene dependencias asociadas.
+                        @if (sitio.GetZonasCount() > 0)
+                        {
+                            <text>Tiene @sitio.GetZonasCount() zona(s) asociada(s).</text>
+                        }
+                        @if (sitio.GetCompaniasCount() > 0)
+                        {
+                            <text>Tiene @sitio.GetCompaniasCount() compañía(s) asociada(s).</text>
+                        }
+                        <br />
+                        <strong>No se podrá eliminar hasta que se eliminen o desactiven todas las dependencias.</strong>
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info mt-3" role="alert">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Este sitio no tiene dependencias asociadas y puede ser eliminado de forma segura.
+                    </div>
+                }
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-danger" @onclick="Delete" disabled="@(isDeleting || (sitio.GetZonasCount() > 0 || sitio.GetCompaniasCount() > 0))">
+                    @if (isDeleting)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        @("Eliminando...")
+                    }
+                    else
+                    {
+                        <i class="bi bi-trash me-2"></i>
+                        @("Eliminar")
+                    }
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public SitioDto Sitio { get; set; } = null!;
+    [Parameter] public EventCallback<bool> OnClose { get; set; }
+    
+    private SitioDto sitio => Sitio;
+    private bool isDeleting = false;
+
+    private async Task Delete()
+    {
+        try
+        {
+            isDeleting = true;
+            StateHasChanged();
+
+            await SitioService.DeleteSitioAsync(sitio.Id);
+            await ShowAlert($"Sitio '{sitio.Nombre}' eliminado exitosamente", "success");
+            
+            await OnClose.InvokeAsync(true);
+        }
+        catch (InvalidOperationException ex)
+        {
+            await ShowAlert(ex.Message, "warning");
+        }
+        catch (Exception ex)
+        {
+            await ShowAlert($"Error al eliminar sitio: {ex.Message}", "error");
+        }
+        finally
+        {
+            isDeleting = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ShowAlert(string message, string type)
+    {
+        // Implementar notificaciones con JavaScript
+        await JSRuntime.InvokeVoidAsync("showAlert", message, type);
+    }
+
+    [Inject] private IJSRuntime JSRuntime { get; set; } = null!;
+    [Inject] private SitioService SitioService { get; set; } = null!;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Asegurar que el modal se inicialice correctamente
+            await JSRuntime.InvokeVoidAsync("eval", @"
+                if (typeof bootstrap !== 'undefined') {
+                    const modalElement = document.getElementById('sitioDeleteModal');
+                    if (modalElement && !bootstrap.Modal.getInstance(modalElement)) {
+                        new bootstrap.Modal(modalElement, {
+                            backdrop: true,
+                            keyboard: true,
+                            focus: true
+                        });
+                    }
+                }
+            ");
+        }
+    }
+}

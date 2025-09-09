@@ -1,0 +1,68 @@
+@using Park.Front.Services
+@using Park.Comun.DTOs
+@inject AuthService AuthService
+@inject ILocalStorageService LocalStorage
+
+@ChildContent
+
+@code {
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    public bool IsAuthenticated { get; private set; }
+    public UserDto? CurrentUser { get; private set; }
+    public bool IsLoading { get; private set; } = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Suscribirse a cambios de estado de autenticación
+        AuthService.AuthStateChanged += OnAuthStateChanged;
+
+        // Verificar estado inicial
+        await CheckAuthStateAsync();
+    }
+
+    private async Task CheckAuthStateAsync()
+    {
+        IsLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            IsAuthenticated = await AuthService.IsAuthenticatedAsync();
+            if (IsAuthenticated)
+            {
+                CurrentUser = await AuthService.GetStoredUserAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error checking auth state: {ex.Message}");
+            IsAuthenticated = false;
+            CurrentUser = null;
+        }
+        finally
+        {
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async void OnAuthStateChanged(bool isAuthenticated)
+    {
+        IsAuthenticated = isAuthenticated;
+        if (isAuthenticated)
+        {
+            CurrentUser = await AuthService.GetStoredUserAsync();
+        }
+        else
+        {
+            CurrentUser = null;
+        }
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        AuthService.AuthStateChanged -= OnAuthStateChanged;
+    }
+}

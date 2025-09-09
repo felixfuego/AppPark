@@ -12,17 +12,19 @@ namespace Park.Comun.Models
         public int LoginAttempts { get; set; } = 0;
         public DateTime? LockoutEnd { get; set; }
         
+        // Nuevas propiedades para el nuevo modelo
+        public int? IdColaborador { get; set; }
+        public int? IdCompania { get; set; }
+        
         // Relación muchos a muchos con Role
         public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
         
         // Propiedad de navegación para acceder directamente a los roles
         public virtual ICollection<Role> Roles { get; set; } = new List<Role>();
         
-        // Relaciones con empresas y zonas
-        public virtual ICollection<UserCompany> UserCompanies { get; set; } = new List<UserCompany>();
-        public virtual ICollection<UserZone> UserZones { get; set; } = new List<UserZone>();
+        // Navigation properties para el nuevo modelo
+        public virtual Colaborador? Colaborador { get; set; }
+        public virtual Company? Compania { get; set; }
         
-        // Visitas creadas por el usuario
-        public virtual ICollection<Visit> CreatedVisits { get; set; } = new List<Visit>();
     }
 }
