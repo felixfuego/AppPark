@@ -2,6 +2,7 @@
 @using Park.Front.Services
 @using Park.Comun.DTOs
 @using Park.Front.Components
+@using Park.Front.Pages.Shared
 @using System.ComponentModel.DataAnnotations
 @inject IJSRuntime JSRuntime
 @inject ColaboradorService ColaboradorService
@@ -14,7 +15,7 @@
 
 <RoleGuard RequiredRole="Admin">
 
-<div class="colaboradores-container">
+<div class="colaboradores-container management-page">
     <div class="page-header">
         <div class="page-title">
             <h1>Gestión de Colaboradores</h1>
@@ -135,183 +136,215 @@
 {
     <div class="modal-backdrop show" @onclick="HideModal"></div>
     <div class="modal show d-block" tabindex="-1">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-xxl compact">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">@(isEditing ? "Editar Colaborador" : "Nuevo Colaborador")</h5>
-                    <button type="button" class="btn-close" @onclick="HideModal"></button>
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-user-plus me-2"></i>
+                        @(isEditing ? "Editar Colaborador" : "Nuevo Colaborador")
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="HideModal"></button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body p-4">
                     <EditForm Model="@currentColaborador" OnValidSubmit="@HandleSave">
                         <DataAnnotationsValidator />
                         
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="sitio">Sitio *</label>
-                                    <InputSelect id="sitio" @bind-Value="currentColaborador.IdSitio" @onchange="OnSitioChanged" class="form-control">
-                                        <option value="">Seleccionar sitio...</option>
-                                        @foreach (var sitio in availableSites)
-                                        {
-                                            <option value="@sitio.Id">@sitio.Nombre</option>
-                                        }
-                                    </InputSelect>
-                                    <ValidationMessage For="@(() => currentColaborador.IdSitio)" class="text-danger" />
-                                </div>
+                        <!-- Sección de Ubicación y Acceso -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-map-marker-alt me-2"></i>
+                                    Ubicación y Centros de Acceso
+                                </h6>
                             </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="compania">Compañía *</label>
-                                    <InputSelect id="compania" @bind-Value="currentColaborador.IdCompania" class="form-control">
-                                        <option value="">Seleccionar compañía...</option>
-                                        @foreach (var compania in availableCompanies)
-                                        {
-                                            <option value="@compania.Id">@compania.Name</option>
-                                        }
-                                    </InputSelect>
-                                    <ValidationMessage For="@(() => currentColaborador.IdCompania)" class="text-danger" />
+                            <div class="card-body">
+                                <CascadaSelection 
+                                    IdSitio="currentColaborador.IdSitio" 
+                                    IdSitioChanged="OnSitioChanged"
+                                    IdZona="currentColaborador.IdZona" 
+                                    IdZonaChanged="OnZonaChanged"
+                                    IdEmpresa="currentColaborador.IdCompania" 
+                                    IdEmpresaChanged="OnEmpresaChanged"
+                                    SelectedCentroIds="selectedCentroIds" 
+                                    SelectedCentroIdsChanged="OnCentroIdsChanged" />
+                            </div>
+                        </div>
+
+                        <!-- Sección de Información Personal -->
+                        <div class="card mb-12">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-user me-2"></i>
+                                    Información Personal
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-lg-12 col-md-12">
+                                        <div class="mb-3">
+                                            <label for="identidad" class="form-label fw-bold">Identidad *</label>
+                                            <InputText id="identidad" @bind-Value="currentColaborador.Identidad" 
+                                                      class="form-control form-control-lg" 
+                                                      placeholder="Número de identidad" />
+                                            <ValidationMessage For="@(() => currentColaborador.Identidad)" class="text-danger small" />
+                                        </div>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <div class="mb-3">
+                                            <label for="nombre" class="form-label fw-bold">Nombre Completo *</label>
+                                            <InputText id="nombre" @bind-Value="currentColaborador.Nombre" 
+                                                      class="form-control form-control-lg" 
+                                                      placeholder="Nombre completo del colaborador" />
+                                            <ValidationMessage For="@(() => currentColaborador.Nombre)" class="text-danger small" />
+                                        </div>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <div class="mb-3">
+                                            <label for="puesto" class="form-label fw-bold">Puesto *</label>
+                                            <InputText id="puesto" @bind-Value="currentColaborador.Puesto" 
+                                                      class="form-control form-control-lg" 
+                                                      placeholder="Cargo o puesto de trabajo" />
+                                            <ValidationMessage For="@(() => currentColaborador.Puesto)" class="text-danger small" />
+                                        </div>
+                                    </div>
+                                    <div class="col-md-12">
+                                        <div class="mb-3">
+                                            <label for="email" class="form-label fw-bold">Email</label>
+                                            <InputText id="email" @bind-Value="currentColaborador.Email" type="email" 
+                                                      class="form-control form-control-lg" 
+                                                      placeholder="correo@ejemplo.com" />
+                                            <ValidationMessage For="@(() => currentColaborador.Email)" class="text-danger small" />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="zona">Zona *</label>
-                                    <InputSelect id="zona" @bind-Value="currentColaborador.IdZona" @onchange="OnZonaChanged" class="form-control">
-                                        <option value="">Seleccionar zona...</option>
-                                        @foreach (var zona in availableZonas)
-                                        {
-                                            <option value="@zona.Id">@zona.Nombre</option>
-                                        }
-                                    </InputSelect>
-                                    <ValidationMessage For="@(() => currentColaborador.IdZona)" class="text-danger" />
-                                </div>
+                        <!-- Sección de Contacto -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-phone me-2"></i>
+                                    Información de Contacto
+                                </h6>
                             </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="identidad">Identidad *</label>
-                                    <InputText id="identidad" @bind-Value="currentColaborador.Identidad" class="form-control" />
-                                    <ValidationMessage For="@(() => currentColaborador.Identidad)" class="text-danger" />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="nombre">Nombre *</label>
-                                    <InputText id="nombre" @bind-Value="currentColaborador.Nombre" class="form-control" />
-                                    <ValidationMessage For="@(() => currentColaborador.Nombre)" class="text-danger" />
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="puesto">Puesto *</label>
-                                    <InputText id="puesto" @bind-Value="currentColaborador.Puesto" class="form-control" />
-                                    <ValidationMessage For="@(() => currentColaborador.Puesto)" class="text-danger" />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="email">Email</label>
-                                    <InputText id="email" @bind-Value="currentColaborador.Email" type="email" class="form-control" />
-                                    <ValidationMessage For="@(() => currentColaborador.Email)" class="text-danger" />
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="tel1">Teléfono Principal *</label>
-                                    <InputText id="tel1" @bind-Value="currentColaborador.Tel1" class="form-control" />
-                                    <ValidationMessage For="@(() => currentColaborador.Tel1)" class="text-danger" />
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-lg-6 col-md-6">
+                                        <div class="mb-3">
+                                            <label for="tel1" class="form-label fw-bold">Teléfono Principal *</label>
+                                            <InputText id="tel1" @bind-Value="currentColaborador.Tel1" 
+                                                      class="form-control form-control-lg" 
+                                                      placeholder="Número principal" />
+                                            <ValidationMessage For="@(() => currentColaborador.Tel1)" class="text-danger small" />
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6 col-md-6">
+                                        <div class="mb-3">
+                                            <label for="tel2" class="form-label">Teléfono Secundario</label>
+                                            <InputText id="tel2" @bind-Value="currentColaborador.Tel2" 
+                                                      class="form-control form-control-lg" 
+                                                      placeholder="Número secundario" />
+                                            <ValidationMessage For="@(() => currentColaborador.Tel2)" class="text-danger small" />
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6 col-md-12">
+                                        <div class="mb-3">
+                                            <label for="tel3" class="form-label">Teléfono Adicional</label>
+                                            <InputText id="tel3" @bind-Value="currentColaborador.Tel3" 
+                                                      class="form-control form-control-lg" 
+                                                      placeholder="Número adicional" />
+                                            <ValidationMessage For="@(() => currentColaborador.Tel3)" class="text-danger small" />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label for="tel2">Teléfono Secundario</label>
-                                    <InputText id="tel2" @bind-Value="currentColaborador.Tel2" class="form-control" />
-                                    <ValidationMessage For="@(() => currentColaborador.Tel2)" class="text-danger" />
-                                </div>
+                        <!-- Sección de Vehículo y Comentarios -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-car me-2"></i>
+                                    Información Adicional
+                                </h6>
                             </div>
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label for="tel3">Teléfono Adicional</label>
-                                    <InputText id="tel3" @bind-Value="currentColaborador.Tel3" class="form-control" />
-                                    <ValidationMessage For="@(() => currentColaborador.Tel3)" class="text-danger" />
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label for="placa">Placa Vehículo</label>
-                                    <InputText id="placa" @bind-Value="currentColaborador.PlacaVehiculo" class="form-control" />
-                                    <ValidationMessage For="@(() => currentColaborador.PlacaVehiculo)" class="text-danger" />
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-lg-6 col-md-6">
+                                        <div class="mb-3">
+                                            <label for="placa" class="form-label">Placa del Vehículo</label>
+                                            <InputText id="placa" @bind-Value="currentColaborador.PlacaVehiculo" 
+                                                      class="form-control form-control-lg" 
+                                                      placeholder="ABC-1234 (opcional)" />
+                                            <ValidationMessage For="@(() => currentColaborador.PlacaVehiculo)" class="text-danger small" />
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-12 col-md-12">
+                                        <div class="mb-3">
+                                            <label for="comentario" class="form-label">Comentarios</label>
+                                            <InputTextArea id="comentario" @bind-Value="currentColaborador.Comentario" 
+                                                          class="form-control" rows="3" 
+                                                          placeholder="Observaciones adicionales..." />
+                                            <ValidationMessage For="@(() => currentColaborador.Comentario)" class="text-danger small" />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="form-group">
-                            <label for="comentario">Comentario</label>
-                            <InputTextArea id="comentario" @bind-Value="currentColaborador.Comentario" class="form-control" rows="3" />
-                            <ValidationMessage For="@(() => currentColaborador.Comentario)" class="text-danger" />
-                        </div>
-
-                        <div class="form-group">
-                            <label>Centros/Puertas de Acceso</label>
-                            @if (availableCentros.Any())
-                            {
-                                <div class="centros-selection">
-                                    @foreach (var centro in availableCentros)
+                        <!-- Sección de Estado -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">
+                                    <i class="fas fa-cog me-2"></i>
+                                    Estado del Colaborador
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    @if (isEditing)
                                     {
-                                        <div class="form-check">
-                                            <input type="checkbox" 
-                                                   id="@($"centro_{centro.Id}")" 
-                                                   @onchange="@((e) => OnCentroChanged(centro.Id, e))"
-                                                   checked="@GetCentroSelected(centro.Id)"
-                                                   class="form-check-input" />
-                                            <label for="@($"centro_{centro.Id}")" class="form-check-label">
-                                                @centro.Nombre (@centro.Zona?.Nombre)
-                                            </label>
+                                        <div class="col-lg-6 col-md-6">
+                                            <div class="form-check form-switch">
+                                                <InputCheckbox id="isActive" @bind-Value="currentColaborador.IsActive" 
+                                                              class="form-check-input" />
+                                                <label for="isActive" class="form-check-label fw-bold">
+                                                    <i class="fas fa-toggle-on me-1"></i>
+                                                    Colaborador Activo
+                                                </label>
+                                            </div>
                                         </div>
                                     }
+                                    <div class="col-lg-6 col-md-6">
+                                        <div class="form-check form-switch">
+                                            <InputCheckbox id="isBlackList" @bind-Value="currentColaborador.IsBlackList" 
+                                                          class="form-check-input" />
+                                            <label for="isBlackList" class="form-check-label fw-bold text-danger">
+                                                <i class="fas fa-ban me-1"></i>
+                                                Lista Negra
+                                            </label>
+                                        </div>
+                                    </div>
                                 </div>
-                            }
-                            else
-                            {
-                                <p class="text-muted">Selecciona una zona para ver los centros disponibles</p>
-                            }
-                        </div>
-
-                        @if (isEditing)
-                        {
-                            <div class="form-group">
-                                <div class="form-check">
-                                    <InputCheckbox id="isActive" @bind-Value="currentColaborador.IsActive" class="form-check-input" />
-                                    <label for="isActive" class="form-check-label">Colaborador Activo</label>
-                                </div>
-                            </div>
-                        }
-
-                        <div class="form-group">
-                            <div class="form-check">
-                                <InputCheckbox id="isBlackList" @bind-Value="currentColaborador.IsBlackList" class="form-check-input" />
-                                <label for="isBlackList" class="form-check-label">Lista Negra</label>
                             </div>
                         </div>
 
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" @onclick="HideModal">Cancelar</button>
-                            <button type="submit" class="btn btn-primary" disabled="@isSaving">
+                        <div class="modal-footer bg-light border-top">
+                            <button type="button" class="btn btn-outline-secondary btn-lg" @onclick="HideModal">
+                                <i class="fas fa-times me-2"></i>
+                                Cancelar
+                            </button>
+                            <button type="submit" class="btn btn-primary btn-lg" disabled="@isSaving">
                                 @if (isSaving)
                                 {
                                     <span class="spinner-border spinner-border-sm me-2" role="status"></span>
                                 }
-                                @(isEditing ? "Actualizar" : "Crear")
+                                else
+                                {
+                                    <i class="fas fa-save me-2"></i>
+                                }
+                                @(isEditing ? "Actualizar Colaborador" : "Crear Colaborador")
                             </button>
                         </div>
                     </EditForm>
@@ -326,11 +359,7 @@
 @code {
     private List<ColaboradorDto> colaboradores = new();
     private List<ColaboradorDto> filteredColaboradores = new();
-    private List<CompanyDto> availableCompanies = new();
-    private List<SitioDto> availableSites = new();
-    private List<ZonaDto> availableZonas = new();
-    private List<CentroDto> availableCentros = new();
-    private List<int> selectedCentros = new();
+    private List<int> selectedCentroIds = new();
     private bool isLoading = true;
     private bool showModal = false;
     private bool isEditing = false;
@@ -357,8 +386,6 @@
             
             // Cargar datos reales
             colaboradores = await ColaboradorService.GetAllColaboradoresAsync();
-            availableCompanies = await CompanyService.GetAllCompaniesAsync();
-            availableSites = await SitioService.GetAllSitiosAsync();
             
             ApplyFilters();
         }
@@ -400,9 +427,7 @@
     private void ShowCreateModal()
     {
         currentColaborador = new ColaboradorModel();
-        selectedCentros.Clear();
-        availableZonas.Clear();
-        availableCentros.Clear();
+        selectedCentroIds.Clear();
         isEditing = false;
         showModal = true;
         errorMessage = string.Empty;
@@ -413,9 +438,9 @@
         editingColaboradorId = colaborador.Id;
         currentColaborador = new ColaboradorModel
         {
-            IdSitio = colaborador.Compania?.IdSitio ?? 0,
+            IdSitio = colaborador.IdSitio,
             IdCompania = colaborador.IdCompania,
-            IdZona = 0, // Se cargará cuando se seleccione el sitio
+            IdZona = colaborador.IdZona,
             Identidad = colaborador.Identidad,
             Nombre = colaborador.Nombre,
             Puesto = colaborador.Puesto,
@@ -429,11 +454,8 @@
             IsBlackList = colaborador.IsBlackList
         };
         
-        // Cargar datos dependientes si hay sitio seleccionado
-        if (currentColaborador.IdSitio > 0)
-        {
-            await OnSitioChanged(new ChangeEventArgs { Value = currentColaborador.IdSitio.ToString() });
-        }
+        // Cargar centros seleccionados del colaborador
+        selectedCentroIds = colaborador.ColaboradorByCentros?.Select(cbc => cbc.IdCentro).ToList() ?? new List<int>();
         
         isEditing = true;
         showModal = true;
@@ -446,65 +468,28 @@
         errorMessage = string.Empty;
     }
 
-    private async Task OnSitioChanged(ChangeEventArgs e)
+    private async Task OnSitioChanged(int sitioId)
     {
-        if (int.TryParse(e.Value?.ToString(), out int sitioId) && sitioId > 0)
-        {
-            // Cargar empresas del sitio seleccionado
-            availableCompanies = (await CompanyService.GetAllCompaniesAsync())
-                .Where(c => c.IdSitio == sitioId).ToList();
-            
-            // Cargar zonas del sitio seleccionado
-            var allZonas = await ZonaService.GetAllZonasAsync();
-            availableZonas = allZonas.Where(z => z.IdSitio == sitioId).ToList();
-        }
-        else
-        {
-            availableCompanies.Clear();
-            availableZonas.Clear();
-        }
-        
-        // Limpiar selecciones dependientes
-        currentColaborador.IdCompania = 0;
-        currentColaborador.IdZona = 0;
-        availableCentros.Clear();
-        selectedCentros.Clear();
+        currentColaborador.IdSitio = sitioId;
         StateHasChanged();
     }
 
-    private async Task OnZonaChanged(ChangeEventArgs e)
+    private async Task OnZonaChanged(int zonaId)
     {
-        if (int.TryParse(e.Value?.ToString(), out int zonaId) && zonaId > 0)
-        {
-            // Cargar centros de la zona seleccionada
-            var allCentros = await CentroService.GetAllCentrosAsync();
-            availableCentros = allCentros.Where(c => c.IdZona == zonaId).ToList();
-        }
-        else
-        {
-            availableCentros.Clear();
-        }
-        
-        selectedCentros.Clear();
+        currentColaborador.IdZona = zonaId;
         StateHasChanged();
     }
 
-    private bool GetCentroSelected(int centroId)
+    private async Task OnEmpresaChanged(int empresaId)
     {
-        return selectedCentros.Contains(centroId);
+        currentColaborador.IdCompania = empresaId;
+        StateHasChanged();
     }
 
-    private void OnCentroChanged(int centroId, ChangeEventArgs e)
+    private async Task OnCentroIdsChanged(List<int> centroIds)
     {
-        bool isSelected = (bool)(e.Value ?? false);
-        if (isSelected && !selectedCentros.Contains(centroId))
-        {
-            selectedCentros.Add(centroId);
-        }
-        else if (!isSelected && selectedCentros.Contains(centroId))
-        {
-            selectedCentros.Remove(centroId);
-        }
+        selectedCentroIds = centroIds;
+        StateHasChanged();
     }
 
     private async Task HandleSave()
@@ -519,6 +504,8 @@
                 var updateDto = new UpdateColaboradorDto
                 {
                     Id = editingColaboradorId,
+                    IdSitio = currentColaborador.IdSitio,
+                    IdZona = currentColaborador.IdZona,
                     IdCompania = currentColaborador.IdCompania,
                     Identidad = currentColaborador.Identidad,
                     Nombre = currentColaborador.Nombre,
@@ -530,17 +517,17 @@
                     PlacaVehiculo = currentColaborador.PlacaVehiculo,
                     Comentario = currentColaborador.Comentario,
                     IsActive = currentColaborador.IsActive,
-                    IsBlackList = currentColaborador.IsBlackList
+                    IsBlackList = currentColaborador.IsBlackList,
+                    CentroIds = selectedCentroIds
                 };
                 await ColaboradorService.UpdateColaboradorAsync(updateDto);
-                
-                // TODO: Implementar asignación de centros al colaborador
-                // await AsignarCentrosAColaborador(editingColaboradorId, selectedCentros);
             }
             else
             {
                 var createDto = new CreateColaboradorDto
                 {
+                    IdSitio = currentColaborador.IdSitio,
+                    IdZona = currentColaborador.IdZona,
                     IdCompania = currentColaborador.IdCompania,
                     Identidad = currentColaborador.Identidad,
                     Nombre = currentColaborador.Nombre,
@@ -551,12 +538,10 @@
                     Tel3 = currentColaborador.Tel3,
                     PlacaVehiculo = currentColaborador.PlacaVehiculo,
                     Comentario = currentColaborador.Comentario,
-                    IsBlackList = currentColaborador.IsBlackList
+                    IsBlackList = currentColaborador.IsBlackList,
+                    CentroIds = selectedCentroIds
                 };
-                var nuevoColaborador = await ColaboradorService.CreateColaboradorAsync(createDto);
-                
-                // TODO: Implementar asignación de centros al colaborador
-                // await AsignarCentrosAColaborador(nuevoColaborador.Id, selectedCentros);
+                await ColaboradorService.CreateColaboradorAsync(createDto);
             }
 
             await LoadData();

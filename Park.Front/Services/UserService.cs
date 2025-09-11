@@ -277,5 +277,53 @@ namespace Park.Front.Services
                 throw;
             }
         }
+
+        public async Task<bool> AssignColaboradorToUserAsync(int userId, int colaboradorId)
+        {
+            try
+            {
+                var token = await _authService.GetValidTokenAsync();
+                if (string.IsNullOrEmpty(token))
+                    throw new UnauthorizedAccessException("No hay token válido");
+
+                _httpClient.DefaultRequestHeaders.Authorization = 
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+                var response = await _httpClient.PostAsync($"/api/user/{userId}/assign-colaborador/{colaboradorId}", null);
+                response.EnsureSuccessStatusCode();
+
+                var content = await response.Content.ReadAsStringAsync();
+                return JsonSerializer.Deserialize<bool>(content, _jsonOptions);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error asignando colaborador: {ex.Message}");
+                throw;
+            }
+        }
+
+        public async Task<bool> RemoveColaboradorFromUserAsync(int userId)
+        {
+            try
+            {
+                var token = await _authService.GetValidTokenAsync();
+                if (string.IsNullOrEmpty(token))
+                    throw new UnauthorizedAccessException("No hay token válido");
+
+                _httpClient.DefaultRequestHeaders.Authorization = 
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+                var response = await _httpClient.DeleteAsync($"/api/user/{userId}/colaborador");
+                response.EnsureSuccessStatusCode();
+
+                var content = await response.Content.ReadAsStringAsync();
+                return JsonSerializer.Deserialize<bool>(content, _jsonOptions);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error removiendo colaborador: {ex.Message}");
+                throw;
+            }
+        }
     }
 }

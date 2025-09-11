@@ -123,7 +123,9 @@ builder.Services.AddDbContext<ParkDbContext>(options =>
         builder.Services.AddScoped<IZonaService, ZonaService>();
         builder.Services.AddScoped<ICentroService, CentroService>();
         builder.Services.AddScoped<IColaboradorService, ColaboradorService>();
+        builder.Services.AddScoped<IVisitorService, VisitorService>();
         builder.Services.AddScoped<IVisitaService, VisitaService>();
+        builder.Services.AddScoped<ExcelService>();
         builder.Services.AddScoped<IReportService, ReportService>();
         builder.Services.AddScoped<INotificationService, NotificationService>();
         builder.Services.AddScoped<IAuditService, AuditService>();

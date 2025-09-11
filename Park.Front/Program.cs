@@ -25,6 +25,8 @@ builder.Services.AddScoped<ZonaService>();
 builder.Services.AddScoped<CentroService>();
 builder.Services.AddScoped<CompanyService>();
 builder.Services.AddScoped<ColaboradorService>();
+builder.Services.AddScoped<VisitorService>();
+builder.Services.AddScoped<VisitaService>();
 
 var app = builder.Build();
 

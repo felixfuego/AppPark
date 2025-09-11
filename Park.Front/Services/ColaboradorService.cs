@@ -221,5 +221,35 @@ namespace Park.Front.Services
                 throw;
             }
         }
+
+        public async Task<List<CompanyDto>> GetEmpresasByZonaAsync(int idZona)
+        {
+            try
+            {
+                await SetAuthorizationHeader();
+                var response = await _httpClient.GetFromJsonAsync<List<CompanyDto>>($"api/colaborador/empresas-by-zona/{idZona}");
+                return response ?? new List<CompanyDto>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener empresas por zona {IdZona}", idZona);
+                throw;
+            }
+        }
+
+        public async Task<List<CentroDto>> GetCentrosByZonaAsync(int idZona)
+        {
+            try
+            {
+                await SetAuthorizationHeader();
+                var response = await _httpClient.GetFromJsonAsync<List<CentroDto>>($"api/colaborador/centros-by-zona/{idZona}");
+                return response ?? new List<CentroDto>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener centros por zona {IdZona}", idZona);
+                throw;
+            }
+        }
     }
 }

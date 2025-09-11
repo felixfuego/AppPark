@@ -37,31 +37,6 @@ namespace Park.Api.Controllers
             return Ok(company);
         }
 
-        [HttpGet("name/{name}")]
-        public async Task<ActionResult<CompanyDto>> GetCompanyByName(string name)
-        {
-            var company = await _companyService.GetCompanyByNameAsync(name);
-            
-            if (company == null)
-            {
-                return NotFound("Empresa no encontrada");
-            }
-
-            return Ok(company);
-        }
-
-        [HttpGet("email/{email}")]
-        public async Task<ActionResult<CompanyDto>> GetCompanyByEmail(string email)
-        {
-            var company = await _companyService.GetCompanyByEmailAsync(email);
-            
-            if (company == null)
-            {
-                return NotFound("Empresa no encontrada");
-            }
-
-            return Ok(company);
-        }
 
         [HttpPost]
         [Authorize(Roles = "Admin")]
@@ -80,6 +55,17 @@ namespace Park.Api.Controllers
             catch (InvalidOperationException ex)
             {
                 return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                // Log detallado del error para debugging
+                Console.WriteLine($"Error al crear empresa: {ex.Message}");
+                Console.WriteLine($"StackTrace: {ex.StackTrace}");
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"Inner Exception: {ex.InnerException.Message}");
+                }
+                return StatusCode(500, $"Error interno del servidor: {ex.Message}");
             }
         }
 
@@ -130,14 +116,14 @@ namespace Park.Api.Controllers
             }
         }
 
-        [HttpGet("centros-by-sitio/{idSitio}")]
+        [HttpGet("zonas-by-sitio/{idSitio}")]
         [Authorize]
-        public async Task<ActionResult<IEnumerable<CentroDto>>> GetCentrosBySitio(int idSitio)
+        public async Task<ActionResult<IEnumerable<ZonaDto>>> GetZonasBySitio(int idSitio)
         {
             try
             {
-                var centros = await _companyService.GetCentrosBySitioAsync(idSitio);
-                return Ok(centros);
+                var zonas = await _companyService.GetZonasBySitioAsync(idSitio);
+                return Ok(zonas);
             }
             catch (Exception ex)
             {
@@ -153,14 +139,14 @@ namespace Park.Api.Controllers
             {
                 // Este endpoint es temporal para debuggear los datos
                 var sitios = await _companyService.GetAllCompaniesAsync();
-                var centros = await _companyService.GetCentrosBySitioAsync(1); // Probar con sitio ID 1
+                var zonas = await _companyService.GetZonasBySitioAsync(1); // Probar con sitio ID 1
                 
                 return Ok(new 
                 { 
                     message = "Datos de debug",
                     sitiosCount = sitios.Count(),
-                    centrosCount = centros.Count(),
-                    centros = centros.Select(c => new { c.Id, c.Nombre, c.IdZona })
+                    zonasCount = zonas.Count(),
+                    zonas = zonas.Select(z => new { z.Id, z.Nombre, z.IdSitio })
                 });
             }
             catch (Exception ex)

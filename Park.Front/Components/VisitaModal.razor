@@ -1,0 +1,470 @@
+@using Park.Comun.DTOs
+@using Park.Comun.Enums
+@using Park.Front.Services
+@inject IJSRuntime JSRuntime
+@inject VisitaService VisitaService
+@inject ColaboradorService ColaboradorService
+@inject CompanyService CompanyService
+@inject CentroService CentroService
+@inject AuthService AuthService
+
+<div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5);" tabindex="-1" aria-labelledby="visitaModalLabel" aria-hidden="false">
+    <div class="modal-dialog modal-xxl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="visitaModalLabel">@(IsEdit ? "Editar Visita" : "Nueva Visita Individual")</h5>
+                <button type="button" class="btn-close" @onclick="CloseModal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="visitaForm">
+                    <!-- Información de la Solicitud -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0"><i class="bi bi-file-text me-2"></i>Información de la Solicitud</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="mb-3">
+                                        <label for="numeroSolicitud" class="form-label fw-bold">Número de Solicitud <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="numeroSolicitud" @bind="createVisita.NumeroSolicitud" maxlength="50" required readonly>
+                                        <div class="form-text">Generado automáticamente</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="mb-3">
+                                        <label for="fecha" class="form-label fw-bold">Fecha de Visita <span class="text-danger">*</span></label>
+                                        <input type="datetime-local" class="form-control" id="fecha" @bind="fechaVisita" @bind:format="yyyy-MM-ddTHH:mm" required>
+                                        <div class="form-text">Fecha programada para la visita</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rango de Validez de la Visita -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0"><i class="bi bi-calendar-range me-2"></i>Rango de Validez de la Visita</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="mb-3">
+                                        <label for="fechaInicio" class="form-label fw-bold">Fecha de Inicio <span class="text-danger">*</span></label>
+                                        <input type="datetime-local" class="form-control" id="fechaInicio" @bind="fechaInicio" @bind:format="yyyy-MM-ddTHH:mm" required>
+                                        <div class="form-text">
+                                            <i class="bi bi-info-circle me-1"></i>Fecha desde cuando la visita es válida
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="mb-3">
+                                        <label for="fechaVencimiento" class="form-label fw-bold">Fecha de Vencimiento <span class="text-danger">*</span></label>
+                                        <input type="datetime-local" class="form-control" id="fechaVencimiento" @bind="fechaVencimiento" @bind:format="yyyy-MM-ddTHH:mm" required>
+                                        <div class="form-text">
+                                            <i class="bi bi-exclamation-triangle me-1"></i>Fecha hasta cuando la visita es válida
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tipo de Visita y Transporte -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0"><i class="bi bi-tags me-2"></i>Clasificación de la Visita</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="mb-3">
+                                        <label for="tipoVisita" class="form-label fw-bold">Tipo de Visita <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="tipoVisita" @bind="createVisita.TipoVisita" required>
+                                            <option value="">Seleccionar tipo...</option>
+                                            <option value="@TipoVisita.Contratista">Contratista</option>
+                                            <option value="@TipoVisita.Empleado">Empleado</option>
+                                            <option value="@TipoVisita.Proveedor">Proveedor</option>
+                                            <option value="@TipoVisita.Visitante">Visitante</option>
+                                            <option value="@TipoVisita.Cliente">Cliente</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="mb-3">
+                                        <label for="tipoTransporte" class="form-label fw-bold">Tipo de Transporte <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="tipoTransporte" @bind="createVisita.TipoTransporte" required>
+                                            <option value="">Seleccionar transporte...</option>    
+                                            <option value="@TipoTransporte.Vehiculo">Vehículo</option>
+                                            <option value="@TipoTransporte.Moto">Moto</option>
+                                            <option value="@TipoTransporte.Bicicleta">Bicicleta</option>
+                                            <option value="@TipoTransporte.Peaton">Peatón</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Información del Visitante -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0"><i class="bi bi-person-badge me-2"></i>Información del Visitante</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="mb-3">
+                                        <label for="nombreCompleto" class="form-label fw-bold">Nombre Completo <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="nombreCompleto" @bind="createVisita.NombreCompleto" maxlength="200" required placeholder="Ej: Juan Pérez García">
+                                        <div class="form-text">
+                                            <i class="bi bi-person me-1"></i>Nombre completo del visitante
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="mb-3">
+                                        <label for="identidadVisitante" class="form-label fw-bold">Número de Identidad <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" id="identidadVisitante" @bind="createVisita.IdentidadVisitante" maxlength="50" required placeholder="Ej: 1234567890">
+                                            <button class="btn btn-outline-secondary" type="button" title="Buscar visitante existente">
+                                                <i class="bi bi-search"></i>
+                                            </button>
+                                        </div>
+                                        <div class="form-text">
+                                            <i class="bi bi-card-text me-1"></i>Número de cédula o documento de identidad
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="mb-3">
+                                        <label for="procedencia" class="form-label fw-bold">Procedencia <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="procedencia" @bind="createVisita.Procedencia" maxlength="200" required placeholder="Ej: Empresa ABC, Ciudad">
+                                        <div class="form-text">
+                                            <i class="bi bi-building me-1"></i>Empresa o lugar de procedencia
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="mb-3">
+                                        <label for="placaVehiculo" class="form-label fw-bold">Placa del Vehículo</label>
+                                        <input type="text" class="form-control" id="placaVehiculo" @bind="createVisita.PlacaVehiculo" maxlength="20" placeholder="Ej: ABC-123">
+                                        <div class="form-text">
+                                            <i class="bi bi-car-front me-1"></i>Opcional - Solo si viene en vehículo
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Información de la Visita -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0"><i class="bi bi-geo-alt me-2"></i>Detalles de la Visita</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="mb-3">
+                                        <label for="destino" class="form-label fw-bold">Destino <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="destino" @bind="createVisita.Destino" maxlength="200" required placeholder="Ej: Oficina Principal, Área de Producción">
+                                        <div class="form-text">
+                                            <i class="bi bi-geo-alt me-1"></i>Lugar específico dentro de la empresa
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="mb-3">
+                                        <label for="motivoVisita" class="form-label fw-bold">Motivo de la Visita <span class="text-danger">*</span></label>
+                                        <textarea class="form-control" id="motivoVisita" @bind="createVisita.MotivoVisita" maxlength="500" rows="3" required placeholder="Describa el motivo de la visita..."></textarea>
+                                        <div class="form-text">
+                                            <i class="bi bi-chat-text me-1"></i>Descripción detallada del propósito
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Asignaciones y Ubicación -->
+                    <div class="card mb-4">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0"><i class="bi bi-building me-2"></i>Asignaciones y Ubicación</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="mb-3">
+                                        <label for="idCompania" class="form-label fw-bold">Empresa <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="idCompania" @bind="createVisita.IdCompania" required>
+                                            <option value="">Seleccionar empresa...</option>
+                                            @foreach (var empresa in empresas)
+                                            {
+                                                <option value="@empresa.Id">@empresa.Name</option>
+                                            }
+                                        </select>
+                                        <div class="form-text">
+                                            <i class="bi bi-building me-1"></i>Empresa donde se realizará la visita
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="mb-3">
+                                        <label for="idCentro" class="form-label fw-bold">Centro <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="idCentro" @bind="createVisita.IdCentro" required>
+                                            <option value="">Seleccionar centro...</option>
+                                            @foreach (var centro in centros)
+                                            {
+                                                <option value="@centro.Id">@centro.Nombre</option>
+                                            }
+                                        </select>
+                                        <div class="form-text">
+                                            <i class="bi bi-geo-alt me-1"></i>Centro específico dentro de la empresa
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="mb-3">
+                                        <label for="idSolicitante" class="form-label fw-bold">Solicitante <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="idSolicitante" @bind="createVisita.IdSolicitante" required>
+                                            <option value="">Seleccionar solicitante...</option>
+                                            @foreach (var colaborador in colaboradores)
+                                            {
+                                                <option value="@colaborador.Id">@colaborador.Nombre</option>
+                                            }
+                                        </select>
+                                        <div class="form-text">
+                                            <i class="bi bi-person me-1"></i>Colaborador que solicita la visita
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="mb-3">
+                                        <label for="idRecibidoPor" class="form-label fw-bold">Recibido Por <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="idRecibidoPor" @bind="createVisita.IdRecibidoPor" required>
+                                            <option value="">Seleccionar responsable...</option>
+                                            @foreach (var colaborador in colaboradores)
+                                            {
+                                                <option value="@colaborador.Id">@colaborador.Nombre</option>
+                                            }
+                                        </select>
+                                        <div class="form-text">
+                                            <i class="bi bi-person-check me-1"></i>Colaborador que recibirá al visitante
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @onclick="CloseModal">Cancelar</button>
+                <button type="button" class="btn btn-primary" @onclick="SaveVisita" disabled="@isLoading">
+                    @if (isLoading)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    }
+                    @(IsEdit ? "Actualizar" : "Crear") Visita
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public VisitaDto? Visita { get; set; }
+    [Parameter] public EventCallback OnSave { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private CreateVisitaDto createVisita = new();
+    private UpdateVisitaDto updateVisita = new();
+    private bool isLoading = false;
+    private bool IsEdit => Visita != null;
+
+    // Datos para dropdowns
+    private List<CompanyDto> empresas = new();
+    private List<CentroDto> centros = new();
+    private List<ColaboradorDto> colaboradores = new();
+
+    // Fecha como DateTime para el binding
+    private DateTime fechaVisita
+    {
+        get => IsEdit ? Visita!.Fecha : DateTime.Now;
+        set
+        {
+            if (IsEdit)
+            {
+                updateVisita.Fecha = value;
+            }
+            else
+            {
+                createVisita.Fecha = value;
+            }
+        }
+    }
+
+    // Fecha de inicio como DateTime para el binding
+    private DateTime fechaInicio
+    {
+        get => IsEdit ? Visita!.FechaInicio : DateTime.Now;
+        set
+        {
+            if (IsEdit)
+            {
+                updateVisita.FechaInicio = value;
+            }
+            else
+            {
+                createVisita.FechaInicio = value;
+            }
+        }
+    }
+
+    // Fecha de vencimiento como DateTime para el binding
+    private DateTime fechaVencimiento
+    {
+        get => IsEdit ? Visita!.FechaVencimiento : DateTime.Now.AddDays(1);
+        set
+        {
+            if (IsEdit)
+            {
+                updateVisita.FechaVencimiento = value;
+            }
+            else
+            {
+                createVisita.FechaVencimiento = value;
+            }
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDropdownData();
+        
+        if (IsEdit)
+        {
+            // Cargar datos para edición
+            updateVisita = new UpdateVisitaDto
+            {
+                Id = Visita!.Id,
+                NumeroSolicitud = Visita.NumeroSolicitud,
+                Fecha = Visita.Fecha,
+                FechaInicio = Visita.FechaInicio,
+                FechaVencimiento = Visita.FechaVencimiento,
+                TipoVisita = Visita.TipoVisita,
+                TipoTransporte = Visita.TipoTransporte,
+                NombreCompleto = Visita.NombreCompleto,
+                IdentidadVisitante = Visita.IdentidadVisitante,
+                PlacaVehiculo = Visita.PlacaVehiculo,
+                Procedencia = Visita.Procedencia,
+                Destino = Visita.Destino,
+                MotivoVisita = Visita.MotivoVisita,
+                IdSolicitante = Visita.IdSolicitante,
+                IdRecibidoPor = Visita.IdRecibidoPor,
+                IdCompania = Visita.IdCompania,
+                IdCentro = Visita.IdCentro
+            };
+        }
+        else
+        {
+            // Generar número de solicitud automático
+            createVisita.NumeroSolicitud = VisitaService.GenerarNumeroSolicitud();
+        }
+    }
+
+    private async Task LoadDropdownData()
+    {
+        try
+        {
+            var empresasTask = CompanyService.GetAllCompaniesAsync();
+            var centrosTask = CentroService.GetAllCentrosAsync();
+            var colaboradoresTask = ColaboradorService.GetAllColaboradoresAsync();
+
+            await Task.WhenAll(empresasTask, centrosTask, colaboradoresTask);
+
+            empresas = empresasTask.Result;
+            centros = centrosTask.Result;
+            colaboradores = colaboradoresTask.Result;
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error al cargar datos: {ex.Message}");
+        }
+    }
+
+    private async Task SaveVisita()
+    {
+        if (isLoading) return;
+
+        // Validaciones de fechas
+        if (fechaInicio >= fechaVencimiento)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "La fecha de inicio debe ser anterior a la fecha de vencimiento");
+            return;
+        }
+
+        if (fechaVencimiento <= DateTime.Now)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", "La fecha de vencimiento debe ser posterior a la fecha actual");
+            return;
+        }
+
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            if (IsEdit)
+            {
+                await VisitaService.UpdateVisitaAsync(updateVisita);
+                await JSRuntime.InvokeVoidAsync("alert", "Visita actualizada exitosamente");
+            }
+            else
+            {
+                await VisitaService.CreateVisitaAsync(createVisita);
+                await JSRuntime.InvokeVoidAsync("alert", "Visita creada exitosamente");
+            }
+
+            await OnSave.InvokeAsync();
+            await OnCancel.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CloseModal()
+    {
+        await OnCancel.InvokeAsync();
+    }
+}
+}

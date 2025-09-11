@@ -20,8 +20,10 @@ namespace Park.Api.Data
         public DbSet<Centro> Centros { get; set; }
         public DbSet<Company> Companies { get; set; }
         public DbSet<CompanyCentro> CompanyCentros { get; set; }
+        public DbSet<CompanyZona> CompanyZonas { get; set; }
         public DbSet<Colaborador> Colaboradores { get; set; }
         public DbSet<ColaboradorByCentro> ColaboradorByCentros { get; set; }
+        public DbSet<Visitor> Visitors { get; set; }
         public DbSet<Visita> Visitas { get; set; }
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
@@ -44,6 +46,18 @@ namespace Park.Api.Data
                 // Índices únicos
                 entity.HasIndex(e => e.Username).IsUnique();
                 entity.HasIndex(e => e.Email).IsUnique();
+                
+                // Relación con Colaborador (opcional)
+                entity.HasOne(e => e.Colaborador)
+                      .WithMany()
+                      .HasForeignKey(e => e.IdColaborador)
+                      .OnDelete(DeleteBehavior.SetNull);
+                      
+                // Relación con Company (opcional)
+                entity.HasOne(e => e.Compania)
+                      .WithMany()
+                      .HasForeignKey(e => e.IdCompania)
+                      .OnDelete(DeleteBehavior.SetNull);
             });
 
             // Configuración de Role
@@ -147,12 +161,6 @@ namespace Park.Api.Data
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
                 entity.Property(e => e.Description).HasMaxLength(500);
-                entity.Property(e => e.Address).IsRequired().HasMaxLength(300);
-                entity.Property(e => e.Phone).HasMaxLength(20);
-                entity.Property(e => e.Email).HasMaxLength(100);
-                entity.Property(e => e.ContactPerson).IsRequired().HasMaxLength(100);
-                entity.Property(e => e.ContactPhone).HasMaxLength(20);
-                entity.Property(e => e.ContactEmail).HasMaxLength(100);
                 
                 // Relación con Sitio
                 entity.HasOne(e => e.Sitio)
@@ -162,27 +170,27 @@ namespace Park.Api.Data
                       
                 // Índices
                 entity.HasIndex(e => e.Name).IsUnique();
-                entity.HasIndex(e => e.Email).IsUnique();
             });
 
-            // Configuración de CompanyCentro
-            modelBuilder.Entity<CompanyCentro>(entity =>
+
+            // Configuración de CompanyZona
+            modelBuilder.Entity<CompanyZona>(entity =>
             {
                 entity.HasKey(e => e.Id);
                 
                 // Relaciones
                 entity.HasOne(e => e.Compania)
-                      .WithMany(c => c.CompanyCentros)
+                      .WithMany(c => c.CompanyZonas)
                       .HasForeignKey(e => e.IdCompania)
                       .OnDelete(DeleteBehavior.Cascade);
                       
-                entity.HasOne(e => e.Centro)
-                      .WithMany(c => c.CompanyCentros)
-                      .HasForeignKey(e => e.IdCentro)
+                entity.HasOne(e => e.Zona)
+                      .WithMany()
+                      .HasForeignKey(e => e.IdZona)
                       .OnDelete(DeleteBehavior.Cascade);
                       
                 // Índice compuesto para evitar duplicados
-                entity.HasIndex(e => new { e.IdCompania, e.IdCentro }).IsUnique();
+                entity.HasIndex(e => new { e.IdCompania, e.IdZona }).IsUnique();
             });
 
             // Configuración de Colaborador
@@ -228,6 +236,27 @@ namespace Park.Api.Data
                       
                 // Índice compuesto para evitar duplicados
                 entity.HasIndex(e => new { e.IdCentro, e.IdColaborador }).IsUnique();
+            });
+
+            // Configuración de Visitor
+            modelBuilder.Entity<Visitor>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.FirstName).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.LastName).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Email).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Phone).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.DocumentType).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.DocumentNumber).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.Company).IsRequired().HasMaxLength(200);
+                
+                // Índices únicos
+                entity.HasIndex(e => e.Email).IsUnique();
+                entity.HasIndex(e => new { e.DocumentType, e.DocumentNumber }).IsUnique();
+                
+                // Índices de búsqueda
+                entity.HasIndex(e => e.Company);
+                entity.HasIndex(e => e.IsActive);
             });
 
             // Configuración de Visita

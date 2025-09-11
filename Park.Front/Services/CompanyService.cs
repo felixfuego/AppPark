@@ -147,17 +147,17 @@ namespace Park.Front.Services
             }
         }
 
-        public async Task<List<CentroDto>> GetCentrosBySitioAsync(int idSitio)
+        public async Task<List<ZonaDto>> GetZonasBySitioAsync(int idSitio)
         {
             try
             {
                 await SetAuthorizationHeader();
-                var response = await _httpClient.GetFromJsonAsync<List<CentroDto>>($"api/company/centros-by-sitio/{idSitio}");
-                return response ?? new List<CentroDto>();
+                var response = await _httpClient.GetFromJsonAsync<List<ZonaDto>>($"api/company/zonas-by-sitio/{idSitio}");
+                return response ?? new List<ZonaDto>();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al obtener centros por sitio {IdSitio}", idSitio);
+                _logger.LogError(ex, "Error al obtener zonas por sitio {IdSitio}", idSitio);
                 throw;
             }
         }

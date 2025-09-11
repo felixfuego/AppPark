@@ -59,6 +59,27 @@ namespace Park.Front.Services
             }
         }
 
+        public async Task<List<ZonaDto>> GetZonasBySitioAsync(int idSitio)
+        {
+            try
+            {
+                var token = await _authService.GetValidTokenAsync();
+                if (string.IsNullOrEmpty(token))
+                    throw new UnauthorizedAccessException("No hay token válido");
+
+                _httpClient.DefaultRequestHeaders.Authorization = 
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+                var response = await _httpClient.GetFromJsonAsync<List<ZonaDto>>($"api/zona/sitio/{idSitio}");
+                return response ?? new List<ZonaDto>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener zonas del sitio {IdSitio}", idSitio);
+                throw;
+            }
+        }
+
         public async Task<ZonaDto> CreateZonaAsync(CreateZonaDto createZonaDto)
         {
             try

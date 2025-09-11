@@ -22,6 +22,83 @@ namespace Park.Api.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("Park.Comun.Models.AuditLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Accion")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DatosAnteriores")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DatosNuevos")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Descripcion")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Entidad")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ErrorMessage")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("Exitoso")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("FechaAccion")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("IdEntidad")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IdUsuario")
+                        .HasColumnType("int");
+
+                    b.Property<string>("IpAddress")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("StackTrace")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserAgent")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("UsuarioId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UsuarioNombre")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UsuarioId");
+
+                    b.ToTable("AuditLogs");
+                });
+
             modelBuilder.Entity("Park.Comun.Models.Centro", b =>
                 {
                     b.Property<int>("Id")
@@ -182,26 +259,6 @@ namespace Park.Api.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Address")
-                        .IsRequired()
-                        .HasMaxLength(300)
-                        .HasColumnType("nvarchar(300)");
-
-                    b.Property<string>("ContactEmail")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("ContactPerson")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("ContactPhone")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -209,11 +266,6 @@ namespace Park.Api.Migrations
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
 
                     b.Property<int>("IdSitio")
                         .HasColumnType("int");
@@ -226,18 +278,10 @@ namespace Park.Api.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.Property<string>("Phone")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("Email")
-                        .IsUnique();
 
                     b.HasIndex("IdSitio");
 
@@ -254,6 +298,12 @@ namespace Park.Api.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CentroId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CompaniaId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -272,12 +322,187 @@ namespace Park.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("IdCentro");
+                    b.HasIndex("CentroId");
 
-                    b.HasIndex("IdCompania", "IdCentro")
-                        .IsUnique();
+                    b.HasIndex("CompaniaId");
 
                     b.ToTable("CompanyCentros");
+                });
+
+            modelBuilder.Entity("Park.Comun.Models.CompanyZona", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("IdCompania")
+                        .HasColumnType("int");
+
+                    b.Property<int>("IdZona")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("IdZona");
+
+                    b.HasIndex("IdCompania", "IdZona")
+                        .IsUnique();
+
+                    b.ToTable("CompanyZonas");
+                });
+
+            modelBuilder.Entity("Park.Comun.Models.FileEntity", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Descripcion")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Entidad")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Extension")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("FechaEliminacion")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("FechaSubida")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("IdEntidad")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IdUsuario")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("NombreArchivo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("NombreOriginal")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("RutaArchivo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<long>("TamañoBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("Tipo")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TipoMime")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("UsuarioId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UsuarioId");
+
+                    b.ToTable("Files");
+                });
+
+            modelBuilder.Entity("Park.Comun.Models.Notification", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("ColaboradorId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("FechaCreacion")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("FechaExpiracion")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("FechaLeida")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("IdColaborador")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IdUsuario")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IdVisita")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("Leida")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Mensaje")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("Prioridad")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Tipo")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Titulo")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("UsuarioId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("VisitaId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ColaboradorId");
+
+                    b.HasIndex("UsuarioId");
+
+                    b.HasIndex("VisitaId");
+
+                    b.ToTable("Notifications");
                 });
 
             modelBuilder.Entity("Park.Comun.Models.Role", b =>
@@ -361,9 +586,6 @@ namespace Park.Api.Migrations
                     b.Property<int?>("ColaboradorId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("CompaniaId")
-                        .HasColumnType("int");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -416,10 +638,12 @@ namespace Park.Api.Migrations
 
                     b.HasIndex("ColaboradorId");
 
-                    b.HasIndex("CompaniaId");
-
                     b.HasIndex("Email")
                         .IsUnique();
+
+                    b.HasIndex("IdColaborador");
+
+                    b.HasIndex("IdCompania");
 
                     b.HasIndex("Username")
                         .IsUnique();
@@ -478,16 +702,25 @@ namespace Park.Api.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<bool>("EsVisitaMasiva")
+                        .HasColumnType("bit");
+
                     b.Property<int>("Estado")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("Fecha")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime>("FechaInicio")
+                        .HasColumnType("datetime2");
+
                     b.Property<DateTime?>("FechaLlegada")
                         .HasColumnType("datetime2");
 
                     b.Property<DateTime?>("FechaSalida")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("FechaVencimiento")
                         .HasColumnType("datetime2");
 
                     b.Property<int>("IdCentro")
@@ -500,6 +733,12 @@ namespace Park.Api.Migrations
                         .HasColumnType("int");
 
                     b.Property<int>("IdSolicitante")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IdVisitaPadre")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("IdVisitor")
                         .HasColumnType("int");
 
                     b.Property<string>("IdentidadVisitante")
@@ -544,6 +783,12 @@ namespace Park.Api.Migrations
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<int?>("VisitaPadreId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("VisitorId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Estado");
@@ -561,7 +806,78 @@ namespace Park.Api.Migrations
                     b.HasIndex("NumeroSolicitud")
                         .IsUnique();
 
+                    b.HasIndex("VisitaPadreId");
+
+                    b.HasIndex("VisitorId");
+
                     b.ToTable("Visitas");
+                });
+
+            modelBuilder.Entity("Park.Comun.Models.Visitor", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Company")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DocumentNumber")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("DocumentType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Phone")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Company");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("DocumentType", "DocumentNumber")
+                        .IsUnique();
+
+                    b.ToTable("Visitors");
                 });
 
             modelBuilder.Entity("Park.Comun.Models.Zona", b =>
@@ -600,6 +916,15 @@ namespace Park.Api.Migrations
                         .IsUnique();
 
                     b.ToTable("Zonas");
+                });
+
+            modelBuilder.Entity("Park.Comun.Models.AuditLog", b =>
+                {
+                    b.HasOne("Park.Comun.Models.User", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId");
+
+                    b.Navigation("Usuario");
                 });
 
             modelBuilder.Entity("Park.Comun.Models.Centro", b =>
@@ -658,13 +983,13 @@ namespace Park.Api.Migrations
                 {
                     b.HasOne("Park.Comun.Models.Centro", "Centro")
                         .WithMany("CompanyCentros")
-                        .HasForeignKey("IdCentro")
+                        .HasForeignKey("CentroId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("Park.Comun.Models.Company", "Compania")
-                        .WithMany("CompanyCentros")
-                        .HasForeignKey("IdCompania")
+                        .WithMany()
+                        .HasForeignKey("CompaniaId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -673,15 +998,70 @@ namespace Park.Api.Migrations
                     b.Navigation("Compania");
                 });
 
-            modelBuilder.Entity("Park.Comun.Models.User", b =>
+            modelBuilder.Entity("Park.Comun.Models.CompanyZona", b =>
+                {
+                    b.HasOne("Park.Comun.Models.Company", "Compania")
+                        .WithMany("CompanyZonas")
+                        .HasForeignKey("IdCompania")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Park.Comun.Models.Zona", "Zona")
+                        .WithMany()
+                        .HasForeignKey("IdZona")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Compania");
+
+                    b.Navigation("Zona");
+                });
+
+            modelBuilder.Entity("Park.Comun.Models.FileEntity", b =>
+                {
+                    b.HasOne("Park.Comun.Models.User", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId");
+
+                    b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("Park.Comun.Models.Notification", b =>
                 {
                     b.HasOne("Park.Comun.Models.Colaborador", "Colaborador")
+                        .WithMany()
+                        .HasForeignKey("ColaboradorId");
+
+                    b.HasOne("Park.Comun.Models.User", "Usuario")
+                        .WithMany()
+                        .HasForeignKey("UsuarioId");
+
+                    b.HasOne("Park.Comun.Models.Visita", "Visita")
+                        .WithMany()
+                        .HasForeignKey("VisitaId");
+
+                    b.Navigation("Colaborador");
+
+                    b.Navigation("Usuario");
+
+                    b.Navigation("Visita");
+                });
+
+            modelBuilder.Entity("Park.Comun.Models.User", b =>
+                {
+                    b.HasOne("Park.Comun.Models.Colaborador", null)
                         .WithMany("Users")
                         .HasForeignKey("ColaboradorId");
 
+                    b.HasOne("Park.Comun.Models.Colaborador", "Colaborador")
+                        .WithMany()
+                        .HasForeignKey("IdColaborador")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("Park.Comun.Models.Company", "Compania")
                         .WithMany()
-                        .HasForeignKey("CompaniaId");
+                        .HasForeignKey("IdCompania")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Colaborador");
 
@@ -733,6 +1113,14 @@ namespace Park.Api.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Park.Comun.Models.Visita", "VisitaPadre")
+                        .WithMany("VisitasHijas")
+                        .HasForeignKey("VisitaPadreId");
+
+                    b.HasOne("Park.Comun.Models.Visitor", "Visitor")
+                        .WithMany()
+                        .HasForeignKey("VisitorId");
+
                     b.Navigation("Centro");
 
                     b.Navigation("Compania");
@@ -740,6 +1128,10 @@ namespace Park.Api.Migrations
                     b.Navigation("RecibidoPor");
 
                     b.Navigation("Solicitante");
+
+                    b.Navigation("VisitaPadre");
+
+                    b.Navigation("Visitor");
                 });
 
             modelBuilder.Entity("Park.Comun.Models.Zona", b =>
@@ -775,7 +1167,7 @@ namespace Park.Api.Migrations
                 {
                     b.Navigation("Colaboradores");
 
-                    b.Navigation("CompanyCentros");
+                    b.Navigation("CompanyZonas");
 
                     b.Navigation("Visitas");
                 });
@@ -795,6 +1187,11 @@ namespace Park.Api.Migrations
             modelBuilder.Entity("Park.Comun.Models.User", b =>
                 {
                     b.Navigation("UserRoles");
+                });
+
+            modelBuilder.Entity("Park.Comun.Models.Visita", b =>
+                {
+                    b.Navigation("VisitasHijas");
                 });
 
             modelBuilder.Entity("Park.Comun.Models.Zona", b =>

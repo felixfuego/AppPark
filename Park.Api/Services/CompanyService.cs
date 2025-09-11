@@ -18,42 +18,47 @@ namespace Park.Api.Services
         public async Task<IEnumerable<CompanyDto>> GetAllCompaniesAsync()
         {
             var companies = await _context.Companies
-                .Include(c => c.CompanyCentros)
-                    .ThenInclude(cc => cc.Centro)
+                .Include(c => c.CompanyZonas)
+                    .ThenInclude(cz => cz.Zona)
                 .Where(c => c.IsActive)
                 .ToListAsync();
 
-            return companies.Select(MapToDto);
+            var result = new List<CompanyDto>();
+            foreach (var company in companies)
+            {
+                result.Add(await MapToDtoAsync(company));
+            }
+            return result;
         }
 
         public async Task<CompanyDto?> GetCompanyByIdAsync(int id)
         {
             var company = await _context.Companies
-                .Include(c => c.CompanyCentros)
-                    .ThenInclude(cc => cc.Centro)
+                .Include(c => c.CompanyZonas)
+                    .ThenInclude(cz => cz.Zona)
                 .FirstOrDefaultAsync(c => c.Id == id && c.IsActive);
 
-            return company != null ? MapToDto(company) : null;
+            return company != null ? await MapToDtoAsync(company) : null;
         }
 
         public async Task<CompanyDto?> GetCompanyByNameAsync(string name)
         {
             var company = await _context.Companies
+                .Include(c => c.CompanyZonas)
+                    .ThenInclude(cz => cz.Zona)
                 .FirstOrDefaultAsync(c => c.Name == name && c.IsActive);
 
-            return company != null ? MapToDto(company) : null;
+            return company != null ? await MapToDtoAsync(company) : null;
         }
 
-        public async Task<CompanyDto?> GetCompanyByEmailAsync(string email)
-        {
-            var company = await _context.Companies
-                .FirstOrDefaultAsync(c => c.Email == email && c.IsActive);
-
-            return company != null ? MapToDto(company) : null;
-        }
 
         public async Task<CompanyDto> CreateCompanyAsync(CreateCompanyDto createCompanyDto)
         {
+            // Log temporal para debugging
+            Console.WriteLine($"Creando empresa: {createCompanyDto.Name}");
+            Console.WriteLine($"IdSitio: {createCompanyDto.IdSitio}");
+            Console.WriteLine($"ZonaIds: {(createCompanyDto.ZonaIds?.Count ?? 0)} elementos");
+            
             // Verificar si la empresa ya existe
             var existingCompany = await _context.Companies
                 .FirstOrDefaultAsync(c => c.Name == createCompanyDto.Name);
@@ -70,17 +75,17 @@ namespace Park.Api.Services
                 throw new InvalidOperationException($"El sitio con ID {createCompanyDto.IdSitio} no existe o no está activo.");
             }
 
-            // Verificar que los centros existen y pertenecen al sitio
-            if (createCompanyDto.CentroIds.Any())
-            {
-                var centrosExisten = await _context.Centros
-                    .Include(c => c.Zona)
-                    .Where(c => createCompanyDto.CentroIds.Contains(c.Id) && c.IsActive)
-                    .AllAsync(c => c.Zona.IdSitio == createCompanyDto.IdSitio);
 
-                if (!centrosExisten)
+            // Verificar que las zonas existen y pertenecen al sitio
+            if (createCompanyDto.ZonaIds != null && createCompanyDto.ZonaIds.Any())
+            {
+                var zonasExisten = await _context.Zonas
+                    .Where(z => createCompanyDto.ZonaIds.Contains(z.Id) && z.IsActive && z.IdSitio == createCompanyDto.IdSitio)
+                    .CountAsync() == createCompanyDto.ZonaIds.Count;
+
+                if (!zonasExisten)
                 {
-                    throw new InvalidOperationException("Uno o más centros no existen, no están activos o no pertenecen al sitio seleccionado.");
+                    throw new InvalidOperationException("Uno o más zonas no existen, no están activas o no pertenecen al sitio seleccionado.");
                 }
             }
 
@@ -88,48 +93,46 @@ namespace Park.Api.Services
             {
                 Name = createCompanyDto.Name,
                 Description = createCompanyDto.Description,
-                Address = "Dirección por defecto", // Campo requerido en el modelo
-                Phone = "000-000-000", // Campo requerido en el modelo
-                Email = "empresa@ejemplo.com", // Campo requerido en el modelo
-                ContactPerson = "Contacto por defecto", // Campo requerido en el modelo
-                ContactPhone = "000-000-000", // Campo requerido en el modelo
-                ContactEmail = "contacto@ejemplo.com", // Campo requerido en el modelo
                 IdSitio = createCompanyDto.IdSitio,
                 IsActive = true,
                 CreatedAt = DateTime.UtcNow
             };
 
+            Console.WriteLine("Agregando empresa a la base de datos...");
             _context.Companies.Add(company);
             await _context.SaveChangesAsync();
+            Console.WriteLine("Empresa guardada exitosamente en la base de datos");
 
-            // Agregar centros de acceso
-            if (createCompanyDto.CentroIds.Any())
+
+            // Agregar zonas de acceso
+            if (createCompanyDto.ZonaIds != null && createCompanyDto.ZonaIds.Any())
             {
-                var companyCentros = createCompanyDto.CentroIds.Select(centroId => new CompanyCentro
+                var companyZonas = createCompanyDto.ZonaIds.Select(zonaId => new CompanyZona
                 {
                     IdCompania = company.Id,
-                    IdCentro = centroId,
+                    IdZona = zonaId,
                     IsActive = true,
                     CreatedAt = DateTime.UtcNow
                 });
 
-                _context.CompanyCentros.AddRange(companyCentros);
-                await _context.SaveChangesAsync();
+                _context.CompanyZonas.AddRange(companyZonas);
             }
 
-            // Recargar la empresa con los centros para devolver el DTO completo
-            var companyWithCentros = await _context.Companies
-                .Include(c => c.CompanyCentros)
-                    .ThenInclude(cc => cc.Centro)
+            await _context.SaveChangesAsync();
+
+            // Recargar la empresa con los centros y zonas para devolver el DTO completo
+            var companyWithRelations = await _context.Companies
+                .Include(c => c.CompanyZonas)
+                    .ThenInclude(cz => cz.Zona)
                 .FirstOrDefaultAsync(c => c.Id == company.Id);
 
-            return MapToDto(companyWithCentros!);
+            return await MapToDtoAsync(companyWithRelations!);
         }
 
         public async Task<CompanyDto?> UpdateCompanyAsync(int id, UpdateCompanyDto updateCompanyDto)
         {
             var company = await _context.Companies
-                .Include(c => c.CompanyCentros)
+                .Include(c => c.CompanyZonas)
                 .FirstOrDefaultAsync(c => c.Id == id);
             
             if (company == null)
@@ -153,17 +156,17 @@ namespace Park.Api.Services
                 throw new InvalidOperationException($"El sitio con ID {updateCompanyDto.IdSitio} no existe o no está activo.");
             }
 
-            // Verificar que los centros existen y pertenecen al sitio
-            if (updateCompanyDto.CentroIds.Any())
-            {
-                var centrosExisten = await _context.Centros
-                    .Include(c => c.Zona)
-                    .Where(c => updateCompanyDto.CentroIds.Contains(c.Id) && c.IsActive)
-                    .AllAsync(c => c.Zona.IdSitio == updateCompanyDto.IdSitio);
 
-                if (!centrosExisten)
+            // Verificar que las zonas existen y pertenecen al sitio
+            if (updateCompanyDto.ZonaIds != null && updateCompanyDto.ZonaIds.Any())
+            {
+                var zonasExisten = await _context.Zonas
+                    .Where(z => updateCompanyDto.ZonaIds.Contains(z.Id) && z.IsActive && z.IdSitio == updateCompanyDto.IdSitio)
+                    .CountAsync() == updateCompanyDto.ZonaIds.Count;
+
+                if (!zonasExisten)
                 {
-                    throw new InvalidOperationException("Uno o más centros no existen, no están activos o no pertenecen al sitio seleccionado.");
+                    throw new InvalidOperationException("Uno o más zonas no existen, no están activas o no pertenecen al sitio seleccionado.");
                 }
             }
 
@@ -174,34 +177,35 @@ namespace Park.Api.Services
             company.IsActive = updateCompanyDto.IsActive;
             company.UpdatedAt = DateTime.UtcNow;
 
-            // Actualizar centros de acceso
-            // Eliminar centros existentes
-            var existingCentros = company.CompanyCentros.ToList();
-            _context.CompanyCentros.RemoveRange(existingCentros);
 
-            // Agregar nuevos centros
-            if (updateCompanyDto.CentroIds.Any())
+            // Actualizar zonas de acceso
+            // Eliminar zonas existentes
+            var existingZonas = company.CompanyZonas.ToList();
+            _context.CompanyZonas.RemoveRange(existingZonas);
+
+            // Agregar nuevas zonas
+            if (updateCompanyDto.ZonaIds != null && updateCompanyDto.ZonaIds.Any())
             {
-                var companyCentros = updateCompanyDto.CentroIds.Select(centroId => new CompanyCentro
+                var companyZonas = updateCompanyDto.ZonaIds.Select(zonaId => new CompanyZona
                 {
                     IdCompania = company.Id,
-                    IdCentro = centroId,
+                    IdZona = zonaId,
                     IsActive = true,
                     CreatedAt = DateTime.UtcNow
                 });
 
-                _context.CompanyCentros.AddRange(companyCentros);
+                _context.CompanyZonas.AddRange(companyZonas);
             }
 
             await _context.SaveChangesAsync();
 
-            // Recargar la empresa con los centros para devolver el DTO completo
-            var companyWithCentros = await _context.Companies
-                .Include(c => c.CompanyCentros)
-                    .ThenInclude(cc => cc.Centro)
+            // Recargar la empresa con los centros y zonas para devolver el DTO completo
+            var companyWithRelations = await _context.Companies
+                .Include(c => c.CompanyZonas)
+                    .ThenInclude(cz => cz.Zona)
                 .FirstOrDefaultAsync(c => c.Id == company.Id);
 
-            return MapToDto(companyWithCentros!);
+            return await MapToDtoAsync(companyWithRelations!);
         }
 
         public async Task<bool> DeleteCompanyAsync(int id)
@@ -236,85 +240,81 @@ namespace Park.Api.Services
             return await _context.Companies.AnyAsync(c => c.Name == name && c.IsActive);
         }
 
-        public async Task<bool> CompanyExistsByEmailAsync(string email)
-        {
-            return await _context.Companies.AnyAsync(c => c.Email == email && c.IsActive);
-        }
 
         public async Task<int> GetCompaniesCountAsync()
         {
             return await _context.Companies.CountAsync(c => c.IsActive);
         }
 
-        public async Task<IEnumerable<CentroDto>> GetCentrosBySitioAsync(int idSitio)
+        public async Task<IEnumerable<ZonaDto>> GetZonasBySitioAsync(int idSitio)
         {
-            // Debug: Verificar si hay sitios
+            // Verificar si hay sitios
             var sitio = await _context.Sitios.FirstOrDefaultAsync(s => s.Id == idSitio);
             if (sitio == null)
             {
                 throw new InvalidOperationException($"Sitio con ID {idSitio} no encontrado");
             }
 
-            // Debug: Verificar zonas del sitio
-            var zonas = await _context.Zonas.Where(z => z.IdSitio == idSitio).ToListAsync();
-            if (!zonas.Any())
-            {
-                throw new InvalidOperationException($"No hay zonas para el sitio {sitio.Nombre} (ID: {idSitio})");
-            }
-
-            // Debug: Verificar centros en las zonas
-            var zonaIds = zonas.Select(z => z.Id).ToList();
-            var centros = await _context.Centros
-                .Include(c => c.Zona)
-                .Where(c => zonaIds.Contains(c.IdZona) && c.IsActive)
+            // Obtener zonas del sitio
+            var zonas = await _context.Zonas
+                .Include(z => z.Sitio)
+                .Where(z => z.IdSitio == idSitio && z.IsActive)
                 .ToListAsync();
 
-            if (!centros.Any())
+            if (!zonas.Any())
             {
-                throw new InvalidOperationException($"No hay centros activos en las zonas del sitio {sitio.Nombre}");
+                throw new InvalidOperationException($"No hay zonas activas para el sitio {sitio.Nombre} (ID: {idSitio})");
             }
 
-            return centros.Select(c => new CentroDto
+            return zonas.Select(z => new ZonaDto
             {
-                Id = c.Id,
-                IdZona = c.IdZona,
-                Nombre = c.Nombre,
-                Localidad = c.Localidad,
-                IsActive = c.IsActive,
-                CreatedAt = c.CreatedAt,
-                UpdatedAt = c.UpdatedAt
+                Id = z.Id,
+                IdSitio = z.IdSitio,
+                Nombre = z.Nombre,
+                Descripcion = z.Descripcion,
+                IsActive = z.IsActive,
+                CreatedAt = z.CreatedAt,
+                UpdatedAt = z.UpdatedAt,
+                Sitio = new SitioDto
+                {
+                    Id = z.Sitio.Id,
+                    Nombre = z.Sitio.Nombre,
+                    Descripcion = z.Sitio.Descripcion,
+                    IsActive = z.Sitio.IsActive,
+                    CreatedAt = z.Sitio.CreatedAt,
+                    UpdatedAt = z.Sitio.UpdatedAt
+                }
             });
         }
 
-        private static CompanyDto MapToDto(Company company)
+        private async Task<CompanyDto> MapToDtoAsync(Company company)
         {
+            // Contar colaboradores de la empresa
+            var employeesCount = await _context.Colaboradores
+                .CountAsync(c => c.IdCompania == company.Id && c.IsActive);
+
             return new CompanyDto
             {
                 Id = company.Id,
                 Name = company.Name,
                 Description = company.Description,
-                Address = company.Address,
-                Phone = company.Phone,
-                Email = company.Email,
-                ContactPerson = company.ContactPerson,
-                ContactPhone = company.ContactPhone,
-                ContactEmail = company.ContactEmail,
                 IsActive = company.IsActive,
                 CreatedAt = company.CreatedAt,
                 IdSitio = company.IdSitio,
                 VisitsCount = 0, // TODO: Implementar cuando se creen las nuevas visitas
-                CentrosAcceso = company.CompanyCentros?
-                    .Where(cc => cc.IsActive)
-                    .Select(cc => new CentroDto
+                EmployeesCount = employeesCount,
+                ZonasAcceso = company.CompanyZonas?
+                    .Where(cz => cz.IsActive)
+                    .Select(cz => new ZonaDto
                     {
-                        Id = cc.Centro.Id,
-                        IdZona = cc.Centro.IdZona,
-                        Nombre = cc.Centro.Nombre,
-                        Localidad = cc.Centro.Localidad,
-                        IsActive = cc.Centro.IsActive,
-                        CreatedAt = cc.Centro.CreatedAt,
-                        UpdatedAt = cc.Centro.UpdatedAt
-                    }).ToList() ?? new List<CentroDto>()
+                        Id = cz.Zona.Id,
+                        IdSitio = cz.Zona.IdSitio,
+                        Nombre = cz.Zona.Nombre,
+                        Descripcion = cz.Zona.Descripcion,
+                        IsActive = cz.Zona.IsActive,
+                        CreatedAt = cz.Zona.CreatedAt,
+                        UpdatedAt = cz.Zona.UpdatedAt
+                    }).ToList() ?? new List<ZonaDto>()
             };
         }
     }

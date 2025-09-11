@@ -43,11 +43,14 @@ namespace Park.Comun.DTOs
         public int? IdCompania { get; set; }
         public int? IdCentro { get; set; }
         public int? IdColaborador { get; set; }
+        public int? IdSolicitante { get; set; }
         public DateTime? FechaInicio { get; set; }
         public DateTime? FechaFin { get; set; }
         public string? Estado { get; set; }
         public string? TipoVisita { get; set; }
         public string? TipoTransporte { get; set; }
+        public bool? EsVisitaMasiva { get; set; }
+        public string? SearchTerm { get; set; }
     }
 
     /// <summary>

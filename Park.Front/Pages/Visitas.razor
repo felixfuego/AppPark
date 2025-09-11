@@ -1,0 +1,416 @@
+@page "/visitas"
+@using Park.Front.Services
+@using Park.Comun.DTOs
+@using Park.Comun.Enums
+@using Park.Front.Components
+@inject IJSRuntime JSRuntime
+@inject VisitaService VisitaService
+@inject ColaboradorService ColaboradorService
+@inject CompanyService CompanyService
+@inject CentroService CentroService
+@inject AuthService AuthService
+
+<PageTitle>Gestión de Visitas - Park.Front</PageTitle>
+
+<div class="visitas-container management-page">
+    <div class="page-header">
+        <div class="page-title">
+            <h1>Gestión de Visitas</h1>
+            <p>Administra las visitas del sistema</p>
+        </div>
+        <div class="page-actions">
+            <button class="btn btn-primary" @onclick="ShowCreateModal">
+                <i class="bi bi-plus-circle"></i>
+                Nueva Visita Individual
+            </button>
+            <button class="btn btn-success" @onclick="ShowCreateMasivaModal">
+                <i class="bi bi-people"></i>
+                Nueva Visita Masiva
+            </button>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="filters-container">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Buscar</label>
+                <input type="text" class="form-control" @bind="searchTerm" @onkeyup="FilterVisitas" placeholder="Número, visitante, empresa..." />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Estado</label>
+                <select class="form-select" @bind="selectedEstado" @bind:after="FilterVisitas">
+                    <option value="">Todos</option>
+                    <option value="Programada">Programada</option>
+                    <option value="EnProceso">En Proceso</option>
+                    <option value="Terminada">Terminada</option>
+                    <option value="Cancelada">Cancelada</option>
+                    <option value="Expirada">Expirada</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Tipo</label>
+                <select class="form-select" @bind="selectedTipo" @bind:after="FilterVisitas">
+                    <option value="">Todos</option>
+                    <option value="Individual">Individual</option>
+                    <option value="Masiva">Masiva</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Fecha Desde</label>
+                <input type="date" class="form-control" @bind="fechaDesde" @bind:after="FilterVisitas" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Fecha Hasta</label>
+                <input type="date" class="form-control" @bind="fechaHasta" @bind:after="FilterVisitas" />
+            </div>
+            <div class="col-md-1">
+                <label class="form-label">&nbsp;</label>
+                <button class="btn btn-outline-secondary w-100" @onclick="ClearFilters">
+                    <i class="bi bi-x-circle"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="loading-container">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-3">Cargando visitas...</p>
+        </div>
+    }
+    else
+    {
+        <div class="visitas-table-container">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Número</th>
+                            <th>Fecha</th>
+                            <th>Visitante</th>
+                            <th>Empresa</th>
+                            <th>Centro</th>
+                            <th>Estado</th>
+                            <th>Tipo</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var visita in filteredVisitas)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="visita-info">
+                                        <strong>@visita.NumeroSolicitud</strong>
+                                        @if (visita.EsVisitaMasiva)
+                                        {
+                                            <small class="text-muted d-block">Visita Masiva</small>
+                                        }
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="fecha-info">
+                                        <div>@visita.Fecha.ToString("dd/MM/yyyy")</div>
+                                        <small class="text-muted">@visita.Fecha.ToString("HH:mm")</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="visitante-info">
+                                        <div>@visita.NombreCompleto</div>
+                                        <small class="text-muted">@visita.IdentidadVisitante</small>
+                                    </div>
+                                </td>
+                                <td>@visita.Compania?.Name</td>
+                                <td>@visita.Centro?.Nombre</td>
+                                <td>
+                                    @switch (visita.Estado)
+                                    {
+                                        case VisitStatus.Programada:
+                                            <span class="badge bg-primary">Programada</span>
+                                            break;
+                                        case VisitStatus.EnProceso:
+                                            <span class="badge bg-warning">En Proceso</span>
+                                            break;
+                                        case VisitStatus.Terminada:
+                                            <span class="badge bg-success">Terminada</span>
+                                            break;
+                                        case VisitStatus.Cancelada:
+                                            <span class="badge bg-danger">Cancelada</span>
+                                            break;
+                                        case VisitStatus.Expirada:
+                                            <span class="badge bg-secondary">Expirada</span>
+                                            break;
+                                    }
+                                </td>
+                                <td>
+                                    @if (visita.EsVisitaMasiva)
+                                    {
+                                        <span class="badge bg-info">Masiva</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Individual</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn btn-sm btn-outline-primary" @onclick="() => ShowDetailsModal(visita)" title="Ver Detalles">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                        @if (visita.Estado == VisitStatus.Programada)
+                                        {
+                                            <button class="btn btn-sm btn-outline-warning" @onclick="() => ShowEditModal(visita)" title="Editar">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" @onclick="() => CancelarVisita(visita.Id)" title="Cancelar">
+                                                <i class="bi bi-x-circle"></i>
+                                            </button>
+                                        }
+                                        @if (visita.Estado == VisitStatus.Programada || visita.Estado == VisitStatus.EnProceso)
+                                        {
+                                            @if (visita.Estado == VisitStatus.Programada)
+                                            {
+                                                <button class="btn btn-sm btn-outline-success" @onclick="() => CheckInVisita(visita.Id)" title="Check-in">
+                                                    <i class="bi bi-box-arrow-in-right"></i>
+                                                </button>
+                                            }
+                                            @if (visita.Estado == VisitStatus.EnProceso)
+                                            {
+                                                <button class="btn btn-sm btn-outline-info" @onclick="() => CheckOutVisita(visita.Id)" title="Check-out">
+                                                    <i class="bi bi-box-arrow-right"></i>
+                                                </button>
+                                            }
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            @if (!filteredVisitas.Any())
+            {
+                <div class="no-data-container">
+                    <div class="text-center py-5">
+                        <i class="bi bi-calendar-x display-1 text-muted"></i>
+                        <h3 class="mt-3">No hay visitas</h3>
+                        <p class="text-muted">No se encontraron visitas con los filtros aplicados</p>
+                        <button class="btn btn-primary" @onclick="ShowCreateModal">
+                            <i class="bi bi-plus-circle"></i>
+                            Crear Primera Visita
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<!-- Modal para crear/editar visita individual -->
+@if (showCreateModal)
+{
+    <VisitaModal Visita="selectedVisita" 
+                 OnSave="OnVisitaSaved" 
+                 OnCancel="OnModalCancel" />
+}
+
+<!-- Modal para crear visita masiva -->
+@if (showCreateMasivaModal)
+{
+    <VisitaMasivaModal OnSave="OnVisitaMasivaSaved" 
+                       OnCancel="OnModalCancel" />
+}
+
+<!-- Modal para ver detalles -->
+@if (showDetailsModal)
+{
+    <VisitaDetailsModal Visita="selectedVisita" 
+                        OnClose="OnModalCancel" />
+}
+
+@code {
+    private List<VisitaDto> visitas = new();
+    private List<VisitaDto> filteredVisitas = new();
+    private VisitaDto? selectedVisita;
+    private bool isLoading = true;
+    private bool showCreateModal = false;
+    private bool showCreateMasivaModal = false;
+    private bool showDetailsModal = false;
+
+    // Filtros
+    private string searchTerm = "";
+    private string selectedEstado = "";
+    private string selectedTipo = "";
+    private DateTime? fechaDesde;
+    private DateTime? fechaHasta;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadVisitas();
+    }
+
+    private async Task LoadVisitas()
+    {
+        try
+        {
+            isLoading = true;
+            StateHasChanged();
+
+            // Obtener el usuario actual para aplicar restricciones
+            var currentUser = await AuthService.GetCurrentUserAsync();
+            if (currentUser != null)
+            {
+                visitas = await VisitaService.GetVisitasByUserAsync(currentUser.Id);
+            }
+            else
+            {
+                visitas = await VisitaService.GetAllVisitasAsync();
+            }
+
+            filteredVisitas = visitas.ToList();
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error al cargar visitas: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void FilterVisitas()
+    {
+        filteredVisitas = visitas.Where(v =>
+            (string.IsNullOrEmpty(searchTerm) || 
+             v.NumeroSolicitud.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+             v.NombreCompleto.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+             v.Compania?.Name.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) == true) &&
+            (string.IsNullOrEmpty(selectedEstado) || v.Estado.ToString() == selectedEstado) &&
+            (string.IsNullOrEmpty(selectedTipo) || 
+             (selectedTipo == "Individual" && !v.EsVisitaMasiva) ||
+             (selectedTipo == "Masiva" && v.EsVisitaMasiva)) &&
+            (!fechaDesde.HasValue || v.Fecha.Date >= fechaDesde.Value.Date) &&
+            (!fechaHasta.HasValue || v.Fecha.Date <= fechaHasta.Value.Date)
+        ).ToList();
+    }
+
+    private void ClearFilters()
+    {
+        searchTerm = "";
+        selectedEstado = "";
+        selectedTipo = "";
+        fechaDesde = null;
+        fechaHasta = null;
+        FilterVisitas();
+    }
+
+    private void ShowCreateModal()
+    {
+        selectedVisita = null;
+        showCreateModal = true;
+    }
+
+    private void ShowCreateMasivaModal()
+    {
+        showCreateMasivaModal = true;
+    }
+
+    private void ShowEditModal(VisitaDto visita)
+    {
+        selectedVisita = visita;
+        showCreateModal = true;
+    }
+
+    private void ShowDetailsModal(VisitaDto visita)
+    {
+        selectedVisita = visita;
+        showDetailsModal = true;
+    }
+
+    private async Task OnVisitaSaved()
+    {
+        showCreateModal = false;
+        await LoadVisitas();
+    }
+
+    private async Task OnVisitaMasivaSaved()
+    {
+        showCreateMasivaModal = false;
+        await LoadVisitas();
+    }
+
+    private void OnModalCancel()
+    {
+        showCreateModal = false;
+        showCreateMasivaModal = false;
+        showDetailsModal = false;
+        selectedVisita = null;
+    }
+
+    private async Task CheckInVisita(int id)
+    {
+        try
+        {
+            var checkInDto = new VisitaCheckInDto
+            {
+                Id = id,
+                FechaLlegada = DateTime.Now,
+                IdGuardia = 1 // TODO: Obtener del usuario actual
+            };
+
+            await VisitaService.CheckInVisitaAsync(checkInDto);
+            await LoadVisitas();
+            await JSRuntime.InvokeVoidAsync("alert", "Check-in realizado exitosamente");
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error al realizar check-in: {ex.Message}");
+        }
+    }
+
+    private async Task CheckOutVisita(int id)
+    {
+        try
+        {
+            var checkOutDto = new VisitaCheckOutDto
+            {
+                Id = id,
+                FechaSalida = DateTime.Now,
+                IdGuardia = 1 // TODO: Obtener del usuario actual
+            };
+
+            await VisitaService.CheckOutVisitaAsync(checkOutDto);
+            await LoadVisitas();
+            await JSRuntime.InvokeVoidAsync("alert", "Check-out realizado exitosamente");
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error al realizar check-out: {ex.Message}");
+        }
+    }
+
+    private async Task CancelarVisita(int id)
+    {
+        try
+        {
+            var confirm = await JSRuntime.InvokeAsync<bool>("confirm", "¿Está seguro de que desea cancelar esta visita?");
+            if (confirm)
+            {
+                await VisitaService.CancelarVisitaAsync(id);
+                await LoadVisitas();
+                await JSRuntime.InvokeVoidAsync("alert", "Visita cancelada exitosamente");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error al cancelar visita: {ex.Message}");
+        }
+    }
+}

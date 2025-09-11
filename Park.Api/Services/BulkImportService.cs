@@ -307,7 +307,7 @@ namespace Park.Api.Services
                             Name = company.Name,
                             Description = company.Description,
                             IdSitio = 1, // Valor por defecto temporal
-                            CentroIds = new List<int>() // Lista vacía por defecto
+                            ZonaIds = new List<int>() // Lista vacía por defecto
                         };
 
                         var createdCompany = await _companyService.CreateCompanyAsync(createCompanyDto);

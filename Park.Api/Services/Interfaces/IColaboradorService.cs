@@ -16,5 +16,7 @@ namespace Park.Api.Services.Interfaces
         Task<bool> ToggleBlackListAsync(int id);
         Task<IEnumerable<ColaboradorDto>> GetActiveColaboradoresAsync();
         Task<IEnumerable<ColaboradorDto>> GetBlackListedColaboradoresAsync();
+        Task<IEnumerable<CompanyDto>> GetEmpresasByZonaAsync(int idZona);
+        Task<IEnumerable<CentroDto>> GetCentrosByZonaAsync(int idZona);
     }
 }

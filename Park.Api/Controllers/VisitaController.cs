@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Park.Api.Services;
 using Park.Api.Services.Interfaces;
 using Park.Comun.DTOs;
 using Park.Comun.Enums;
+using System.ComponentModel.DataAnnotations;
 
 namespace Park.Api.Controllers
 {
@@ -12,11 +14,13 @@ namespace Park.Api.Controllers
     public class VisitaController : ControllerBase
     {
         private readonly IVisitaService _visitaService;
+        private readonly ExcelService _excelService;
         private readonly ILogger<VisitaController> _logger;
 
-        public VisitaController(IVisitaService visitaService, ILogger<VisitaController> logger)
+        public VisitaController(IVisitaService visitaService, ExcelService excelService, ILogger<VisitaController> logger)
         {
             _visitaService = visitaService;
+            _excelService = excelService;
             _logger = logger;
         }
 
@@ -385,6 +389,304 @@ namespace Park.Api.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al expirar visitas");
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        // Nuevos endpoints para visitas masivas y restricciones por usuario
+
+        /// <summary>
+        /// Obtener visitas según los permisos del usuario actual
+        /// </summary>
+        /// <param name="userId">ID del usuario</param>
+        /// <returns>Lista de visitas filtradas por permisos</returns>
+        [HttpGet("user/{userId}")]
+        public async Task<ActionResult<IEnumerable<VisitaDto>>> GetVisitasByUser(int userId)
+        {
+            try
+            {
+                var visitas = await _visitaService.GetVisitasByUserAsync(userId);
+                return Ok(visitas);
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener visitas del usuario {UserId}", userId);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        /// <summary>
+        /// Crear una visita masiva con múltiples visitantes
+        /// </summary>
+        /// <param name="createVisitaMasivaDto">Datos de la visita masiva</param>
+        /// <returns>Visita masiva creada</returns>
+        [HttpPost("masiva")]
+        [Authorize(Roles = "Admin,Operador")]
+        public async Task<ActionResult<VisitaMasivaDto>> CreateVisitaMasiva(CreateVisitaMasivaDto createVisitaMasivaDto)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+
+                var visitaMasiva = await _visitaService.CreateVisitaMasivaAsync(createVisitaMasivaDto);
+                return CreatedAtAction(nameof(GetVisitaMasiva), new { id = visitaMasiva.Id }, visitaMasiva);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al crear visita masiva");
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        /// <summary>
+        /// Obtener todas las visitas masivas
+        /// </summary>
+        /// <returns>Lista de visitas masivas</returns>
+        [HttpGet("masivas")]
+        public async Task<ActionResult<IEnumerable<VisitaMasivaDto>>> GetVisitasMasivas()
+        {
+            try
+            {
+                var visitasMasivas = await _visitaService.GetVisitasMasivasAsync();
+                return Ok(visitasMasivas);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener visitas masivas");
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        /// <summary>
+        /// Obtener una visita masiva por ID
+        /// </summary>
+        /// <param name="id">ID de la visita masiva</param>
+        /// <returns>Visita masiva</returns>
+        [HttpGet("masiva/{id}")]
+        public async Task<ActionResult<VisitaMasivaDto>> GetVisitaMasiva(int id)
+        {
+            try
+            {
+                var visitaMasiva = await _visitaService.GetVisitaMasivaByIdAsync(id);
+                if (visitaMasiva == null)
+                {
+                    return NotFound($"Visita masiva con ID {id} no encontrada");
+                }
+                return Ok(visitaMasiva);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener visita masiva con ID {Id}", id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        /// <summary>
+        /// Subir archivo Excel para crear visitas masivas
+        /// </summary>
+        /// <param name="file">Archivo Excel con datos de visitas</param>
+        /// <returns>Visita masiva creada desde Excel</returns>
+        [HttpPost("upload-excel")]
+        [Authorize(Roles = "Admin,Operador")]
+        public async Task<ActionResult<VisitaMasivaDto>> UploadExcelVisitas(IFormFile file)
+        {
+            try
+            {
+                if (file == null || file.Length == 0)
+                {
+                    return BadRequest("No se ha proporcionado ningún archivo");
+                }
+
+                // Validar tipo de archivo
+                var allowedExtensions = new[] { ".xlsx", ".xls" };
+                var fileExtension = Path.GetExtension(file.FileName).ToLowerInvariant();
+                if (!allowedExtensions.Contains(fileExtension))
+                {
+                    return BadRequest("Solo se permiten archivos Excel (.xlsx, .xls)");
+                }
+
+                // Procesar archivo Excel
+                using var stream = file.OpenReadStream();
+                var createVisitaMasivaDto = await _excelService.ProcessVisitasExcelAsync(stream, file.FileName);
+
+                // Crear visita masiva
+                var visitaMasiva = await _visitaService.CreateVisitaMasivaAsync(createVisitaMasivaDto);
+
+                return Ok(visitaMasiva);
+            }
+            catch (ValidationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al procesar archivo Excel");
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        /// <summary>
+        /// Descargar plantilla Excel para visitas masivas
+        /// </summary>
+        /// <returns>Archivo Excel de plantilla</returns>
+        [HttpGet("template-excel")]
+        [Authorize(Roles = "Admin,Operador")]
+        public ActionResult DownloadVisitasMasivasTemplate()
+        {
+            try
+            {
+                var templateBytes = _excelService.GenerateVisitasMasivasTemplate();
+                var fileName = $"Plantilla_Visitas_Masivas_{DateTime.Now:yyyyMMdd}.xlsx";
+
+                return File(templateBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al generar plantilla Excel");
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        /// <summary>
+        /// Obtener visita por número de solicitud (alias para compatibilidad)
+        /// </summary>
+        /// <param name="numeroSolicitud">Número de solicitud</param>
+        /// <returns>Visita</returns>
+        [HttpGet("numero/{numeroSolicitud}")]
+        public async Task<ActionResult<VisitaDto>> GetVisitaByNumero(string numeroSolicitud)
+        {
+            try
+            {
+                var visita = await _visitaService.GetVisitaByNumeroSolicitudAsync(numeroSolicitud);
+                if (visita == null)
+                {
+                    return NotFound($"Visita con número de solicitud {numeroSolicitud} no encontrada");
+                }
+                return Ok(visita);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener visita con número de solicitud {NumeroSolicitud}", numeroSolicitud);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        /// <summary>
+        /// Check-in de visita (endpoint específico)
+        /// </summary>
+        /// <param name="id">ID de la visita</param>
+        /// <param name="checkInDto">Datos del check-in</param>
+        /// <returns>Visita actualizada</returns>
+        [HttpPost("{id}/checkin")]
+        [Authorize(Roles = "Admin,Operador,Guardia")]
+        public async Task<ActionResult<VisitaDto>> CheckInVisitaById(int id, VisitaCheckInDto checkInDto)
+        {
+            try
+            {
+                if (id != checkInDto.Id)
+                {
+                    return BadRequest("El ID de la URL no coincide con el ID del cuerpo de la solicitud");
+                }
+
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+
+                var visita = await _visitaService.CheckInVisitaAsync(checkInDto);
+                return Ok(visita);
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al realizar check-in para visita con ID {Id}", id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        /// <summary>
+        /// Check-out de visita (endpoint específico)
+        /// </summary>
+        /// <param name="id">ID de la visita</param>
+        /// <param name="checkOutDto">Datos del check-out</param>
+        /// <returns>Visita actualizada</returns>
+        [HttpPost("{id}/checkout")]
+        [Authorize(Roles = "Admin,Operador,Guardia")]
+        public async Task<ActionResult<VisitaDto>> CheckOutVisitaById(int id, VisitaCheckOutDto checkOutDto)
+        {
+            try
+            {
+                if (id != checkOutDto.Id)
+                {
+                    return BadRequest("El ID de la URL no coincide con el ID del cuerpo de la solicitud");
+                }
+
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+
+                var visita = await _visitaService.CheckOutVisitaAsync(checkOutDto);
+                return Ok(visita);
+            }
+            catch (ArgumentException ex)
+            {
+                return NotFound(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al realizar check-out para visita con ID {Id}", id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        /// <summary>
+        /// Cancelar visita (endpoint específico)
+        /// </summary>
+        /// <param name="id">ID de la visita</param>
+        /// <returns>Resultado de la operación</returns>
+        [HttpPost("{id}/cancel")]
+        [Authorize(Roles = "Admin,Operador")]
+        public async Task<ActionResult> CancelarVisitaById(int id)
+        {
+            try
+            {
+                var result = await _visitaService.CancelarVisitaAsync(id);
+                if (!result)
+                {
+                    return NotFound($"Visita con ID {id} no encontrada");
+                }
+                return Ok(new { message = "Visita cancelada exitosamente" });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al cancelar visita con ID {Id}", id);
                 return StatusCode(500, "Error interno del servidor");
             }
         }

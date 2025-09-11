@@ -319,6 +319,46 @@ namespace Park.Api.Controllers
 
 
         /// <summary>
+        /// Asignar colaborador a usuario
+        /// </summary>
+        /// <param name="userId">ID del usuario</param>
+        /// <param name="colaboradorId">ID del colaborador</param>
+        /// <returns>True si se asignó correctamente</returns>
+        [HttpPost("{userId}/assign-colaborador/{colaboradorId}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<bool>> AssignColaboradorToUser(int userId, int colaboradorId)
+        {
+            try
+            {
+                var result = await _userService.AssignColaboradorToUserAsync(userId, colaboradorId);
+                return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Remover colaborador de usuario
+        /// </summary>
+        /// <param name="userId">ID del usuario</param>
+        /// <returns>True si se removió correctamente</returns>
+        [HttpDelete("{userId}/colaborador")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<bool>> RemoveColaboradorFromUser(int userId)
+        {
+            var result = await _userService.RemoveColaboradorFromUserAsync(userId);
+            
+            if (!result)
+            {
+                return NotFound("Usuario no encontrado");
+            }
+
+            return Ok(result);
+        }
+
+        /// <summary>
         /// Obtener el ID del usuario actual desde el token JWT
         /// </summary>
         /// <returns>ID del usuario o null si no se puede obtener</returns>

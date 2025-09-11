@@ -113,6 +113,8 @@ namespace Park.Comun.DTOs
 
     public class UpdateUserDto
     {
+        public int Id { get; set; }
+        
         [Required(ErrorMessage = "El nombre de usuario es requerido")]
         [StringLength(50, MinimumLength = 3, ErrorMessage = "El nombre de usuario debe tener entre 3 y 50 caracteres")]
         public string Username { get; set; } = string.Empty;

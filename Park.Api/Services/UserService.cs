@@ -22,6 +22,11 @@ namespace Park.Api.Services
             var users = await _context.Users
                 .Include(u => u.UserRoles)
                     .ThenInclude(ur => ur.Role)
+                .Include(u => u.Colaborador)
+                    .ThenInclude(c => c.Compania)
+                .Include(u => u.Colaborador)
+                    .ThenInclude(c => c.ColaboradorByCentros)
+                        .ThenInclude(cbc => cbc.Centro)
                 .Where(u => u.IsActive)
                 .ToListAsync();
 
@@ -33,6 +38,11 @@ namespace Park.Api.Services
             var user = await _context.Users
                 .Include(u => u.UserRoles)
                     .ThenInclude(ur => ur.Role)
+                .Include(u => u.Colaborador)
+                    .ThenInclude(c => c.Compania)
+                .Include(u => u.Colaborador)
+                    .ThenInclude(c => c.ColaboradorByCentros)
+                        .ThenInclude(cbc => cbc.Centro)
                 .FirstOrDefaultAsync(u => u.Id == id && u.IsActive);
 
             return user != null ? MapToDto(user) : null;
@@ -256,29 +266,80 @@ namespace Park.Api.Services
 
         public async Task<IEnumerable<CompanyDto>> GetUserCompaniesAsync(int userId)
         {
-            // TODO: Implementar cuando se cree la nueva estructura de UserCompany
-            // var userCompanies = await _context.UserCompanies
-            //     .Include(uc => uc.Company)
-            //     .Where(uc => uc.UserId == userId && uc.IsActive && uc.Company.IsActive)
-            //     .ToListAsync();
+            // Obtener las empresas a través del colaborador asignado al usuario
+            var user = await _context.Users
+                .Include(u => u.Colaborador)
+                    .ThenInclude(c => c.Compania)
+                .FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
 
-            // return userCompanies.Select(uc => new CompanyDto
-            // {
-            //     Id = uc.Company.Id,
-            //     Name = uc.Company.Name,
-            //     Description = uc.Company.Description,
-            //     Address = uc.Company.Address,
-            //     Phone = uc.Company.Phone,
-            //     Email = uc.Company.Email,
-            //     ContactPerson = uc.Company.ContactPerson,
-            //     ContactPhone = uc.Company.ContactPhone,
-            //     ContactEmail = uc.Company.ContactEmail,
-            //     IsActive = uc.Company.IsActive,
-            //     CreatedAt = uc.Company.CreatedAt,
-            //     VisitsCount = 0 // TODO: Implementar cuando se creen las nuevas visitas
-            // });
+            if (user?.Colaborador?.Compania != null)
+            {
+                return new List<CompanyDto>
+                {
+                    new CompanyDto
+                    {
+                        Id = user.Colaborador.Compania.Id,
+                        Name = user.Colaborador.Compania.Name,
+                        Description = user.Colaborador.Compania.Description,
+                        IsActive = user.Colaborador.Compania.IsActive,
+                        CreatedAt = user.Colaborador.Compania.CreatedAt,
+                        VisitsCount = 0, // TODO: Calcular desde visitas
+                        IdSitio = user.Colaborador.Compania.IdSitio
+                    }
+                };
+            }
 
             return new List<CompanyDto>();
+        }
+
+        public async Task<bool> AssignColaboradorToUserAsync(int userId, int colaboradorId)
+        {
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+            {
+                throw new InvalidOperationException("El usuario no existe.");
+            }
+
+            var colaborador = await _context.Colaboradores
+                .Include(c => c.Compania)
+                .FirstOrDefaultAsync(c => c.Id == colaboradorId && c.IsActive);
+
+            if (colaborador == null)
+            {
+                throw new InvalidOperationException("El colaborador no existe o no está activo.");
+            }
+
+            // Verificar que el colaborador no esté ya asignado a otro usuario
+            var existingUser = await _context.Users
+                .FirstOrDefaultAsync(u => u.IdColaborador == colaboradorId && u.Id != userId);
+
+            if (existingUser != null)
+            {
+                throw new InvalidOperationException($"El colaborador '{colaborador.Nombre}' ya está asignado al usuario '{existingUser.Username}'.");
+            }
+
+            user.IdColaborador = colaboradorId;
+            user.IdCompania = colaborador.IdCompania; // Heredar la empresa del colaborador
+            user.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> RemoveColaboradorFromUserAsync(int userId)
+        {
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null)
+            {
+                return false;
+            }
+
+            user.IdColaborador = null;
+            user.IdCompania = null;
+            user.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return true;
         }
 
         // Métodos auxiliares
@@ -304,6 +365,8 @@ namespace Park.Api.Services
                 LastLoginDate = user.LastLogin,
                 CreatedAt = user.CreatedAt,
                 UpdatedAt = user.UpdatedAt,
+                IdColaborador = user.IdColaborador,
+                IdCompania = user.IdCompania,
                 Roles = user.UserRoles?.Select(ur => new RoleDto
                 {
                     Id = ur.Role.Id,
@@ -312,7 +375,58 @@ namespace Park.Api.Services
                     IsActive = ur.Role.IsActive,
                     CreatedAt = ur.Role.CreatedAt
                 }).ToList() ?? new List<RoleDto>(),
-                AssignedCompanies = new List<CompanyDto>() // TODO: Implementar cuando se cree la nueva estructura
+                Colaborador = user.Colaborador != null ? new ColaboradorDto
+                {
+                    Id = user.Colaborador.Id,
+                    IdCompania = user.Colaborador.IdCompania,
+                    Identidad = user.Colaborador.Identidad,
+                    Nombre = user.Colaborador.Nombre,
+                    Puesto = user.Colaborador.Puesto,
+                    Email = user.Colaborador.Email,
+                    Tel1 = user.Colaborador.Tel1,
+                    Tel2 = user.Colaborador.Tel2,
+                    Tel3 = user.Colaborador.Tel3,
+                    PlacaVehiculo = user.Colaborador.PlacaVehiculo,
+                    Comentario = user.Colaborador.Comentario,
+                    IsActive = user.Colaborador.IsActive,
+                    IsBlackList = user.Colaborador.IsBlackList,
+                    Compania = user.Colaborador.Compania != null ? new CompanyDto
+                    {
+                        Id = user.Colaborador.Compania.Id,
+                        Name = user.Colaborador.Compania.Name,
+                        Description = user.Colaborador.Compania.Description,
+                        IsActive = user.Colaborador.Compania.IsActive,
+                        CreatedAt = user.Colaborador.Compania.CreatedAt,
+                        VisitsCount = 0, // TODO: Calcular desde visitas
+                        IdSitio = user.Colaborador.Compania.IdSitio
+                    } : null,
+                    ColaboradorByCentros = user.Colaborador.ColaboradorByCentros?.Select(cbc => new ColaboradorByCentroDto
+                    {
+                        Id = cbc.Id,
+                        IdColaborador = cbc.IdColaborador,
+                        IdCentro = cbc.IdCentro,
+                        Centro = cbc.Centro != null ? new CentroDto
+                        {
+                            Id = cbc.Centro.Id,
+                            IdZona = cbc.Centro.IdZona,
+                            Nombre = cbc.Centro.Nombre,
+                            Localidad = cbc.Centro.Localidad,
+                            IsActive = cbc.Centro.IsActive,
+                            CreatedAt = cbc.Centro.CreatedAt
+                        } : null
+                    }).ToList() ?? new List<ColaboradorByCentroDto>()
+                } : null,
+                Compania = user.Compania != null ? new CompanyDto
+                {
+                    Id = user.Compania.Id,
+                    Name = user.Compania.Name,
+                    Description = user.Compania.Description,
+                    IsActive = user.Compania.IsActive,
+                    CreatedAt = user.Compania.CreatedAt,
+                    VisitsCount = 0, // TODO: Calcular desde visitas
+                    IdSitio = user.Compania.IdSitio
+                } : null,
+                AssignedCompanies = new List<CompanyDto>() // Mantener para compatibilidad
             };
         }
     }

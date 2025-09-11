@@ -24,5 +24,14 @@ namespace Park.Api.Services.Interfaces
         Task<IEnumerable<VisitaDto>> GetVisitasActivasAsync();
         Task<IEnumerable<VisitaDto>> GetVisitasExpiradasAsync();
         Task<PagedResultDto<VisitaDto>> SearchVisitasAsync(VisitaSearchDto searchDto);
+        
+        // Nuevos métodos con restricciones por rol
+        Task<IEnumerable<VisitaDto>> GetVisitasByUserAsync(int userId);
+        Task<VisitaMasivaDto> CreateVisitaMasivaAsync(CreateVisitaMasivaDto createVisitaMasivaDto);
+        Task<IEnumerable<VisitaMasivaDto>> GetVisitasMasivasAsync();
+        Task<VisitaMasivaDto?> GetVisitaMasivaByIdAsync(int id);
+        
+        // Método para gestión de visitantes desde visitas
+        Task<VisitorExisteDto> BuscarOCrearVisitorAsync(string identidad, CrearVisitorDesdeVisitaDto datos);
     }
 }

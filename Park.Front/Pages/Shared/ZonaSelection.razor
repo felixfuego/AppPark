@@ -1,0 +1,159 @@
+@using Park.Comun.DTOs
+@using Park.Front.Services
+
+@inject CompanyService CompanyService
+
+<div class="form-group">
+    <label>Zonas de Acceso</label>
+    
+    @if (IdSitio > 0)
+    {
+        @if (isLoading)
+        {
+            <div class="text-center">
+                <div class="spinner-border spinner-border-sm" role="status">
+                    <span class="visually-hidden">Cargando zonas...</span>
+                </div>
+                <span class="ms-2">Cargando zonas del sitio...</span>
+            </div>
+        }
+        else if (availableZonas.Any())
+        {
+            <div class="zonas-selection">
+                <div class="row">
+                    @foreach (var zona in availableZonas)
+                    {
+                        <div class="col-md-6 mb-2">
+                            <div class="form-check">
+                                <input type="checkbox" 
+                                       id="@($"zona_{zona.Id}")" 
+                                       @onchange="@((e) => OnZonaChanged(zona.Id, e))"
+                                       checked="@GetZonaSelected(zona.Id)"
+                                       class="form-check-input" />
+                                <label for="@($"zona_{zona.Id}")" class="form-check-label">
+                                    <strong>@zona.Nombre</strong>
+                                    @if (!string.IsNullOrEmpty(zona.Descripcion))
+                                    {
+                                        <small class="text-muted d-block">@zona.Descripcion</small>
+                                    }
+                                    @if (zona.Sitio != null)
+                                    {
+                                        <small class="text-muted d-block">Sitio: @zona.Sitio.Nombre</small>
+                                    }
+                                </label>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-warning" role="alert">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                No hay zonas disponibles para este sitio. Asegúrate de que el sitio tenga zonas configuradas.
+            </div>
+        }
+    }
+    else
+    {
+        <div class="alert alert-info" role="alert">
+            <i class="fas fa-info-circle me-2"></i>
+            Selecciona un sitio para ver las zonas disponibles
+        </div>
+    }
+    
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger mt-2" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            @errorMessage
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public int IdSitio { get; set; }
+    [Parameter] public List<int> SelectedZonaIds { get; set; } = new();
+    [Parameter] public EventCallback<List<int>> SelectedZonaIdsChanged { get; set; }
+    [Parameter] public EventCallback<string> ErrorMessageChanged { get; set; }
+
+    private List<ZonaDto> availableZonas = new();
+    private bool isLoading = false;
+    private string errorMessage = string.Empty;
+
+    private int _previousIdSitio = 0;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // Solo recargar si el IdSitio realmente cambió
+        if (IdSitio != _previousIdSitio)
+        {
+            _previousIdSitio = IdSitio;
+            
+            if (IdSitio > 0)
+            {
+                await LoadZonasForSitio();
+            }
+            else
+            {
+                availableZonas.Clear();
+                errorMessage = string.Empty;
+            }
+        }
+    }
+
+    private async Task LoadZonasForSitio()
+    {
+        if (IdSitio <= 0) return;
+
+        try
+        {
+            isLoading = true;
+            errorMessage = string.Empty;
+            StateHasChanged();
+
+            // Cargar zonas del sitio seleccionado
+            availableZonas = await CompanyService.GetZonasBySitioAsync(IdSitio);
+            
+            if (!availableZonas.Any())
+            {
+                errorMessage = "No hay zonas disponibles para este sitio. Asegúrate de que el sitio tenga zonas configuradas.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error cargando zonas: {ex.Message}";
+            availableZonas.Clear();
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private bool GetZonaSelected(int zonaId)
+    {
+        return SelectedZonaIds.Contains(zonaId);
+    }
+
+    private async Task OnZonaChanged(int zonaId, ChangeEventArgs e)
+    {
+        var isChecked = (bool)(e.Value ?? false);
+        
+        if (isChecked)
+        {
+            if (!SelectedZonaIds.Contains(zonaId))
+            {
+                SelectedZonaIds.Add(zonaId);
+            }
+        }
+        else
+        {
+            SelectedZonaIds.Remove(zonaId);
+        }
+
+        await SelectedZonaIdsChanged.InvokeAsync(SelectedZonaIds);
+    }
+}

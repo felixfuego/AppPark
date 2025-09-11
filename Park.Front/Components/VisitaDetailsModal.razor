@@ -1,0 +1,275 @@
+@using Park.Comun.DTOs
+@using Park.Comun.Enums
+
+<div class="modal fade" id="visitaDetailsModal" tabindex="-1" aria-labelledby="visitaDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="visitaDetailsModalLabel">Detalles de la Visita</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                @if (Visita != null)
+                {
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Información General</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row mb-2">
+                                        <div class="col-4"><strong>Número:</strong></div>
+                                        <div class="col-8">@Visita.NumeroSolicitud</div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-4"><strong>Fecha:</strong></div>
+                                        <div class="col-8">@Visita.Fecha.ToString("dd/MM/yyyy HH:mm")</div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-4"><strong>Estado:</strong></div>
+                                        <div class="col-8">
+                                            @switch (Visita.Estado)
+                                            {
+                                                case VisitStatus.Programada:
+                                                    <span class="badge bg-primary">Programada</span>
+                                                    break;
+                                                case VisitStatus.EnProceso:
+                                                    <span class="badge bg-warning">En Proceso</span>
+                                                    break;
+                                                case VisitStatus.Terminada:
+                                                    <span class="badge bg-success">Terminada</span>
+                                                    break;
+                                                case VisitStatus.Cancelada:
+                                                    <span class="badge bg-danger">Cancelada</span>
+                                                    break;
+                                                case VisitStatus.Expirada:
+                                                    <span class="badge bg-secondary">Expirada</span>
+                                                    break;
+                                            }
+                                        </div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-4"><strong>Tipo:</strong></div>
+                                        <div class="col-8">
+                                            @if (Visita.EsVisitaMasiva)
+                                            {
+                                                <span class="badge bg-info">Visita Masiva</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary">Individual</span>
+                                            }
+                                        </div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-4"><strong>Tipo de Visita:</strong></div>
+                                        <div class="col-8">@Visita.TipoVisita</div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-4"><strong>Tipo de Transporte:</strong></div>
+                                        <div class="col-8">@Visita.TipoTransporte</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Información del Visitante</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row mb-2">
+                                        <div class="col-4"><strong>Nombre:</strong></div>
+                                        <div class="col-8">@Visita.NombreCompleto</div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-4"><strong>Identidad:</strong></div>
+                                        <div class="col-8">@Visita.IdentidadVisitante</div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-4"><strong>Procedencia:</strong></div>
+                                        <div class="col-8">@Visita.Procedencia</div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-4"><strong>Destino:</strong></div>
+                                        <div class="col-8">@Visita.Destino</div>
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(Visita.PlacaVehiculo))
+                                    {
+                                        <div class="row mb-2">
+                                            <div class="col-4"><strong>Placa:</strong></div>
+                                            <div class="col-8">@Visita.PlacaVehiculo</div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Información de la Empresa</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row mb-2">
+                                        <div class="col-4"><strong>Empresa:</strong></div>
+                                        <div class="col-8">@Visita.Compania?.Name</div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-4"><strong>Centro:</strong></div>
+                                        <div class="col-8">@Visita.Centro?.Nombre</div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-4"><strong>Solicitante:</strong></div>
+                                        <div class="col-8">@Visita.Solicitante?.Nombre</div>
+                                    </div>
+                                    <div class="row mb-2">
+                                        <div class="col-4"><strong>Recibido Por:</strong></div>
+                                        <div class="col-8">@Visita.RecibidoPor?.Nombre</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h6 class="mb-0">Horarios</h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row mb-2">
+                                        <div class="col-4"><strong>Fecha Programada:</strong></div>
+                                        <div class="col-8">@Visita.Fecha.ToString("dd/MM/yyyy HH:mm")</div>
+                                    </div>
+                                    @if (Visita.FechaLlegada.HasValue)
+                                    {
+                                        <div class="row mb-2">
+                                            <div class="col-4"><strong>Check-in:</strong></div>
+                                            <div class="col-8">@Visita.FechaLlegada.Value.ToString("dd/MM/yyyy HH:mm")</div>
+                                        </div>
+                                    }
+                                    @if (Visita.FechaSalida.HasValue)
+                                    {
+                                        <div class="row mb-2">
+                                            <div class="col-4"><strong>Check-out:</strong></div>
+                                            <div class="col-8">@Visita.FechaSalida.Value.ToString("dd/MM/yyyy HH:mm")</div>
+                                        </div>
+                                    }
+                                    @if (Visita.FechaLlegada.HasValue && Visita.FechaSalida.HasValue)
+                                    {
+                                        var duracion = Visita.FechaSalida.Value - Visita.FechaLlegada.Value;
+                                        <div class="row mb-2">
+                                            <div class="col-4"><strong>Duración:</strong></div>
+                                            <div class="col-8">@duracion.ToString(@"hh\:mm")</div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h6 class="mb-0">Motivo de la Visita</h6>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-0">@Visita.MotivoVisita</p>
+                        </div>
+                    </div>
+
+                    @if (Visita.EsVisitaMasiva && Visita.VisitasHijas?.Any() == true)
+                    {
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h6 class="mb-0">Visitantes de la Visita Masiva</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Número</th>
+                                                <th>Nombre</th>
+                                                <th>Identidad</th>
+                                                <th>Estado</th>
+                                                <th>Check-in</th>
+                                                <th>Check-out</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var visitaHija in Visita.VisitasHijas)
+                                            {
+                                                <tr>
+                                                    <td>@visitaHija.NumeroSolicitud</td>
+                                                    <td>@visitaHija.NombreCompleto</td>
+                                                    <td>@visitaHija.IdentidadVisitante</td>
+                                                    <td>
+                                                        @switch (visitaHija.Estado)
+                                                        {
+                                                            case VisitStatus.Programada:
+                                                                <span class="badge bg-primary">Programada</span>
+                                                                break;
+                                                            case VisitStatus.EnProceso:
+                                                                <span class="badge bg-warning">En Proceso</span>
+                                                                break;
+                                                            case VisitStatus.Terminada:
+                                                                <span class="badge bg-success">Terminada</span>
+                                                                break;
+                                                            case VisitStatus.Cancelada:
+                                                                <span class="badge bg-danger">Cancelada</span>
+                                                                break;
+                                                            case VisitStatus.Expirada:
+                                                                <span class="badge bg-secondary">Expirada</span>
+                                                                break;
+                                                        }
+                                                    </td>
+                                                    <td>
+                                                        @if (visitaHija.FechaLlegada.HasValue)
+                                                        {
+                                                            @visitaHija.FechaLlegada.Value.ToString("HH:mm")
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="text-muted">-</span>
+                                                        }
+                                                    </td>
+                                                    <td>
+                                                        @if (visitaHija.FechaSalida.HasValue)
+                                                        {
+                                                            @visitaHija.FechaSalida.Value.ToString("HH:mm")
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="text-muted">-</span>
+                                                        }
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="text-center py-4">
+                        <i class="bi bi-exclamation-triangle display-4 text-warning"></i>
+                        <p class="text-muted mt-2">No se pudo cargar la información de la visita</p>
+                    </div>
+                }
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public VisitaDto? Visita { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+}

@@ -7,22 +7,17 @@ namespace Park.Comun.DTOs
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
-        public string Address { get; set; } = string.Empty;
-        public string Phone { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
-        public string ContactPerson { get; set; } = string.Empty;
-        public string ContactPhone { get; set; } = string.Empty;
-        public string ContactEmail { get; set; } = string.Empty;
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
         public int VisitsCount { get; set; }
+        public int EmployeesCount { get; set; }
         
-        // Nueva propiedad para el nuevo modelo
+        // Propiedad para el sitio
         public int IdSitio { get; set; }
         
         // Propiedades de navegación
         public SitioDto? Sitio { get; set; }
-        public List<CentroDto> CentrosAcceso { get; set; } = new List<CentroDto>();
+        public List<ZonaDto> ZonasAcceso { get; set; } = new List<ZonaDto>();
     }
 
     public class CreateCompanyDto
@@ -39,8 +34,8 @@ namespace Park.Comun.DTOs
         [Range(1, int.MaxValue, ErrorMessage = "El ID del sitio debe ser mayor a 0")]
         public int IdSitio { get; set; }
         
-        // Lista de IDs de centros de acceso seleccionados
-        public List<int> CentroIds { get; set; } = new List<int>();
+        // Lista de IDs de zonas de acceso seleccionadas
+        public List<int> ZonaIds { get; set; } = new List<int>();
     }
 
     public class UpdateCompanyDto
@@ -51,7 +46,7 @@ namespace Park.Comun.DTOs
         public bool IsActive { get; set; }
         public int IdSitio { get; set; }
         
-        // Lista de IDs de centros de acceso seleccionados
-        public List<int> CentroIds { get; set; } = new List<int>();
+        // Lista de IDs de zonas de acceso seleccionadas
+        public List<int> ZonaIds { get; set; } = new List<int>();
     }
 }

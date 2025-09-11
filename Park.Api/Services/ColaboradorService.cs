@@ -24,6 +24,7 @@ namespace Park.Api.Services
                 var colaboradores = await _context.Colaboradores
                     .Include(c => c.Compania)
                     .Include(c => c.ColaboradorByCentros)
+                        .ThenInclude(cbc => cbc.Centro)
                     .ToListAsync();
 
                 return colaboradores.Select(MapToDto);
@@ -42,6 +43,7 @@ namespace Park.Api.Services
                 var colaborador = await _context.Colaboradores
                     .Include(c => c.Compania)
                     .Include(c => c.ColaboradorByCentros)
+                        .ThenInclude(cbc => cbc.Centro)
                     .FirstOrDefaultAsync(c => c.Id == id);
 
                 return colaborador != null ? MapToDto(colaborador) : null;
@@ -94,6 +96,34 @@ namespace Park.Api.Services
         {
             try
             {
+                // Validar que la empresa existe y pertenece a la zona
+                var empresa = await _context.Companies
+                    .Include(c => c.CompanyZonas)
+                    .FirstOrDefaultAsync(c => c.Id == createColaboradorDto.IdCompania && c.IsActive);
+                
+                if (empresa == null)
+                {
+                    throw new InvalidOperationException($"La empresa con ID {createColaboradorDto.IdCompania} no existe o no está activa.");
+                }
+
+                if (!empresa.CompanyZonas.Any(cz => cz.IdZona == createColaboradorDto.IdZona && cz.IsActive))
+                {
+                    throw new InvalidOperationException($"La empresa {empresa.Name} no tiene acceso a la zona seleccionada.");
+                }
+
+                // Validar que los centros existen y pertenecen a la zona
+                if (createColaboradorDto.CentroIds != null && createColaboradorDto.CentroIds.Any())
+                {
+                    var centrosExisten = await _context.Centros
+                        .Where(c => createColaboradorDto.CentroIds.Contains(c.Id) && c.IsActive && c.IdZona == createColaboradorDto.IdZona)
+                        .CountAsync() == createColaboradorDto.CentroIds.Count;
+
+                    if (!centrosExisten)
+                    {
+                        throw new InvalidOperationException("Uno o más centros no existen, no están activos o no pertenecen a la zona seleccionada.");
+                    }
+                }
+
                 var colaborador = new Colaborador
                 {
                     IdCompania = createColaboradorDto.IdCompania,
@@ -114,8 +144,29 @@ namespace Park.Api.Services
                 _context.Colaboradores.Add(colaborador);
                 await _context.SaveChangesAsync();
 
+                // Agregar centros de acceso
+                if (createColaboradorDto.CentroIds != null && createColaboradorDto.CentroIds.Any())
+                {
+                    var colaboradorCentros = createColaboradorDto.CentroIds.Select(centroId => new ColaboradorByCentro
+                    {
+                        IdColaborador = colaborador.Id,
+                        IdCentro = centroId,
+                        IsActive = true,
+                        CreatedAt = DateTime.UtcNow
+                    });
+
+                    _context.ColaboradorByCentros.AddRange(colaboradorCentros);
+                    await _context.SaveChangesAsync();
+                }
+
+                // Recargar el colaborador con las relaciones para devolver el DTO completo
+                var colaboradorWithRelations = await _context.Colaboradores
+                    .Include(c => c.Compania)
+                    .Include(c => c.ColaboradorByCentros)
+                    .FirstOrDefaultAsync(c => c.Id == colaborador.Id);
+
                 _logger.LogInformation("Colaborador creado exitosamente: {Nombre}", colaborador.Nombre);
-                return MapToDto(colaborador);
+                return MapToDto(colaboradorWithRelations!);
             }
             catch (Exception ex)
             {
@@ -300,6 +351,8 @@ namespace Park.Api.Services
             {
                 Id = colaborador.Id,
                 IdCompania = colaborador.IdCompania,
+                IdSitio = colaborador.Compania?.IdSitio ?? 0, // Obtener IdSitio de la compañía
+                IdZona = GetZonaFromColaboradorCentros(colaborador), // Obtener IdZona de los centros
                 Identidad = colaborador.Identidad,
                 Nombre = colaborador.Nombre,
                 Puesto = colaborador.Puesto,
@@ -318,12 +371,6 @@ namespace Park.Api.Services
                     Id = colaborador.Compania.Id,
                     Name = colaborador.Compania.Name,
                     Description = colaborador.Compania.Description,
-                    Address = colaborador.Compania.Address,
-                    Phone = colaborador.Compania.Phone,
-                    Email = colaborador.Compania.Email,
-                    ContactPerson = colaborador.Compania.ContactPerson,
-                    ContactPhone = colaborador.Compania.ContactPhone,
-                    ContactEmail = colaborador.Compania.ContactEmail,
                     IsActive = colaborador.Compania.IsActive,
                     CreatedAt = colaborador.Compania.CreatedAt,
                     IdSitio = colaborador.Compania.IdSitio
@@ -338,6 +385,73 @@ namespace Park.Api.Services
                     UpdatedAt = cbc.UpdatedAt
                 }).ToList() ?? new List<ColaboradorByCentroDto>()
             };
+        }
+
+        private static int GetZonaFromColaboradorCentros(Colaborador colaborador)
+        {
+            // Si el colaborador tiene centros asignados, obtener la zona del primer centro
+            if (colaborador.ColaboradorByCentros?.Any() == true)
+            {
+                var primerCentro = colaborador.ColaboradorByCentros.FirstOrDefault(cbc => cbc.Centro != null);
+                if (primerCentro?.Centro != null)
+                {
+                    return primerCentro.Centro.IdZona;
+                }
+            }
+            return 0;
+        }
+
+        public async Task<IEnumerable<CompanyDto>> GetEmpresasByZonaAsync(int idZona)
+        {
+            // Verificar que la zona existe
+            var zona = await _context.Zonas.FirstOrDefaultAsync(z => z.Id == idZona);
+            if (zona == null)
+            {
+                throw new InvalidOperationException($"Zona con ID {idZona} no encontrada");
+            }
+
+            // Obtener empresas que tienen acceso a esta zona
+            var empresas = await _context.Companies
+                .Include(c => c.CompanyZonas)
+                .Where(c => c.IsActive && c.CompanyZonas.Any(cz => cz.IdZona == idZona && cz.IsActive))
+                .ToListAsync();
+
+            return empresas.Select(e => new CompanyDto
+            {
+                Id = e.Id,
+                Name = e.Name,
+                Description = e.Description,
+                IsActive = e.IsActive,
+                CreatedAt = e.CreatedAt,
+                IdSitio = e.IdSitio
+            });
+        }
+
+        public async Task<IEnumerable<CentroDto>> GetCentrosByZonaAsync(int idZona)
+        {
+            // Verificar que la zona existe
+            var zona = await _context.Zonas.FirstOrDefaultAsync(z => z.Id == idZona);
+            if (zona == null)
+            {
+                throw new InvalidOperationException($"Zona con ID {idZona} no encontrada");
+            }
+
+            // Obtener centros que pertenecen a esta zona
+            var centros = await _context.Centros
+                .Include(c => c.Zona)
+                .Where(c => c.IsActive && c.IdZona == idZona)
+                .ToListAsync();
+
+            return centros.Select(c => new CentroDto
+            {
+                Id = c.Id,
+                IdZona = c.IdZona,
+                Nombre = c.Nombre,
+                Localidad = c.Localidad,
+                IsActive = c.IsActive,
+                CreatedAt = c.CreatedAt,
+                UpdatedAt = c.UpdatedAt
+            });
         }
     }
 }

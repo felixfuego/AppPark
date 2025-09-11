@@ -215,6 +215,8 @@ namespace Park.Api.Services
                 {
                     NumeroSolicitud = createVisitaDto.NumeroSolicitud,
                     Fecha = createVisitaDto.Fecha,
+                    FechaInicio = createVisitaDto.FechaInicio,
+                    FechaVencimiento = createVisitaDto.FechaVencimiento,
                     Estado = createVisitaDto.Estado,
                     IdSolicitante = createVisitaDto.IdSolicitante,
                     IdCompania = createVisitaDto.IdCompania,
@@ -230,6 +232,9 @@ namespace Park.Api.Services
                     NombreCompleto = createVisitaDto.NombreCompleto,
                     PlacaVehiculo = createVisitaDto.PlacaVehiculo,
                     IdCentro = createVisitaDto.IdCentro,
+                    IdVisitaPadre = createVisitaDto.IdVisitaPadre,
+                    EsVisitaMasiva = createVisitaDto.EsVisitaMasiva,
+                    IdVisitor = createVisitaDto.IdVisitor,
                     IsActive = true,
                     CreatedAt = DateTime.UtcNow
                 };
@@ -259,6 +264,8 @@ namespace Park.Api.Services
 
                 visita.NumeroSolicitud = updateVisitaDto.NumeroSolicitud;
                 visita.Fecha = updateVisitaDto.Fecha;
+                visita.FechaInicio = updateVisitaDto.FechaInicio;
+                visita.FechaVencimiento = updateVisitaDto.FechaVencimiento;
                 visita.Estado = updateVisitaDto.Estado;
                 visita.IdSolicitante = updateVisitaDto.IdSolicitante;
                 visita.IdCompania = updateVisitaDto.IdCompania;
@@ -472,27 +479,210 @@ namespace Park.Api.Services
             }
         }
 
-        private static VisitaDto MapToDto(Visita visita)
+        public async Task<IEnumerable<VisitaDto>> GetVisitasByUserAsync(int userId)
         {
-            return new VisitaDto
+            try
+            {
+                // Obtener el usuario y sus roles para aplicar restricciones
+                var user = await _context.Users
+                    .Include(u => u.UserRoles)
+                    .ThenInclude(ur => ur.Role)
+                    .FirstOrDefaultAsync(u => u.Id == userId);
+
+                if (user == null)
+                {
+                    throw new ArgumentException($"Usuario con ID {userId} no encontrado");
+                }
+
+                var query = _context.Visitas
+                    .Include(v => v.Solicitante)
+                    .Include(v => v.Compania)
+                    .Include(v => v.RecibidoPor)
+                    .Include(v => v.Centro)
+                    .AsQueryable();
+
+                // Aplicar restricciones según el rol
+                var userRoles = user.UserRoles.Select(ur => ur.Role.Name).ToList();
+                
+                if (userRoles.Contains("Admin"))
+                {
+                    // Admin puede ver todas las visitas
+                    // No se aplican restricciones
+                }
+                else if (userRoles.Contains("Operador"))
+                {
+                    // Operador solo puede ver visitas de su empresa
+                    var colaborador = await _context.Colaboradores
+                        .FirstOrDefaultAsync(c => c.Id == user.IdColaborador);
+                    
+                    if (colaborador != null)
+                    {
+                        query = query.Where(v => v.IdCompania == colaborador.IdCompania);
+                    }
+                }
+                else if (userRoles.Contains("Guardia"))
+                {
+                    // Guardia solo puede ver visitas activas y del día actual
+                    var hoy = DateTime.Today;
+                    query = query.Where(v => v.Fecha.Date == hoy && 
+                                           (v.Estado == VisitStatus.Programada || 
+                                            v.Estado == VisitStatus.EnProceso));
+                }
+
+                var visitas = await query.ToListAsync();
+                return visitas.Select(MapToDto);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener visitas del usuario {UserId}", userId);
+                throw;
+            }
+        }
+
+        public async Task<VisitaMasivaDto> CreateVisitaMasivaAsync(CreateVisitaMasivaDto createVisitaMasivaDto)
+        {
+            try
+            {
+                using var transaction = await _context.Database.BeginTransactionAsync();
+
+                // Crear la visita padre (visita masiva)
+                var visitaPadre = new Visita
+                {
+                    NumeroSolicitud = createVisitaMasivaDto.NumeroSolicitud,
+                    Fecha = createVisitaMasivaDto.Fecha,
+                    FechaInicio = createVisitaMasivaDto.FechaInicio,
+                    FechaVencimiento = createVisitaMasivaDto.FechaVencimiento,
+                    Estado = VisitStatus.Programada,
+                    IdSolicitante = createVisitaMasivaDto.IdSolicitante,
+                    IdCompania = createVisitaMasivaDto.IdCompania,
+                    TipoVisita = createVisitaMasivaDto.TipoVisita,
+                    Procedencia = createVisitaMasivaDto.Procedencia,
+                    IdRecibidoPor = createVisitaMasivaDto.IdRecibidoPor,
+                    Destino = createVisitaMasivaDto.Destino,
+                    TipoTransporte = createVisitaMasivaDto.TipoTransporte,
+                    MotivoVisita = createVisitaMasivaDto.MotivoVisita,
+                    IdCentro = createVisitaMasivaDto.IdCentro,
+                    EsVisitaMasiva = true,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.Visitas.Add(visitaPadre);
+                await _context.SaveChangesAsync();
+
+                // Crear las visitas hijas (visitantes individuales)
+                var visitasHijas = new List<Visita>();
+                foreach (var visitante in createVisitaMasivaDto.Visitantes)
+                {
+                    var visitaHija = new Visita
+                    {
+                        NumeroSolicitud = $"{createVisitaMasivaDto.NumeroSolicitud}-{visitante.IdentidadVisitante}",
+                        Fecha = createVisitaMasivaDto.Fecha,
+                        Estado = VisitStatus.Programada,
+                        IdSolicitante = createVisitaMasivaDto.IdSolicitante,
+                        IdCompania = createVisitaMasivaDto.IdCompania,
+                        TipoVisita = createVisitaMasivaDto.TipoVisita,
+                        Procedencia = createVisitaMasivaDto.Procedencia,
+                        IdRecibidoPor = createVisitaMasivaDto.IdRecibidoPor,
+                        Destino = createVisitaMasivaDto.Destino,
+                        IdentidadVisitante = visitante.IdentidadVisitante,
+                        TipoTransporte = createVisitaMasivaDto.TipoTransporte,
+                        MotivoVisita = createVisitaMasivaDto.MotivoVisita,
+                        NombreCompleto = visitante.NombreCompleto,
+                        PlacaVehiculo = visitante.PlacaVehiculo,
+                        IdCentro = createVisitaMasivaDto.IdCentro,
+                        IdVisitaPadre = visitaPadre.Id,
+                        EsVisitaMasiva = false,
+                        IdVisitor = visitante.IdVisitor,
+                        IsActive = true,
+                        CreatedAt = DateTime.UtcNow
+                    };
+
+                    visitasHijas.Add(visitaHija);
+                }
+
+                _context.Visitas.AddRange(visitasHijas);
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                _logger.LogInformation("Visita masiva creada exitosamente: {NumeroSolicitud} con {CantidadVisitantes} visitantes", 
+                    visitaPadre.NumeroSolicitud, createVisitaMasivaDto.Visitantes.Count);
+
+                return await GetVisitaMasivaByIdAsync(visitaPadre.Id) ?? 
+                       throw new InvalidOperationException("Error al obtener la visita masiva creada");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al crear visita masiva: {NumeroSolicitud}", createVisitaMasivaDto.NumeroSolicitud);
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<VisitaMasivaDto>> GetVisitasMasivasAsync()
+        {
+            try
+            {
+                var visitasMasivas = await _context.Visitas
+                    .Where(v => v.EsVisitaMasiva)
+                    .Include(v => v.Solicitante)
+                    .Include(v => v.Compania)
+                    .Include(v => v.RecibidoPor)
+                    .Include(v => v.Centro)
+                    .Include(v => v.VisitasHijas)
+                    .ToListAsync();
+
+                return visitasMasivas.Select(MapToVisitaMasivaDto);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener visitas masivas");
+                throw;
+            }
+        }
+
+        public async Task<VisitaMasivaDto?> GetVisitaMasivaByIdAsync(int id)
+        {
+            try
+            {
+                var visitaMasiva = await _context.Visitas
+                    .Where(v => v.Id == id && v.EsVisitaMasiva)
+                    .Include(v => v.Solicitante)
+                    .Include(v => v.Compania)
+                    .Include(v => v.RecibidoPor)
+                    .Include(v => v.Centro)
+                    .Include(v => v.VisitasHijas)
+                    .FirstOrDefaultAsync();
+
+                return visitaMasiva != null ? MapToVisitaMasivaDto(visitaMasiva) : null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener visita masiva con ID {Id}", id);
+                throw;
+            }
+        }
+
+        private static VisitaMasivaDto MapToVisitaMasivaDto(Visita visita)
+        {
+            var visitasHijas = visita.VisitasHijas?.Select(MapToDto).ToList() ?? new List<VisitaDto>();
+            
+            return new VisitaMasivaDto
             {
                 Id = visita.Id,
                 NumeroSolicitud = visita.NumeroSolicitud,
                 Fecha = visita.Fecha,
+                FechaInicio = visita.FechaInicio,
+                FechaVencimiento = visita.FechaVencimiento,
                 Estado = visita.Estado,
-                IdSolicitante = visita.IdSolicitante,
-                IdCompania = visita.IdCompania,
+                EsVisitaMasiva = visita.EsVisitaMasiva,
                 TipoVisita = visita.TipoVisita,
                 Procedencia = visita.Procedencia,
-                IdRecibidoPor = visita.IdRecibidoPor,
                 Destino = visita.Destino,
-                FechaLlegada = visita.FechaLlegada,
-                FechaSalida = visita.FechaSalida,
-                IdentidadVisitante = visita.IdentidadVisitante,
                 TipoTransporte = visita.TipoTransporte,
                 MotivoVisita = visita.MotivoVisita,
-                NombreCompleto = visita.NombreCompleto,
-                PlacaVehiculo = visita.PlacaVehiculo,
+                IdSolicitante = visita.IdSolicitante,
+                IdCompania = visita.IdCompania,
+                IdRecibidoPor = visita.IdRecibidoPor,
                 IdCentro = visita.IdCentro,
                 CreatedAt = visita.CreatedAt,
                 UpdatedAt = visita.UpdatedAt,
@@ -520,12 +710,98 @@ namespace Park.Api.Services
                     Id = visita.Compania.Id,
                     Name = visita.Compania.Name,
                     Description = visita.Compania.Description,
-                    Address = visita.Compania.Address,
-                    Phone = visita.Compania.Phone,
-                    Email = visita.Compania.Email,
-                    ContactPerson = visita.Compania.ContactPerson,
-                    ContactPhone = visita.Compania.ContactPhone,
-                    ContactEmail = visita.Compania.ContactEmail,
+                    IsActive = visita.Compania.IsActive,
+                    CreatedAt = visita.Compania.CreatedAt,
+                    IdSitio = visita.Compania.IdSitio
+                } : null,
+                RecibidoPor = visita.RecibidoPor != null ? new ColaboradorDto
+                {
+                    Id = visita.RecibidoPor.Id,
+                    IdCompania = visita.RecibidoPor.IdCompania,
+                    Identidad = visita.RecibidoPor.Identidad,
+                    Nombre = visita.RecibidoPor.Nombre,
+                    Puesto = visita.RecibidoPor.Puesto,
+                    Email = visita.RecibidoPor.Email,
+                    Tel1 = visita.RecibidoPor.Tel1,
+                    Tel2 = visita.RecibidoPor.Tel2,
+                    Tel3 = visita.RecibidoPor.Tel3,
+                    PlacaVehiculo = visita.RecibidoPor.PlacaVehiculo,
+                    Comentario = visita.RecibidoPor.Comentario,
+                    IsBlackList = visita.RecibidoPor.IsBlackList,
+                    IsActive = visita.RecibidoPor.IsActive,
+                    CreatedAt = visita.RecibidoPor.CreatedAt,
+                    UpdatedAt = visita.RecibidoPor.UpdatedAt
+                } : null,
+                Centro = visita.Centro != null ? new CentroDto
+                {
+                    Id = visita.Centro.Id,
+                    IdZona = visita.Centro.IdZona,
+                    Nombre = visita.Centro.Nombre,
+                    Localidad = visita.Centro.Localidad,
+                    IsActive = visita.Centro.IsActive,
+                    CreatedAt = visita.Centro.CreatedAt,
+                    UpdatedAt = visita.Centro.UpdatedAt
+                } : null,
+                VisitasHijas = visitasHijas,
+                TotalVisitantes = visitasHijas.Count,
+                VisitantesCheckIn = visitasHijas.Count(v => v.Estado == VisitStatus.EnProceso || v.Estado == VisitStatus.Terminada),
+                VisitantesCheckOut = visitasHijas.Count(v => v.Estado == VisitStatus.Terminada)
+            };
+        }
+
+        private static VisitaDto MapToDto(Visita visita)
+        {
+            return new VisitaDto
+            {
+                Id = visita.Id,
+                NumeroSolicitud = visita.NumeroSolicitud,
+                Fecha = visita.Fecha,
+                FechaInicio = visita.FechaInicio,
+                FechaVencimiento = visita.FechaVencimiento,
+                Estado = visita.Estado,
+                IdSolicitante = visita.IdSolicitante,
+                IdCompania = visita.IdCompania,
+                TipoVisita = visita.TipoVisita,
+                Procedencia = visita.Procedencia,
+                IdRecibidoPor = visita.IdRecibidoPor,
+                Destino = visita.Destino,
+                FechaLlegada = visita.FechaLlegada,
+                FechaSalida = visita.FechaSalida,
+                IdentidadVisitante = visita.IdentidadVisitante,
+                TipoTransporte = visita.TipoTransporte,
+                MotivoVisita = visita.MotivoVisita,
+                NombreCompleto = visita.NombreCompleto,
+                PlacaVehiculo = visita.PlacaVehiculo,
+                IdCentro = visita.IdCentro,
+                IdVisitaPadre = visita.IdVisitaPadre,
+                EsVisitaMasiva = visita.EsVisitaMasiva,
+                IdVisitor = visita.IdVisitor,
+                CreatedAt = visita.CreatedAt,
+                UpdatedAt = visita.UpdatedAt,
+                IsActive = visita.IsActive,
+                Solicitante = visita.Solicitante != null ? new ColaboradorDto
+                {
+                    Id = visita.Solicitante.Id,
+                    IdCompania = visita.Solicitante.IdCompania,
+                    Identidad = visita.Solicitante.Identidad,
+                    Nombre = visita.Solicitante.Nombre,
+                    Puesto = visita.Solicitante.Puesto,
+                    Email = visita.Solicitante.Email,
+                    Tel1 = visita.Solicitante.Tel1,
+                    Tel2 = visita.Solicitante.Tel2,
+                    Tel3 = visita.Solicitante.Tel3,
+                    PlacaVehiculo = visita.Solicitante.PlacaVehiculo,
+                    Comentario = visita.Solicitante.Comentario,
+                    IsBlackList = visita.Solicitante.IsBlackList,
+                    IsActive = visita.Solicitante.IsActive,
+                    CreatedAt = visita.Solicitante.CreatedAt,
+                    UpdatedAt = visita.Solicitante.UpdatedAt
+                } : null,
+                Compania = visita.Compania != null ? new CompanyDto
+                {
+                    Id = visita.Compania.Id,
+                    Name = visita.Compania.Name,
+                    Description = visita.Compania.Description,
                     IsActive = visita.Compania.IsActive,
                     CreatedAt = visita.Compania.CreatedAt,
                     IdSitio = visita.Compania.IdSitio
@@ -686,6 +962,117 @@ namespace Park.Api.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al buscar visitas");
+                throw;
+            }
+        }
+
+        // Método para buscar o crear visitante desde visita
+        public async Task<VisitorExisteDto> BuscarOCrearVisitorAsync(string identidad, CrearVisitorDesdeVisitaDto datos)
+        {
+            try
+            {
+                // Buscar visitante existente por identidad
+                var visitorExiste = await _context.Visitors
+                    .FirstOrDefaultAsync(v => v.DocumentNumber == identidad);
+
+                if (visitorExiste != null)
+                {
+                    // Verificar si los datos son diferentes
+                    var datosDiferentes = visitorExiste.FirstName != datos.FirstName ||
+                                        visitorExiste.LastName != datos.LastName ||
+                                        visitorExiste.DocumentType != datos.DocumentType ||
+                                        (datos.Email != null && visitorExiste.Email != datos.Email) ||
+                                        (datos.Phone != null && visitorExiste.Phone != datos.Phone) ||
+                                        (datos.Company != null && visitorExiste.Company != datos.Company);
+
+                    if (datosDiferentes)
+                    {
+                        return new VisitorExisteDto
+                        {
+                            Existe = true,
+                            Visitor = new VisitorDto
+                            {
+                                Id = visitorExiste.Id,
+                                FirstName = visitorExiste.FirstName,
+                                LastName = visitorExiste.LastName,
+                                Email = visitorExiste.Email,
+                                Phone = visitorExiste.Phone,
+                                DocumentType = visitorExiste.DocumentType,
+                                DocumentNumber = visitorExiste.DocumentNumber,
+                                Company = visitorExiste.Company,
+                                IsActive = visitorExiste.IsActive,
+                                CreatedAt = visitorExiste.CreatedAt,
+                                UpdatedAt = visitorExiste.UpdatedAt
+                            },
+                            Mensaje = $"Ya existe un visitante con esta identidad pero con datos diferentes. ¿Desea actualizar los datos del visitante existente?"
+                        };
+                    }
+                    else
+                    {
+                        return new VisitorExisteDto
+                        {
+                            Existe = true,
+                            Visitor = new VisitorDto
+                            {
+                                Id = visitorExiste.Id,
+                                FirstName = visitorExiste.FirstName,
+                                LastName = visitorExiste.LastName,
+                                Email = visitorExiste.Email,
+                                Phone = visitorExiste.Phone,
+                                DocumentType = visitorExiste.DocumentType,
+                                DocumentNumber = visitorExiste.DocumentNumber,
+                                Company = visitorExiste.Company,
+                                IsActive = visitorExiste.IsActive,
+                                CreatedAt = visitorExiste.CreatedAt,
+                                UpdatedAt = visitorExiste.UpdatedAt
+                            },
+                            Mensaje = "Visitante encontrado con datos idénticos"
+                        };
+                    }
+                }
+
+                // Si no existe, crear nuevo visitante
+                var nuevoVisitor = new Visitor
+                {
+                    FirstName = datos.FirstName,
+                    LastName = datos.LastName,
+                    Email = datos.Email ?? string.Empty,
+                    Phone = datos.Phone ?? string.Empty,
+                    DocumentType = datos.DocumentType,
+                    DocumentNumber = datos.DocumentNumber,
+                    Company = datos.Company ?? string.Empty,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                _context.Visitors.Add(nuevoVisitor);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Visitante creado automáticamente desde visita: {FullName} ({DocumentNumber})", nuevoVisitor.FullName, nuevoVisitor.DocumentNumber);
+
+                return new VisitorExisteDto
+                {
+                    Existe = false,
+                    Visitor = new VisitorDto
+                    {
+                        Id = nuevoVisitor.Id,
+                        FirstName = nuevoVisitor.FirstName,
+                        LastName = nuevoVisitor.LastName,
+                        Email = nuevoVisitor.Email,
+                        Phone = nuevoVisitor.Phone,
+                        DocumentType = nuevoVisitor.DocumentType,
+                        DocumentNumber = nuevoVisitor.DocumentNumber,
+                        Company = nuevoVisitor.Company,
+                        IsActive = nuevoVisitor.IsActive,
+                        CreatedAt = nuevoVisitor.CreatedAt,
+                        UpdatedAt = nuevoVisitor.UpdatedAt
+                    },
+                    Mensaje = "Visitante creado exitosamente"
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al buscar o crear visitante con identidad {Identidad}", identidad);
                 throw;
             }
         }

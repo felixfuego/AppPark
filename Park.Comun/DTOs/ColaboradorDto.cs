@@ -6,6 +6,8 @@ namespace Park.Comun.DTOs
     {
         public int Id { get; set; }
         public int IdCompania { get; set; }
+        public int IdSitio { get; set; } // Agregado para el formulario de edición
+        public int IdZona { get; set; } // Agregado para el formulario de edición
         public string Identidad { get; set; } = string.Empty;
         public string Nombre { get; set; } = string.Empty;
         public string Puesto { get; set; } = string.Empty;
@@ -27,6 +29,14 @@ namespace Park.Comun.DTOs
 
     public class CreateColaboradorDto
     {
+        [Required(ErrorMessage = "El ID del sitio es obligatorio")]
+        [Range(1, int.MaxValue, ErrorMessage = "El ID del sitio debe ser mayor a 0")]
+        public int IdSitio { get; set; }
+        
+        [Required(ErrorMessage = "El ID de la zona es obligatorio")]
+        [Range(1, int.MaxValue, ErrorMessage = "El ID de la zona debe ser mayor a 0")]
+        public int IdZona { get; set; }
+        
         [Required(ErrorMessage = "El ID de la compañía es obligatorio")]
         [Range(1, int.MaxValue, ErrorMessage = "El ID de la compañía debe ser mayor a 0")]
         public int IdCompania { get; set; }
@@ -70,11 +80,16 @@ namespace Park.Comun.DTOs
         public string Comentario { get; set; } = string.Empty;
         
         public bool IsBlackList { get; set; } = false;
+        
+        // Lista de IDs de centros de acceso seleccionados
+        public List<int> CentroIds { get; set; } = new List<int>();
     }
 
     public class UpdateColaboradorDto
     {
         public int Id { get; set; }
+        public int IdSitio { get; set; }
+        public int IdZona { get; set; }
         public int IdCompania { get; set; }
         public string Identidad { get; set; } = string.Empty;
         public string Nombre { get; set; } = string.Empty;
@@ -87,5 +102,8 @@ namespace Park.Comun.DTOs
         public string Comentario { get; set; } = string.Empty;
         public bool IsBlackList { get; set; }
         public bool IsActive { get; set; }
+        
+        // Lista de IDs de centros de acceso seleccionados
+        public List<int> CentroIds { get; set; } = new List<int>();
     }
 }

@@ -247,5 +247,37 @@ namespace Park.Api.Controllers
                 return StatusCode(500, "Error interno del servidor");
             }
         }
+
+        [HttpGet("empresas-by-zona/{idZona}")]
+        [Authorize]
+        public async Task<ActionResult<IEnumerable<CompanyDto>>> GetEmpresasByZona(int idZona)
+        {
+            try
+            {
+                var empresas = await _colaboradorService.GetEmpresasByZonaAsync(idZona);
+                return Ok(empresas);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener empresas por zona {IdZona}", idZona);
+                return StatusCode(500, $"Error interno del servidor: {ex.Message}");
+            }
+        }
+
+        [HttpGet("centros-by-zona/{idZona}")]
+        [Authorize]
+        public async Task<ActionResult<IEnumerable<CentroDto>>> GetCentrosByZona(int idZona)
+        {
+            try
+            {
+                var centros = await _colaboradorService.GetCentrosByZonaAsync(idZona);
+                return Ok(centros);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener centros por zona {IdZona}", idZona);
+                return StatusCode(500, $"Error interno del servidor: {ex.Message}");
+            }
+        }
     }
 }

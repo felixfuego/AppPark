@@ -3,13 +3,14 @@
 @using Park.Comun.DTOs
 @using Park.Front.Components
 @inject UserService UserService
+@inject ColaboradorService ColaboradorService
 @inject IJSRuntime JSRuntime
 
 <PageTitle>Gestión de Usuarios - Park.Front</PageTitle>
 
 <RoleGuard RequiredRole="Admin">
 
-<div class="users-container">
+<div class="users-container management-page">
     <div class="page-header">
         <div class="page-title">
             <h1>Gestión de Usuarios</h1>
@@ -42,6 +43,8 @@
                             <th>Usuario</th>
                             <th>Email</th>
                             <th>Nombre Completo</th>
+                            <th>Colaborador Asignado</th>
+                            <th>Empresa</th>
                             <th>Roles</th>
                             <th>Estado</th>
                             <th>Último Login</th>
@@ -59,6 +62,34 @@
                                 </td>
                                 <td>@user.Email</td>
                                 <td>@user.FullName</td>
+                                <td>
+                                    @if (user.Colaborador != null)
+                                    {
+                                        <div class="colaborador-info">
+                                            <strong>@user.Colaborador.Nombre</strong>
+                                            <br>
+                                            <small class="text-muted">@user.Colaborador.Puesto</small>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Sin asignar</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (user.Colaborador?.Compania != null)
+                                    {
+                                        <span class="badge bg-info">@user.Colaborador.Compania.Name</span>
+                                    }
+                                    else if (user.Compania != null)
+                                    {
+                                        <span class="badge bg-info">@user.Compania.Name</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">Sin empresa</span>
+                                    }
+                                </td>
                                 <td>
                                     <div class="roles-container">
                                         @foreach (var role in user.Roles)
@@ -93,9 +124,24 @@
                                 </td>
                                 <td>
                                     <div class="action-buttons">
+                                        <button class="btn btn-sm btn-outline-info" @onclick="() => ShowViewModal(user)" title="Ver Detalles">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
                                         <button class="btn btn-sm btn-outline-primary" @onclick="() => ShowEditModal(user)" title="Editar">
                                             <i class="bi bi-pencil"></i>
                                         </button>
+                                        @if (user.Colaborador != null)
+                                        {
+                                            <button class="btn btn-sm btn-outline-warning" @onclick="() => RemoveColaboradorFromUser(user.Id)" title="Remover Colaborador">
+                                                <i class="bi bi-person-dash"></i>
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn btn-sm btn-outline-success" @onclick="() => ShowAssignColaboradorModal(user)" title="Asignar Colaborador">
+                                                <i class="bi bi-person-plus"></i>
+                                            </button>
+                                        }
                                         @if (user.IsLocked)
                                         {
                                             <button class="btn btn-sm btn-outline-success" @onclick="() => UnlockUser(user.Id)" title="Desbloquear">
@@ -137,22 +183,38 @@
                     <button type="button" class="btn-close" @onclick="HideModal"></button>
                 </div>
                 <div class="modal-body">
-                    <EditForm Model="@currentUser" OnValidSubmit="@HandleSave">
+                    <EditForm Model="@(isEditing ? currentEditUser : currentUser)" OnValidSubmit="@HandleSave">
                         <DataAnnotationsValidator />
                         
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label for="username">Nombre de Usuario</label>
-                                    <InputText id="username" @bind-Value="currentUser.Username" class="form-control" />
-                                    <ValidationMessage For="@(() => currentUser.Username)" class="text-danger" />
+                                    @if (isEditing)
+                                    {
+                                        <InputText id="username" @bind-Value="currentEditUser.Username" class="form-control" />
+                                        <ValidationMessage For="@(() => currentEditUser.Username)" class="text-danger" />
+                                    }
+                                    else
+                                    {
+                                        <InputText id="username" @bind-Value="currentUser.Username" class="form-control" />
+                                        <ValidationMessage For="@(() => currentUser.Username)" class="text-danger" />
+                                    }
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label for="email">Email</label>
-                                    <InputText id="email" @bind-Value="currentUser.Email" type="email" class="form-control" />
-                                    <ValidationMessage For="@(() => currentUser.Email)" class="text-danger" />
+                                    @if (isEditing)
+                                    {
+                                        <InputText id="email" @bind-Value="currentEditUser.Email" type="email" class="form-control" />
+                                        <ValidationMessage For="@(() => currentEditUser.Email)" class="text-danger" />
+                                    }
+                                    else
+                                    {
+                                        <InputText id="email" @bind-Value="currentUser.Email" type="email" class="form-control" />
+                                        <ValidationMessage For="@(() => currentUser.Email)" class="text-danger" />
+                                    }
                                 </div>
                             </div>
                         </div>
@@ -161,15 +223,31 @@
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label for="firstName">Nombre</label>
-                                    <InputText id="firstName" @bind-Value="currentUser.FirstName" class="form-control" />
-                                    <ValidationMessage For="@(() => currentUser.FirstName)" class="text-danger" />
+                                    @if (isEditing)
+                                    {
+                                        <InputText id="firstName" @bind-Value="currentEditUser.FirstName" class="form-control" />
+                                        <ValidationMessage For="@(() => currentEditUser.FirstName)" class="text-danger" />
+                                    }
+                                    else
+                                    {
+                                        <InputText id="firstName" @bind-Value="currentUser.FirstName" class="form-control" />
+                                        <ValidationMessage For="@(() => currentUser.FirstName)" class="text-danger" />
+                                    }
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label for="lastName">Apellido</label>
-                                    <InputText id="lastName" @bind-Value="currentUser.LastName" class="form-control" />
-                                    <ValidationMessage For="@(() => currentUser.LastName)" class="text-danger" />
+                                    @if (isEditing)
+                                    {
+                                        <InputText id="lastName" @bind-Value="currentEditUser.LastName" class="form-control" />
+                                        <ValidationMessage For="@(() => currentEditUser.LastName)" class="text-danger" />
+                                    }
+                                    else
+                                    {
+                                        <InputText id="lastName" @bind-Value="currentUser.LastName" class="form-control" />
+                                        <ValidationMessage For="@(() => currentUser.LastName)" class="text-danger" />
+                                    }
                                 </div>
                             </div>
                         </div>
@@ -314,6 +392,532 @@
     </div>
 }
 
+<!-- Modal para asignar colaborador -->
+@if (showAssignColaboradorModal)
+{
+    <div class="modal-backdrop show" @onclick="HideAssignColaboradorModal"></div>
+    <div class="modal show d-block" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Asignar Colaborador a Usuario</h5>
+                    <button type="button" class="btn-close" @onclick="HideAssignColaboradorModal"></button>
+                </div>
+                <div class="modal-body">
+                    @if (selectedUserForColaborador != null)
+                    {
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Usuario:</label>
+                            <p class="form-control-plaintext">@selectedUserForColaborador.Username - @selectedUserForColaborador.FullName</p>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="colaboradorSelect" class="form-label fw-bold">Seleccionar Colaborador:</label>
+                            <select id="colaboradorSelect" @bind="selectedColaboradorId" class="form-select">
+                                <option value="0">-- Seleccionar Colaborador --</option>
+                                @foreach (var colaborador in availableColaboradores.Where(c => c.IsActive))
+                                {
+                                    <option value="@colaborador.Id">
+                                        @colaborador.Nombre (@colaborador.Puesto) - @colaborador.Compania?.Name
+                                    </option>
+                                }
+                            </select>
+                        </div>
+
+                        @if (selectedColaboradorId > 0)
+                        {
+                            var selectedColaborador = availableColaboradores.FirstOrDefault(c => c.Id == selectedColaboradorId);
+                            if (selectedColaborador != null)
+                            {
+                                <div class="alert alert-info">
+                                    <h6>Información del Colaborador:</h6>
+                                    <p><strong>Nombre:</strong> @selectedColaborador.Nombre</p>
+                                    <p><strong>Puesto:</strong> @selectedColaborador.Puesto</p>
+                                    <p><strong>Empresa:</strong> @selectedColaborador.Compania?.Name</p>
+                                    <p><strong>Email:</strong> @selectedColaborador.Email</p>
+                                    <p><strong>Teléfono:</strong> @selectedColaborador.Tel1</p>
+                                </div>
+                            }
+                        }
+
+                        @if (!string.IsNullOrEmpty(errorMessage))
+                        {
+                            <div class="alert alert-danger" role="alert">
+                                @errorMessage
+                            </div>
+                        }
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" @onclick="HideAssignColaboradorModal">Cancelar</button>
+                            <button type="button" class="btn btn-primary" @onclick="AssignColaboradorToUser" disabled="@(selectedColaboradorId == 0 || isAssigningColaborador)">
+                                @if (isAssigningColaborador)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                }
+                                Asignar Colaborador
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Modal para ver detalles del usuario -->
+@if (showViewModal && selectedUserForView != null)
+{
+    <div class="modal-backdrop show" @onclick="HideViewModal"></div>
+    <div class="modal show d-block" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-person-circle me-2"></i>
+                        Detalles del Usuario: @selectedUserForView.Username
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="HideViewModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <!-- Información Personal -->
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-person me-2"></i>
+                                        Información Personal
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row mb-3">
+                                        <div class="col-sm-4">
+                                            <strong>Usuario:</strong>
+                                        </div>
+                                        <div class="col-sm-8">
+                                            <span class="badge bg-primary">@selectedUserForView.Username</span>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-sm-4">
+                                            <strong>Email:</strong>
+                                        </div>
+                                        <div class="col-sm-8">
+                                            <a href="mailto:@selectedUserForView.Email" class="text-decoration-none">
+                                                @selectedUserForView.Email
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-sm-4">
+                                            <strong>Nombre:</strong>
+                                        </div>
+                                        <div class="col-sm-8">
+                                            @selectedUserForView.FullName
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-sm-4">
+                                            <strong>Estado:</strong>
+                                        </div>
+                                        <div class="col-sm-8">
+                                            @if (selectedUserForView.IsActive)
+                                            {
+                                                <span class="badge bg-success">Activo</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger">Inactivo</span>
+                                            }
+                                            @if (selectedUserForView.IsLocked)
+                                            {
+                                                <span class="badge bg-warning ms-1">Bloqueado</span>
+                                            }
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-sm-4">
+                                            <strong>Último Login:</strong>
+                                        </div>
+                                        <div class="col-sm-8">
+                                            @if (selectedUserForView.LastLogin.HasValue)
+                                            {
+                                                <span>@selectedUserForView.LastLogin.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">Nunca</span>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Información del Colaborador -->
+                        <div class="col-md-6">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-person-badge me-2"></i>
+                                        Colaborador Asignado
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    @if (selectedUserForView.Colaborador != null)
+                                    {
+                                        <div class="row mb-3">
+                                            <div class="col-sm-4">
+                                                <strong>Nombre:</strong>
+                                            </div>
+                                            <div class="col-sm-8">
+                                                @selectedUserForView.Colaborador.Nombre
+                                            </div>
+                                        </div>
+                                        <div class="row mb-3">
+                                            <div class="col-sm-4">
+                                                <strong>Puesto:</strong>
+                                            </div>
+                                            <div class="col-sm-8">
+                                                @selectedUserForView.Colaborador.Puesto
+                                            </div>
+                                        </div>
+                                        <div class="row mb-3">
+                                            <div class="col-sm-4">
+                                                <strong>Identidad:</strong>
+                                            </div>
+                                            <div class="col-sm-8">
+                                                @selectedUserForView.Colaborador.Identidad
+                                            </div>
+                                        </div>
+                                        <div class="row mb-3">
+                                            <div class="col-sm-4">
+                                                <strong>Email:</strong>
+                                            </div>
+                                            <div class="col-sm-8">
+                                                <a href="mailto:@selectedUserForView.Colaborador.Email" class="text-decoration-none">
+                                                    @selectedUserForView.Colaborador.Email
+                                                </a>
+                                            </div>
+                                        </div>
+                                        <div class="row mb-3">
+                                            <div class="col-sm-4">
+                                                <strong>Teléfono:</strong>
+                                            </div>
+                                            <div class="col-sm-8">
+                                                @selectedUserForView.Colaborador.Tel1
+                                            </div>
+                                        </div>
+                                        <div class="row mb-3">
+                                            <div class="col-sm-4">
+                                                <strong>Placa:</strong>
+                                            </div>
+                                            <div class="col-sm-8">
+                                                @if (!string.IsNullOrEmpty(selectedUserForView.Colaborador.PlacaVehiculo))
+                                                {
+                                                    <span class="badge bg-info">@selectedUserForView.Colaborador.PlacaVehiculo</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">Sin placa</span>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="text-center text-muted py-4">
+                                            <i class="bi bi-person-x display-4"></i>
+                                            <p class="mt-2">Sin colaborador asignado</p>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-3">
+                        <!-- Información de la Empresa -->
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-building me-2"></i>
+                                        Empresa
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    @if (selectedUserForView.Colaborador?.Compania != null)
+                                    {
+                                        var empresa = selectedUserForView.Colaborador.Compania;
+                                        <div class="row mb-3">
+                                            <div class="col-sm-4">
+                                                <strong>Nombre:</strong>
+                                            </div>
+                                            <div class="col-sm-8">
+                                                <span class="badge bg-info">@empresa.Name</span>
+                                            </div>
+                                        </div>
+                                        <div class="row mb-3">
+                                            <div class="col-sm-4">
+                                                <strong>Descripción:</strong>
+                                            </div>
+                                            <div class="col-sm-8">
+                                                @empresa.Description
+                                            </div>
+                                        </div>
+                                        <div class="row mb-3">
+                                            <div class="col-sm-4">
+                                                <strong>Sitio:</strong>
+                                            </div>
+                                            <div class="col-sm-8">
+                                                @if (empresa.Sitio != null)
+                                                {
+                                                    <span class="badge bg-secondary">@empresa.Sitio.Nombre</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">Sin sitio asignado</span>
+                                                }
+                                            </div>
+                                        </div>
+                                        <div class="row mb-3">
+                                            <div class="col-sm-4">
+                                                <strong>Zonas de Acceso:</strong>
+                                            </div>
+                                            <div class="col-sm-8">
+                                                @if (empresa.ZonasAcceso != null && empresa.ZonasAcceso.Any())
+                                                {
+                                                    <div class="d-flex flex-wrap gap-1">
+                                                        @foreach (var zona in empresa.ZonasAcceso)
+                                                        {
+                                                            <span class="badge bg-light text-dark">@zona.Nombre</span>
+                                                        }
+                                                    </div>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">Sin zonas asignadas</span>
+                                                }
+                                            </div>
+                                        </div>
+                                        <div class="row mb-3">
+                                            <div class="col-sm-4">
+                                                <strong>Visitas:</strong>
+                                            </div>
+                                            <div class="col-sm-8">
+                                                <span class="badge bg-info">@empresa.VisitsCount</span>
+                                            </div>
+                                        </div>
+                                    }
+                                    else if (selectedUserForView.Compania != null)
+                                    {
+                                        var empresa = selectedUserForView.Compania;
+                                        <div class="row mb-3">
+                                            <div class="col-sm-4">
+                                                <strong>Nombre:</strong>
+                                            </div>
+                                            <div class="col-sm-8">
+                                                <span class="badge bg-info">@empresa.Name</span>
+                                            </div>
+                                        </div>
+                                        <div class="row mb-3">
+                                            <div class="col-sm-4">
+                                                <strong>Descripción:</strong>
+                                            </div>
+                                            <div class="col-sm-8">
+                                                @empresa.Description
+                                            </div>
+                                        </div>
+                                        <div class="row mb-3">
+                                            <div class="col-sm-4">
+                                                <strong>Sitio:</strong>
+                                            </div>
+                                            <div class="col-sm-8">
+                                                @if (empresa.Sitio != null)
+                                                {
+                                                    <span class="badge bg-secondary">@empresa.Sitio.Nombre</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">Sin sitio asignado</span>
+                                                }
+                                            </div>
+                                        </div>
+                                        <div class="row mb-3">
+                                            <div class="col-sm-4">
+                                                <strong>Visitas:</strong>
+                                            </div>
+                                            <div class="col-sm-8">
+                                                <span class="badge bg-info">@empresa.VisitsCount</span>
+                                            </div>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="text-center text-muted py-4">
+                                            <i class="bi bi-building-x display-4"></i>
+                                            <p class="mt-2">Sin empresa asignada</p>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Centros de Acceso -->
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-geo-alt me-2"></i>
+                                        Centros de Acceso
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    @if (selectedUserForView.Colaborador?.ColaboradorByCentros != null && selectedUserForView.Colaborador.ColaboradorByCentros.Any())
+                                    {
+                                        <div class="list-group list-group-flush">
+                                            @foreach (var centro in selectedUserForView.Colaborador.ColaboradorByCentros)
+                                            {
+                                                <div class="list-group-item d-flex justify-content-between align-items-center px-0">
+                                                    <div>
+                                                        <strong>@centro.Centro?.Nombre</strong>
+                                                        <br>
+                                                        <small class="text-muted">@centro.Centro?.Localidad</small>
+                                                    </div>
+                                                    <span class="badge bg-success">Acceso</span>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="text-center text-muted py-4">
+                                            <i class="bi bi-geo-alt-x display-4"></i>
+                                            <p class="mt-2">Sin centros asignados</p>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-3">
+                        <!-- Roles del Usuario -->
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-shield-check me-2"></i>
+                                        Roles Asignados
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    @if (selectedUserForView.Roles != null && selectedUserForView.Roles.Any())
+                                    {
+                                        <div class="d-flex flex-wrap gap-2">
+                                            @foreach (var role in selectedUserForView.Roles)
+                                            {
+                                                <span class="badge bg-primary fs-6">@role.Name</span>
+                                            }
+                                        </div>
+                                        <div class="mt-3">
+                                            <small class="text-muted">
+                                                <strong>Descripciones:</strong>
+                                            </small>
+                                            <ul class="list-unstyled mt-2">
+                                                @foreach (var role in selectedUserForView.Roles)
+                                                {
+                                                    <li class="mb-1">
+                                                        <strong>@role.Name:</strong> @role.Description
+                                                    </li>
+                                                }
+                                            </ul>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="text-center text-muted py-4">
+                                            <i class="bi bi-shield-x display-4"></i>
+                                            <p class="mt-2">Sin roles asignados</p>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Información de Auditoría -->
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-clock-history me-2"></i>
+                                        Información de Auditoría
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row mb-3">
+                                        <div class="col-sm-5">
+                                            <strong>Fecha de Creación:</strong>
+                                        </div>
+                                        <div class="col-sm-7">
+                                            @selectedUserForView.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-sm-5">
+                                            <strong>Última Actualización:</strong>
+                                        </div>
+                                        <div class="col-sm-7">
+                                            @if (selectedUserForView.UpdatedAt.HasValue)
+                                            {
+                                                <span>@selectedUserForView.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">Nunca actualizado</span>
+                                            }
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-sm-5">
+                                            <strong>ID del Usuario:</strong>
+                                        </div>
+                                        <div class="col-sm-7">
+                                            <code>@selectedUserForView.Id</code>
+                                        </div>
+                                    </div>
+                                    @if (selectedUserForView.Colaborador != null)
+                                    {
+                                        <div class="row mb-3">
+                                            <div class="col-sm-5">
+                                                <strong>ID Colaborador:</strong>
+                                            </div>
+                                            <div class="col-sm-7">
+                                                <code>@selectedUserForView.IdColaborador</code>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="HideViewModal">
+                        <i class="bi bi-x-circle me-2"></i>
+                        Cerrar
+                    </button>
+                    <button type="button" class="btn btn-primary" @onclick="() => { HideViewModal(); ShowEditModal(selectedUserForView); }">
+                        <i class="bi bi-pencil me-2"></i>
+                        Editar Usuario
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private List<UserDto> users = new();
     private List<RoleDto> availableRoles = new();
@@ -331,6 +935,17 @@
     private string passwordErrorMessage = string.Empty;
     private ChangePasswordDto changePasswordModel = new();
     private int passwordChangeUserId = 0;
+    
+    // Variables para asignación de colaboradores
+    private bool showAssignColaboradorModal = false;
+    private List<ColaboradorDto> availableColaboradores = new();
+    private UserDto? selectedUserForColaborador = null;
+    private int selectedColaboradorId = 0;
+    private bool isAssigningColaborador = false;
+    
+    // Variables para modal de visualización
+    private bool showViewModal = false;
+    private UserDto? selectedUserForView = null;
 
     protected override async Task OnInitializedAsync()
     {
@@ -364,11 +979,24 @@
         errorMessage = string.Empty;
     }
 
+    private void ShowViewModal(UserDto user)
+    {
+        selectedUserForView = user;
+        showViewModal = true;
+    }
+
+    private void HideViewModal()
+    {
+        showViewModal = false;
+        selectedUserForView = null;
+    }
+
     private void ShowEditModal(UserDto user)
     {
         editingUserId = user.Id;
         currentEditUser = new UpdateUserDto
         {
+            Id = user.Id,
             Username = user.Username,
             Email = user.Email,
             FirstName = user.FirstName,
@@ -483,6 +1111,76 @@
             catch (Exception ex)
             {
                 errorMessage = $"Error eliminando usuario: {ex.Message}";
+            }
+        }
+    }
+
+    private async Task ShowAssignColaboradorModal(UserDto user)
+    {
+        selectedUserForColaborador = user;
+        selectedColaboradorId = 0;
+        showAssignColaboradorModal = true;
+        errorMessage = string.Empty;
+        
+        try
+        {
+            // Cargar colaboradores disponibles (que no estén asignados a otros usuarios)
+            availableColaboradores = await ColaboradorService.GetAllColaboradoresAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error cargando colaboradores: {ex.Message}";
+        }
+    }
+
+    private void HideAssignColaboradorModal()
+    {
+        showAssignColaboradorModal = false;
+        selectedUserForColaborador = null;
+        selectedColaboradorId = 0;
+        errorMessage = string.Empty;
+    }
+
+    private async Task AssignColaboradorToUser()
+    {
+        if (selectedUserForColaborador == null || selectedColaboradorId == 0)
+        {
+            errorMessage = "Debe seleccionar un colaborador";
+            return;
+        }
+
+        try
+        {
+            isAssigningColaborador = true;
+            errorMessage = string.Empty;
+
+            await UserService.AssignColaboradorToUserAsync(selectedUserForColaborador.Id, selectedColaboradorId);
+            await LoadData();
+            HideAssignColaboradorModal();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error asignando colaborador: {ex.Message}";
+        }
+        finally
+        {
+            isAssigningColaborador = false;
+        }
+    }
+
+    private async Task RemoveColaboradorFromUser(int userId)
+    {
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", "¿Estás seguro de que quieres remover el colaborador asignado a este usuario?");
+        if (confirmed)
+        {
+            try
+            {
+                await UserService.RemoveColaboradorFromUserAsync(userId);
+                await LoadData();
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Error removiendo colaborador: {ex.Message}";
             }
         }
     }

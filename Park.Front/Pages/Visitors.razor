@@ -1,0 +1,931 @@
+@page "/visitors"
+@using Park.Comun.DTOs
+@using Park.Front.Services
+@inject VisitorService VisitorService
+@inject IJSRuntime JSRuntime
+@inject ILogger<Visitors> Logger
+
+<PageTitle>Gestión de Visitantes</PageTitle>
+
+<div class="container-fluid visitors-page">
+    <!-- Header de la página -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-1">
+                        <i class="bi bi-people-fill text-primary me-2"></i>
+                        Gestión de Visitantes
+                    </h2>
+                    <p class="text-muted mb-0">Administra la base de datos de visitantes del parque industrial</p>
+                </div>
+                <div>
+                    <button class="btn btn-primary" @onclick="ShowCreateModal">
+                        <i class="bi bi-person-plus me-1"></i>
+                        Nuevo Visitante
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtros de búsqueda -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Buscar</label>
+                            <input type="text" class="form-control" @bind="searchTerm" @onkeyup="OnSearchKeyUp" 
+                                   placeholder="Nombre, email, empresa, documento..." />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Tipo Documento</label>
+                            <select class="form-select" @bind="selectedDocumentType" @bind:after="OnFilterChange">
+                                <option value="">Todos</option>
+                                <option value="Cédula">Cédula</option>
+                                <option value="Pasaporte">Pasaporte</option>
+                                <option value="Licencia">Licencia</option>
+                                <option value="Otro">Otro</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Empresa</label>
+                            <input type="text" class="form-control" @bind="selectedCompany" @onkeyup="OnFilterChange" 
+                                   placeholder="Filtrar por empresa..." />
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Estado</label>
+                            <select class="form-select" @bind="selectedStatus" @bind:after="OnFilterChange">
+                                <option value="">Todos</option>
+                                <option value="true">Activos</option>
+                                <option value="false">Inactivos</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">&nbsp;</label>
+                            <div class="d-grid">
+                                <button class="btn btn-outline-secondary" @onclick="ClearFilters">
+                                    <i class="bi bi-x-circle me-1"></i>
+                                    Limpiar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de visitantes -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">
+                        <i class="bi bi-table me-2"></i>
+                        Lista de Visitantes
+                        @if (pagedResult != null)
+                        {
+                            <span class="badge bg-secondary ms-2">@pagedResult.TotalCount registros</span>
+                        }
+                    </h6>
+                    <div class="d-flex align-items-center gap-2">
+                        <label class="form-label mb-0 me-2">Mostrar:</label>
+                        <select class="form-select form-select-sm" style="width: auto;" @bind="pageSize" @bind:after="OnPageSizeChange">
+                            <option value="10">10</option>
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    @if (isLoading)
+                    {
+                        <div class="text-center p-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Cargando...</span>
+                            </div>
+                            <p class="mt-2 text-muted">Cargando visitantes...</p>
+                        </div>
+                    }
+                    else if (visitors == null || !visitors.Any())
+                    {
+                        <div class="text-center p-4">
+                            <i class="bi bi-people text-muted" style="font-size: 3rem;"></i>
+                            <h5 class="text-muted mt-3">No hay visitantes</h5>
+                            <p class="text-muted">Comienza agregando un nuevo visitante</p>
+                            <button class="btn btn-primary" @onclick="ShowCreateModal">
+                                <i class="bi bi-person-plus me-1"></i>
+                                Agregar Visitante
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>
+                                            <button class="btn btn-link p-0 text-decoration-none" @onclick="@(() => SortBy("FullName"))">
+                                                Nombre Completo
+                                                @if (sortBy == "FullName")
+                                                {
+                                                    @if (sortDescending)
+                                                    {
+                                                        <i class="bi bi-arrow-down ms-1"></i>
+                                                    }
+                                                    else
+                                                    {
+                                                        <i class="bi bi-arrow-up ms-1"></i>
+                                                    }
+                                                }
+                                            </button>
+                                        </th>
+                                        <th>
+                                            <button class="btn btn-link p-0 text-decoration-none" @onclick="@(() => SortBy("Email"))">
+                                                Email
+                                                @if (sortBy == "Email")
+                                                {
+                                                    @if (sortDescending)
+                                                    {
+                                                        <i class="bi bi-arrow-down ms-1"></i>
+                                                    }
+                                                    else
+                                                    {
+                                                        <i class="bi bi-arrow-up ms-1"></i>
+                                                    }
+                                                }
+                                            </button>
+                                        </th>
+                                        <th>Teléfono</th>
+                                        <th>
+                                            <button class="btn btn-link p-0 text-decoration-none" @onclick="@(() => SortBy("Company"))">
+                                                Empresa
+                                                @if (sortBy == "Company")
+                                                {
+                                                    @if (sortDescending)
+                                                    {
+                                                        <i class="bi bi-arrow-down ms-1"></i>
+                                                    }
+                                                    else
+                                                    {
+                                                        <i class="bi bi-arrow-up ms-1"></i>
+                                                    }
+                                                }
+                                            </button>
+                                        </th>
+                                        <th>Documento</th>
+                                        <th>Estado</th>
+                                        <th>
+                                            <button class="btn btn-link p-0 text-decoration-none" @onclick="@(() => SortBy("CreatedAt"))">
+                                                Fecha Registro
+                                                @if (sortBy == "CreatedAt")
+                                                {
+                                                    @if (sortDescending)
+                                                    {
+                                                        <i class="bi bi-arrow-down ms-1"></i>
+                                                    }
+                                                    else
+                                                    {
+                                                        <i class="bi bi-arrow-up ms-1"></i>
+                                                    }
+                                                }
+                                            </button>
+                                        </th>
+                                        <th width="120">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var visitor in visitors)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2">
+                                                        @visitor.FirstName.Substring(0, 1).ToUpper()
+                                                    </div>
+                                                    <div>
+                                                        <div class="fw-medium">@visitor.FullName</div>
+                                                        <small class="text-muted">@visitor.DocumentType</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <a href="mailto:@visitor.Email" class="text-decoration-none">
+                                                    @visitor.Email
+                                                </a>
+                                            </td>
+                                            <td>
+                                                <a href="tel:@visitor.Phone" class="text-decoration-none">
+                                                    @visitor.Phone
+                                                </a>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-light text-dark">@visitor.Company</span>
+                                            </td>
+                                            <td>
+                                                <code>@visitor.DocumentNumber</code>
+                                            </td>
+                                            <td>
+                                                @if (visitor.IsActive)
+                                                {
+                                                    <span class="badge bg-success">Activo</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="badge bg-secondary">Inactivo</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <small class="text-muted">
+                                                    @visitor.CreatedAt.ToString("dd/MM/yyyy")
+                                                </small>
+                                            </td>
+                                            <td>
+                                                <div class="btn-group" role="group">
+                                                    <button class="btn btn-sm btn-outline-info" @onclick="() => ShowViewModal(visitor)" title="Ver Detalles">
+                                                        <i class="bi bi-eye"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-primary" @onclick="() => ShowEditModal(visitor)" title="Editar">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </button>
+                                                    @if (visitor.IsActive)
+                                                    {
+                                                        <button class="btn btn-sm btn-outline-warning" @onclick="() => DeactivateVisitor(visitor.Id)" title="Desactivar">
+                                                            <i class="bi bi-pause-circle"></i>
+                                                        </button>
+                                                    }
+                                                    else
+                                                    {
+                                                        <button class="btn btn-sm btn-outline-success" @onclick="() => ActivateVisitor(visitor.Id)" title="Activar">
+                                                            <i class="bi bi-play-circle"></i>
+                                                        </button>
+                                                    }
+                                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteVisitor(visitor.Id)" title="Eliminar">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+                
+                <!-- Paginación -->
+                @if (pagedResult != null && pagedResult.TotalPages > 1)
+                {
+                    <div class="card-footer">
+                        <nav aria-label="Paginación de visitantes">
+                            <ul class="pagination pagination-sm justify-content-center mb-0">
+                                <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                                    <button class="page-link" @onclick="() => ChangePage(1)" disabled="@(currentPage == 1)">
+                                        <i class="bi bi-chevron-double-left"></i>
+                                    </button>
+                                </li>
+                                <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                                    <button class="page-link" @onclick="() => ChangePage(currentPage - 1)" disabled="@(currentPage == 1)">
+                                        <i class="bi bi-chevron-left"></i>
+                                    </button>
+                                </li>
+                                
+                                @for (int i = Math.Max(1, currentPage - 2); i <= Math.Min(pagedResult.TotalPages, currentPage + 2); i++)
+                                {
+                                    <li class="page-item @(i == currentPage ? "active" : "")">
+                                        <button class="page-link" @onclick="() => ChangePage(i)">@i</button>
+                                    </li>
+                                }
+                                
+                                <li class="page-item @(currentPage == pagedResult.TotalPages ? "disabled" : "")">
+                                    <button class="page-link" @onclick="() => ChangePage(currentPage + 1)" disabled="@(currentPage == pagedResult.TotalPages)">
+                                        <i class="bi bi-chevron-right"></i>
+                                    </button>
+                                </li>
+                                <li class="page-item @(currentPage == pagedResult.TotalPages ? "disabled" : "")">
+                                    <button class="page-link" @onclick="() => ChangePage(pagedResult.TotalPages)" disabled="@(currentPage == pagedResult.TotalPages)">
+                                        <i class="bi bi-chevron-double-right"></i>
+                                    </button>
+                                </li>
+                            </ul>
+                        </nav>
+                        <div class="text-center mt-2">
+                            <small class="text-muted">
+                                Mostrando @((currentPage - 1) * pageSize + 1) a @(Math.Min(currentPage * pageSize, pagedResult.TotalCount)) de @pagedResult.TotalCount registros
+                            </small>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para crear visitante -->
+@if (showCreateModal)
+{
+    <div class="modal-backdrop show" @onclick="HideCreateModal"></div>
+    <div class="modal show d-block" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-person-plus me-2"></i>
+                        Nuevo Visitante
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="HideCreateModal"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="newVisitor" OnValidSubmit="CreateVisitor">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary class="text-danger" />
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Nombre *</label>
+                                <InputText class="form-control" @bind-Value="newVisitor.FirstName" placeholder="Ingrese el nombre" />
+                                <ValidationMessage For="@(() => newVisitor.FirstName)" class="text-danger" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Apellido *</label>
+                                <InputText class="form-control" @bind-Value="newVisitor.LastName" placeholder="Ingrese el apellido" />
+                                <ValidationMessage For="@(() => newVisitor.LastName)" class="text-danger" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Email *</label>
+                                <InputText class="form-control" @bind-Value="newVisitor.Email" placeholder="correo@ejemplo.com" />
+                                <ValidationMessage For="@(() => newVisitor.Email)" class="text-danger" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Teléfono *</label>
+                                <InputText class="form-control" @bind-Value="newVisitor.Phone" placeholder="+504 9999-9999" />
+                                <ValidationMessage For="@(() => newVisitor.Phone)" class="text-danger" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Tipo de Documento *</label>
+                                <InputSelect class="form-select" @bind-Value="newVisitor.DocumentType">
+                                    <option value="">Seleccione...</option>
+                                    <option value="Cédula">Cédula</option>
+                                    <option value="Pasaporte">Pasaporte</option>
+                                    <option value="Licencia">Licencia</option>
+                                    <option value="Otro">Otro</option>
+                                </InputSelect>
+                                <ValidationMessage For="@(() => newVisitor.DocumentType)" class="text-danger" />
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label">Número de Documento *</label>
+                                <InputText class="form-control" @bind-Value="newVisitor.DocumentNumber" placeholder="Ingrese el número de documento" />
+                                <ValidationMessage For="@(() => newVisitor.DocumentNumber)" class="text-danger" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Empresa *</label>
+                                <InputText class="form-control" @bind-Value="newVisitor.Company" placeholder="Nombre de la empresa" />
+                                <ValidationMessage For="@(() => newVisitor.Company)" class="text-danger" />
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <InputCheckbox class="form-check-input" @bind-Value="newVisitor.IsActive" />
+                                    <label class="form-check-label">Visitante activo</label>
+                                </div>
+                            </div>
+                        </div>
+                    </EditForm>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="HideCreateModal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" @onclick="CreateVisitor" disabled="@isCreating">
+                        @if (isCreating)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                        }
+                        Crear Visitante
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Modal para editar visitante -->
+@if (showEditModal && selectedVisitor != null)
+{
+    <div class="modal-backdrop show" @onclick="HideEditModal"></div>
+    <div class="modal show d-block" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-pencil me-2"></i>
+                        Editar Visitante
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="HideEditModal"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="editVisitor" OnValidSubmit="UpdateVisitor">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary class="text-danger" />
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Nombre *</label>
+                                <InputText class="form-control" @bind-Value="editVisitor.FirstName" placeholder="Ingrese el nombre" />
+                                <ValidationMessage For="@(() => editVisitor.FirstName)" class="text-danger" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Apellido *</label>
+                                <InputText class="form-control" @bind-Value="editVisitor.LastName" placeholder="Ingrese el apellido" />
+                                <ValidationMessage For="@(() => editVisitor.LastName)" class="text-danger" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Email *</label>
+                                <InputText class="form-control" @bind-Value="editVisitor.Email" placeholder="correo@ejemplo.com" />
+                                <ValidationMessage For="@(() => editVisitor.Email)" class="text-danger" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Teléfono *</label>
+                                <InputText class="form-control" @bind-Value="editVisitor.Phone" placeholder="+504 9999-9999" />
+                                <ValidationMessage For="@(() => editVisitor.Phone)" class="text-danger" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Tipo de Documento *</label>
+                                <InputSelect class="form-select" @bind-Value="editVisitor.DocumentType">
+                                    <option value="">Seleccione...</option>
+                                    <option value="Cédula">Cédula</option>
+                                    <option value="Pasaporte">Pasaporte</option>
+                                    <option value="Licencia">Licencia</option>
+                                    <option value="Otro">Otro</option>
+                                </InputSelect>
+                                <ValidationMessage For="@(() => editVisitor.DocumentType)" class="text-danger" />
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label">Número de Documento *</label>
+                                <InputText class="form-control" @bind-Value="editVisitor.DocumentNumber" placeholder="Ingrese el número de documento" />
+                                <ValidationMessage For="@(() => editVisitor.DocumentNumber)" class="text-danger" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Empresa *</label>
+                                <InputText class="form-control" @bind-Value="editVisitor.Company" placeholder="Nombre de la empresa" />
+                                <ValidationMessage For="@(() => editVisitor.Company)" class="text-danger" />
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check">
+                                    <InputCheckbox class="form-check-input" @bind-Value="editVisitor.IsActive" />
+                                    <label class="form-check-label">Visitante activo</label>
+                                </div>
+                            </div>
+                        </div>
+                    </EditForm>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="HideEditModal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" @onclick="UpdateVisitor" disabled="@isUpdating">
+                        @if (isUpdating)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                        }
+                        Actualizar Visitante
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Modal para ver detalles del visitante -->
+@if (showViewModal && selectedVisitor != null)
+{
+    <div class="modal-backdrop show" @onclick="HideViewModal"></div>
+    <div class="modal show d-block" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-eye me-2"></i>
+                        Detalles del Visitante
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="HideViewModal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <!-- Información Personal -->
+                        <div class="col-md-12">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-person me-2"></i>
+                                        Información Personal
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row mb-3">
+                                        <div class="col-sm-4"><strong>Nombre:</strong></div>
+                                        <div class="col-sm-8">@selectedVisitor.FullName</div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-sm-4"><strong>Email:</strong></div>
+                                        <div class="col-sm-8">
+                                            <a href="mailto:@selectedVisitor.Email" class="text-decoration-none">
+                                                @selectedVisitor.Email
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-sm-4"><strong>Teléfono:</strong></div>
+                                        <div class="col-sm-8">
+                                            <a href="tel:@selectedVisitor.Phone" class="text-decoration-none">
+                                                @selectedVisitor.Phone
+                                            </a>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-sm-4"><strong>Documento:</strong></div>
+                                        <div class="col-sm-8">
+                                            <span class="badge bg-secondary me-1">@selectedVisitor.DocumentType</span>
+                                            <code>@selectedVisitor.DocumentNumber</code>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Información Empresarial -->
+                        <div class="col-md-12">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-building me-2"></i>
+                                        Información Empresarial
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row mb-3">
+                                        <div class="col-sm-4"><strong>Empresa:</strong></div>
+                                        <div class="col-sm-8">
+                                            <span class="badge bg-primary">@selectedVisitor.Company</span>
+                                        </div>
+                                    </div>
+                                    <div class="row mb-3">
+                                        <div class="col-sm-4"><strong>Estado:</strong></div>
+                                        <div class="col-sm-8">
+                                            @if (selectedVisitor.IsActive)
+                                            {
+                                                <span class="badge bg-success">Activo</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-secondary">Inactivo</span>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Información de Auditoría -->
+                        <div class="col-12 mt-3">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-clock-history me-2"></i>
+                                        Información de Auditoría
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <div class="row mb-8">
+                                                <div class="col-sm-4"><strong>Fecha de Registro:</strong></div>
+                                                <div class="col-sm-4">
+                                                    <i class="bi bi-calendar me-1"></i>
+                                                    @selectedVisitor.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-12">
+                                            <div class="row mb-8">
+                                                <div class="col-sm-4"><strong>Última Actualización:</strong></div>
+                                                <div class="col-sm-4">
+                                                    @if (selectedVisitor.UpdatedAt.HasValue)
+                                                    {
+                                                        <i class="bi bi-calendar me-1"></i>
+                                                        @selectedVisitor.UpdatedAt.Value.ToString("dd/MM/yyyy HH:mm")
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted">Nunca actualizado</span>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="HideViewModal">Cerrar</button>
+                    <button type="button" class="btn btn-primary" @onclick="() => { HideViewModal(); ShowEditModal(selectedVisitor); }">
+                        <i class="bi bi-pencil me-1"></i>
+                        Editar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    // Variables de estado
+    private List<VisitorDto> visitors = new();
+    private PagedResultDto<VisitorDto>? pagedResult;
+    private bool isLoading = false;
+    private bool isCreating = false;
+    private bool isUpdating = false;
+    
+    // Variables de búsqueda y filtros
+    private string searchTerm = string.Empty;
+    private string selectedDocumentType = string.Empty;
+    private string selectedCompany = string.Empty;
+    private string selectedStatus = string.Empty;
+    private int currentPage = 1;
+    private int pageSize = 10;
+    private string sortBy = "FullName";
+    private bool sortDescending = false;
+    
+    // Variables para modales
+    private bool showCreateModal = false;
+    private bool showEditModal = false;
+    private bool showViewModal = false;
+    private VisitorDto? selectedVisitor = null;
+    private CreateVisitorDto newVisitor = new();
+    private UpdateVisitorDto editVisitor = new();
+    
+    // Timer para búsqueda
+    private Timer? searchTimer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadVisitors();
+    }
+
+    private async Task LoadVisitors()
+    {
+        try
+        {
+            isLoading = true;
+            StateHasChanged();
+
+            var searchDto = new VisitorSearchDto
+            {
+                SearchTerm = string.IsNullOrWhiteSpace(searchTerm) ? null : searchTerm,
+                DocumentType = string.IsNullOrWhiteSpace(selectedDocumentType) ? null : selectedDocumentType,
+                Company = string.IsNullOrWhiteSpace(selectedCompany) ? null : selectedCompany,
+                IsActive = string.IsNullOrWhiteSpace(selectedStatus) ? null : bool.Parse(selectedStatus),
+                Page = currentPage,
+                PageSize = pageSize,
+                SortBy = sortBy,
+                SortDescending = sortDescending
+            };
+
+            pagedResult = await VisitorService.SearchVisitorsAsync(searchDto);
+            visitors = pagedResult.Data.ToList();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al cargar visitantes");
+            await JSRuntime.InvokeVoidAsync("alert", "Error al cargar los visitantes: " + ex.Message);
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void OnSearchKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            currentPage = 1;
+            _ = LoadVisitors();
+        }
+        else
+        {
+            // Debounce search
+            searchTimer?.Dispose();
+            searchTimer = new Timer(async _ =>
+            {
+                await InvokeAsync(async () =>
+                {
+                    currentPage = 1;
+                    await LoadVisitors();
+                });
+            }, null, 500, Timeout.Infinite);
+        }
+    }
+
+    private void OnFilterChange()
+    {
+        currentPage = 1;
+        _ = LoadVisitors();
+    }
+
+    private void OnPageSizeChange()
+    {
+        currentPage = 1;
+        _ = LoadVisitors();
+    }
+
+    private void SortBy(string field)
+    {
+        if (sortBy == field)
+        {
+            sortDescending = !sortDescending;
+        }
+        else
+        {
+            sortBy = field;
+            sortDescending = false;
+        }
+        _ = LoadVisitors();
+    }
+
+    private void ChangePage(int page)
+    {
+        currentPage = page;
+        _ = LoadVisitors();
+    }
+
+    private void ClearFilters()
+    {
+        searchTerm = string.Empty;
+        selectedDocumentType = string.Empty;
+        selectedCompany = string.Empty;
+        selectedStatus = string.Empty;
+        currentPage = 1;
+        _ = LoadVisitors();
+    }
+
+    // Métodos para modales
+    private void ShowCreateModal()
+    {
+        newVisitor = new CreateVisitorDto();
+        showCreateModal = true;
+    }
+
+    private void HideCreateModal()
+    {
+        showCreateModal = false;
+        newVisitor = new CreateVisitorDto();
+    }
+
+    private void ShowEditModal(VisitorDto visitor)
+    {
+        selectedVisitor = visitor;
+        editVisitor = new UpdateVisitorDto
+        {
+            Id = visitor.Id,
+            FirstName = visitor.FirstName,
+            LastName = visitor.LastName,
+            Email = visitor.Email,
+            Phone = visitor.Phone,
+            DocumentType = visitor.DocumentType,
+            DocumentNumber = visitor.DocumentNumber,
+            Company = visitor.Company,
+            IsActive = visitor.IsActive
+        };
+        showEditModal = true;
+    }
+
+    private void HideEditModal()
+    {
+        showEditModal = false;
+        selectedVisitor = null;
+        editVisitor = new UpdateVisitorDto();
+    }
+
+    private void ShowViewModal(VisitorDto visitor)
+    {
+        selectedVisitor = visitor;
+        showViewModal = true;
+    }
+
+    private void HideViewModal()
+    {
+        showViewModal = false;
+        selectedVisitor = null;
+    }
+
+    // Métodos para operaciones CRUD
+    private async Task CreateVisitor()
+    {
+        try
+        {
+            isCreating = true;
+            StateHasChanged();
+
+            await VisitorService.CreateVisitorAsync(newVisitor);
+            await LoadVisitors();
+            HideCreateModal();
+            
+            await JSRuntime.InvokeVoidAsync("alert", "Visitante creado exitosamente");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al crear visitante");
+            await JSRuntime.InvokeVoidAsync("alert", "Error al crear el visitante: " + ex.Message);
+        }
+        finally
+        {
+            isCreating = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task UpdateVisitor()
+    {
+        try
+        {
+            isUpdating = true;
+            StateHasChanged();
+
+            await VisitorService.UpdateVisitorAsync(editVisitor);
+            await LoadVisitors();
+            HideEditModal();
+            
+            await JSRuntime.InvokeVoidAsync("alert", "Visitante actualizado exitosamente");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al actualizar visitante");
+            await JSRuntime.InvokeVoidAsync("alert", "Error al actualizar el visitante: " + ex.Message);
+        }
+        finally
+        {
+            isUpdating = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task DeleteVisitor(int id)
+    {
+        try
+        {
+            var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", 
+                "¿Está seguro de que desea eliminar este visitante? Esta acción no se puede deshacer.");
+            
+            if (confirmed)
+            {
+                await VisitorService.DeleteVisitorAsync(id);
+                await LoadVisitors();
+                await JSRuntime.InvokeVoidAsync("alert", "Visitante eliminado exitosamente");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al eliminar visitante");
+            await JSRuntime.InvokeVoidAsync("alert", "Error al eliminar el visitante: " + ex.Message);
+        }
+    }
+
+    private async Task ActivateVisitor(int id)
+    {
+        try
+        {
+            await VisitorService.ActivateVisitorAsync(id);
+            await LoadVisitors();
+            await JSRuntime.InvokeVoidAsync("alert", "Visitante activado exitosamente");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al activar visitante");
+            await JSRuntime.InvokeVoidAsync("alert", "Error al activar el visitante: " + ex.Message);
+        }
+    }
+
+    private async Task DeactivateVisitor(int id)
+    {
+        try
+        {
+            await VisitorService.DeactivateVisitorAsync(id);
+            await LoadVisitors();
+            await JSRuntime.InvokeVoidAsync("alert", "Visitante desactivado exitosamente");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al desactivar visitante");
+            await JSRuntime.InvokeVoidAsync("alert", "Error al desactivar el visitante: " + ex.Message);
+        }
+    }
+
+    public void Dispose()
+    {
+        searchTimer?.Dispose();
+    }
+}

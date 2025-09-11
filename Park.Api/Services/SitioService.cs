@@ -244,12 +244,6 @@ namespace Park.Api.Services
                     Id = c.Id,
                     Name = c.Name,
                     Description = c.Description,
-                    Address = c.Address,
-                    Phone = c.Phone,
-                    Email = c.Email,
-                    ContactPerson = c.ContactPerson,
-                    ContactPhone = c.ContactPhone,
-                    ContactEmail = c.ContactEmail,
                     IsActive = c.IsActive,
                     CreatedAt = c.CreatedAt,
                     IdSitio = c.IdSitio

@@ -1,0 +1,338 @@
+@using Park.Comun.DTOs
+@using Park.Front.Services
+@inject SitioService SitioService
+@inject ZonaService ZonaService
+@inject ColaboradorService ColaboradorService
+
+<div class="cascada-selection">
+    <div class="row">
+        <!-- Sitio -->
+        <div class="col-md-12">
+            <div class="mb-12">
+                <label class="form-label fw-bold">
+                    <i class="fas fa-building me-1"></i>
+                    Sitio *
+                </label>
+                <select class="form-select form-select-lg" value="@IdSitio" @onchange="OnSitioChanged">
+                    <option value="0">Seleccionar sitio...</option>
+                    @foreach (var sitio in sitios)
+                    {
+                        <option value="@sitio.Id">@sitio.Nombre</option>
+                    }
+                </select>
+                @if (sitiosLoading)
+                {
+                    <div class="text-muted small mt-1">
+                        <i class="fas fa-spinner fa-spin me-1"></i>
+                        Cargando sitios...
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="text-danger small mt-1">@errorMessage</div>
+                }
+            </div>
+        </div>
+
+        <!-- Zona -->
+        <div class="col-md-12">
+            <div class="mb-3">
+                <label class="form-label fw-bold">
+                    <i class="fas fa-map-marked-alt me-1"></i>
+                    Zona *
+                </label>
+                <select class="form-select form-select-lg" value="@IdZona" @onchange="OnZonaChanged" disabled="@(IdSitio == 0)">
+                    <option value="0">Seleccionar zona...</option>
+                    @foreach (var zona in zonas)
+                    {
+                        <option value="@zona.Id">@zona.Nombre</option>
+                    }
+                </select>
+                @if (IdSitio > 0 && zonasLoading)
+                {
+                    <div class="text-muted small mt-1">
+                        <i class="fas fa-spinner fa-spin me-1"></i>
+                        Cargando zonas...
+                    </div>
+                }
+                @if (IdSitio > 0 && !zonasLoading && !zonas.Any())
+                {
+                    <div class="text-warning small mt-1">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        No hay zonas disponibles para este sitio
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Empresa -->
+        <div class="col-md-12">
+            <div class="mb-3">
+                <label class="form-label fw-bold">
+                    <i class="fas fa-industry me-1"></i>
+                    Empresa *
+                </label>
+                <select class="form-select form-select-lg" value="@IdEmpresa" @onchange="OnEmpresaChanged" disabled="@(IdZona == 0)">
+                    <option value="0">Seleccionar empresa...</option>
+                    @foreach (var empresa in empresas)
+                    {
+                        <option value="@empresa.Id">@empresa.Name</option>
+                    }
+                </select>
+                @if (IdZona > 0 && empresasLoading)
+                {
+                    <div class="text-muted small mt-1">
+                        <i class="fas fa-spinner fa-spin me-1"></i>
+                        Cargando empresas...
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Centros -->
+        <div class="col-md-12">
+            <div class="mb-3">
+                <label class="form-label fw-bold">
+                    <i class="fas fa-door-open me-1"></i>
+                    Centros de Acceso *
+                </label>
+                <div class="centros-checkboxes border rounded p-3" style="max-height: 200px; overflow-y: auto; background-color: #f8f9fa;">
+                    @if (IdZona > 0 && centrosLoading)
+                    {
+                        <div class="text-muted small text-center">
+                            <i class="fas fa-spinner fa-spin me-1"></i>
+                            Cargando centros...
+                        </div>
+                    }
+                    else if (IdZona > 0 && !centrosLoading && !centros.Any())
+                    {
+                        <div class="text-warning small text-center">
+                            <i class="fas fa-exclamation-triangle me-1"></i>
+                            No hay centros disponibles para esta zona
+                        </div>
+                    }
+                    else if (IdZona > 0)
+                    {
+                        @foreach (var centro in centros)
+                        {
+                            <div class="form-check mb-2">
+                                <input type="checkbox" 
+                                       class="form-check-input" 
+                                       id="@($"centro_{centro.Id}")"
+                                       checked="@SelectedCentroIds.Contains(centro.Id)"
+                                       @onchange="@((e) => OnCentroChanged(centro.Id, e))" />
+                                <label class="form-check-label" for="@($"centro_{centro.Id}")">
+                                    <i class="fas fa-door-closed me-1"></i>
+                                    @centro.Nombre
+                                </label>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-muted small text-center">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Seleccione una zona para ver los centros
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int IdSitio { get; set; }
+    [Parameter] public EventCallback<int> IdSitioChanged { get; set; }
+    
+    [Parameter] public int IdZona { get; set; }
+    [Parameter] public EventCallback<int> IdZonaChanged { get; set; }
+    
+    [Parameter] public int IdEmpresa { get; set; }
+    [Parameter] public EventCallback<int> IdEmpresaChanged { get; set; }
+    
+    [Parameter] public List<int> SelectedCentroIds { get; set; } = new List<int>();
+    [Parameter] public EventCallback<List<int>> SelectedCentroIdsChanged { get; set; }
+
+    private List<SitioDto> sitios = new List<SitioDto>();
+    private List<ZonaDto> zonas = new List<ZonaDto>();
+    private List<CompanyDto> empresas = new List<CompanyDto>();
+    private List<CentroDto> centros = new List<CentroDto>();
+    
+    private bool sitiosLoading = true;
+    private bool zonasLoading = false;
+    private bool empresasLoading = false;
+    private bool centrosLoading = false;
+    
+    private string errorMessage = string.Empty;
+    
+    private int _previousIdSitio = 0;
+    private int _previousIdZona = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSitios();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // Solo recargar si el IdSitio realmente cambió
+        if (IdSitio != _previousIdSitio)
+        {
+            _previousIdSitio = IdSitio;
+            
+            if (IdSitio > 0)
+            {
+                await LoadZonasForSitio();
+            }
+            else
+            {
+                ClearZonaAndBelow();
+            }
+        }
+        
+        // Solo recargar si el IdZona realmente cambió
+        if (IdZona != _previousIdZona)
+        {
+            _previousIdZona = IdZona;
+            
+            if (IdZona > 0)
+            {
+                await LoadEmpresasAndCentrosForZona();
+            }
+            else
+            {
+                ClearEmpresaAndBelow();
+            }
+        }
+    }
+
+    private async Task LoadSitios()
+    {
+        try
+        {
+            sitiosLoading = true;
+            sitios = await SitioService.GetAllSitiosAsync();
+            errorMessage = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error al cargar sitios: {ex.Message}";
+            sitios.Clear();
+        }
+        finally
+        {
+            sitiosLoading = false;
+        }
+    }
+
+    private async Task LoadZonasForSitio()
+    {
+        try
+        {
+            zonasLoading = true;
+            zonas = await ZonaService.GetZonasBySitioAsync(IdSitio);
+            errorMessage = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error al cargar zonas: {ex.Message}";
+            zonas.Clear();
+        }
+        finally
+        {
+            zonasLoading = false;
+        }
+    }
+
+    private async Task LoadEmpresasAndCentrosForZona()
+    {
+        try
+        {
+            empresasLoading = true;
+            centrosLoading = true;
+            
+            // Cargar empresas y centros en paralelo
+            var empresasTask = ColaboradorService.GetEmpresasByZonaAsync(IdZona);
+            var centrosTask = ColaboradorService.GetCentrosByZonaAsync(IdZona);
+            
+            await Task.WhenAll(empresasTask, centrosTask);
+            
+            empresas = await empresasTask;
+            centros = await centrosTask;
+            
+            errorMessage = string.Empty;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error al cargar empresas y centros: {ex.Message}";
+            empresas.Clear();
+            centros.Clear();
+        }
+        finally
+        {
+            empresasLoading = false;
+            centrosLoading = false;
+        }
+    }
+
+    private async Task OnSitioChanged(ChangeEventArgs e)
+    {
+        IdSitio = int.Parse(e.Value?.ToString() ?? "0");
+        await IdSitioChanged.InvokeAsync(IdSitio);
+        
+        // Limpiar selecciones dependientes
+        IdZona = 0;
+        await IdZonaChanged.InvokeAsync(IdZona);
+        ClearZonaAndBelow();
+    }
+
+    private async Task OnZonaChanged(ChangeEventArgs e)
+    {
+        IdZona = int.Parse(e.Value?.ToString() ?? "0");
+        await IdZonaChanged.InvokeAsync(IdZona);
+        
+        // Limpiar selecciones dependientes
+        IdEmpresa = 0;
+        await IdEmpresaChanged.InvokeAsync(IdEmpresa);
+        ClearEmpresaAndBelow();
+    }
+
+    private async Task OnEmpresaChanged(ChangeEventArgs e)
+    {
+        IdEmpresa = int.Parse(e.Value?.ToString() ?? "0");
+        await IdEmpresaChanged.InvokeAsync(IdEmpresa);
+    }
+
+    private async Task OnCentroChanged(int centroId, ChangeEventArgs e)
+    {
+        bool isSelected = (bool)(e.Value ?? false);
+        if (isSelected && !SelectedCentroIds.Contains(centroId))
+        {
+            SelectedCentroIds.Add(centroId);
+        }
+        else if (!isSelected && SelectedCentroIds.Contains(centroId))
+        {
+            SelectedCentroIds.Remove(centroId);
+        }
+        
+        await SelectedCentroIdsChanged.InvokeAsync(SelectedCentroIds);
+    }
+
+    private void ClearZonaAndBelow()
+    {
+        zonas.Clear();
+        empresas.Clear();
+        centros.Clear();
+        IdEmpresa = 0;
+        SelectedCentroIds.Clear();
+    }
+
+    private void ClearEmpresaAndBelow()
+    {
+        empresas.Clear();
+        centros.Clear();
+        IdEmpresa = 0;
+        SelectedCentroIds.Clear();
+    }
+}
