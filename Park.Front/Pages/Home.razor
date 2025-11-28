@@ -1,4 +1,8 @@
 ﻿@page "/"
+@using Park.Front.Services
+@using Park.Comun.DTOs
+@inject AuthService AuthService
+@inject NavigationManager NavigationManager
 
 <PageTitle>Home</PageTitle>
 
@@ -85,3 +89,27 @@
         </div>
     </div>
 </div>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        // Verificar si el usuario está autenticado
+        var currentUser = await AuthService.GetStoredUserAsync();
+        
+        if (currentUser != null)
+        {
+            // Si el usuario es Guardia, redirigir al Panel de Guardia
+            if (currentUser.Roles.Any(r => r.Name == "Guardia"))
+            {
+                NavigationManager.NavigateTo("/guard-panel");
+                return;
+            }
+            // Si el usuario es Admin u Operador, redirigir al Dashboard
+            else if (currentUser.Roles.Any(r => r.Name == "Admin" || r.Name == "Operador"))
+            {
+                NavigationManager.NavigateTo("/dashboard");
+                return;
+            }
+        }
+    }
+}

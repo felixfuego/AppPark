@@ -32,7 +32,7 @@ namespace Park.Front.Services
                 _httpClient.DefaultRequestHeaders.Authorization = 
                     new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
-                var response = await _httpClient.GetAsync("/api/user");
+                var response = await _httpClient.GetAsync("api/user");
                 response.EnsureSuccessStatusCode();
 
                 var content = await response.Content.ReadAsStringAsync();
@@ -322,6 +322,33 @@ namespace Park.Front.Services
             catch (Exception ex)
             {
                 Console.WriteLine($"Error removiendo colaborador: {ex.Message}");
+                throw;
+            }
+        }
+
+        public async Task<bool> AssignZoneToUserAsync(AssignZoneToUserDto assignZoneDto)
+        {
+            try
+            {
+                var token = await _authService.GetValidTokenAsync();
+                if (string.IsNullOrEmpty(token))
+                    throw new UnauthorizedAccessException("No hay token válido");
+
+                _httpClient.DefaultRequestHeaders.Authorization = 
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+                var json = JsonSerializer.Serialize(assignZoneDto, _jsonOptions);
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+                var response = await _httpClient.PostAsync("/api/user/assign-zone", content);
+                response.EnsureSuccessStatusCode();
+
+                var responseContent = await response.Content.ReadAsStringAsync();
+                return JsonSerializer.Deserialize<bool>(responseContent, _jsonOptions);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error asignando zona: {ex.Message}");
                 throw;
             }
         }

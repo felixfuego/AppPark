@@ -3,12 +3,14 @@
 @using Park.Comun.DTOs
 @using Park.Comun.Enums
 @using Park.Front.Components
+@using Park.Front.Constants
 @inject IJSRuntime JSRuntime
 @inject VisitaService VisitaService
 @inject ColaboradorService ColaboradorService
 @inject CompanyService CompanyService
 @inject CentroService CentroService
 @inject AuthService AuthService
+@inject NotificationService NotificationService
 
 <PageTitle>Gestión de Visitas - Park.Front</PageTitle>
 
@@ -161,6 +163,12 @@
                                         <button class="btn btn-sm btn-outline-primary" @onclick="() => ShowDetailsModal(visita)" title="Ver Detalles">
                                             <i class="bi bi-eye"></i>
                                         </button>
+                                        @if (!string.IsNullOrEmpty(visita.QrCodeUrl))
+                                        {
+                                            <button class="btn btn-sm btn-outline-info" @onclick="() => ShowQrModal(visita)" title="Ver Código QR">
+                                                <i class="bi bi-qr-code"></i>
+                                            </button>
+                                        }
                                         @if (visita.Estado == VisitStatus.Programada)
                                         {
                                             <button class="btn btn-sm btn-outline-warning" @onclick="() => ShowEditModal(visita)" title="Editar">
@@ -170,21 +178,7 @@
                                                 <i class="bi bi-x-circle"></i>
                                             </button>
                                         }
-                                        @if (visita.Estado == VisitStatus.Programada || visita.Estado == VisitStatus.EnProceso)
-                                        {
-                                            @if (visita.Estado == VisitStatus.Programada)
-                                            {
-                                                <button class="btn btn-sm btn-outline-success" @onclick="() => CheckInVisita(visita.Id)" title="Check-in">
-                                                    <i class="bi bi-box-arrow-in-right"></i>
-                                                </button>
-                                            }
-                                            @if (visita.Estado == VisitStatus.EnProceso)
-                                            {
-                                                <button class="btn btn-sm btn-outline-info" @onclick="() => CheckOutVisita(visita.Id)" title="Check-out">
-                                                    <i class="bi bi-box-arrow-right"></i>
-                                                </button>
-                                            }
-                                        }
+                                        <!-- Los botones de entrada/salida solo están disponibles en el Panel de Guardia -->
                                     </div>
                                 </td>
                             </tr>
@@ -233,7 +227,51 @@
                         OnClose="OnModalCancel" />
 }
 
+<!-- Modal para mostrar QR -->
+@if (showQrModal)
+{
+    <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5);" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-qr-code me-2"></i>Código QR de la Visita
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="CloseQrModal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center">
+                    @if (selectedVisita != null && !string.IsNullOrEmpty(selectedVisita.QrCodeUrl))
+                    {
+                        <div class="mb-3">
+                            <h6>@selectedVisita.NumeroSolicitud</h6>
+                            <p class="text-muted">@selectedVisita.NombreCompleto</p>
+                        </div>
+                        <div class="qr-container mb-3">
+                            <img src="@selectedVisita.QrCodeUrl" alt="Código QR" class="img-fluid" style="max-width: 300px;" />
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary" @onclick="() => DownloadQr(selectedVisita)">
+                                <i class="bi bi-download me-1"></i>Descargar QR
+                            </button>
+                            <button class="btn btn-outline-secondary" @onclick="() => CopyQrUrl(selectedVisita)">
+                                <i class="bi bi-clipboard me-1"></i>Copiar URL
+                            </button>
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseQrModal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Los modales de entrada/salida solo están disponibles en el Panel de Guardia -->
+
 @code {
+    [Inject] private NavigationManager NavigationManager { get; set; } = null!;
+    
     private List<VisitaDto> visitas = new();
     private List<VisitaDto> filteredVisitas = new();
     private VisitaDto? selectedVisita;
@@ -241,6 +279,8 @@
     private bool showCreateModal = false;
     private bool showCreateMasivaModal = false;
     private bool showDetailsModal = false;
+    private bool showQrModal = false;
+    // Los modales de entrada/salida solo están disponibles en el Panel de Guardia
 
     // Filtros
     private string searchTerm = "";
@@ -265,7 +305,45 @@
             var currentUser = await AuthService.GetCurrentUserAsync();
             if (currentUser != null)
             {
-                visitas = await VisitaService.GetVisitasByUserAsync(currentUser.Id);
+                // Determinar el rol del usuario
+                bool isAdmin = currentUser.Roles.Any(r => r.Name == "Admin");
+                bool isOperador = currentUser.Roles.Any(r => r.Name == "Operador");
+                
+                if (isAdmin)
+                {
+                    // Admin ve todas las visitas
+                    visitas = await VisitaService.GetAllVisitasAsync();
+                }
+                else if (isOperador)
+                {
+                    // Operador ve solo visitas de sus empresas asignadas
+                    visitas = new List<VisitaDto>();
+                    
+                    // Obtener empresas asignadas al usuario
+                    var userCompanies = currentUser.AssignedCompanies ?? new List<CompanyDto>();
+                    
+                    // Si no hay empresas asignadas, usar la empresa del usuario
+                    if (userCompanies.Count == 0 && currentUser.IdCompania.HasValue)
+                    {
+                        var company = await CompanyService.GetCompanyByIdAsync(currentUser.IdCompania.Value);
+                        if (company != null)
+                        {
+                            userCompanies = new List<CompanyDto> { company };
+                        }
+                    }
+                    
+                    // Obtener visitas de las empresas asignadas
+                    foreach (var company in userCompanies)
+                    {
+                        var visitasEmpresa = await VisitaService.GetVisitasByCompaniaAsync(company.Id);
+                        visitas.AddRange(visitasEmpresa);
+                    }
+                }
+                else
+                {
+                    // Fallback: usar el método original
+                    visitas = await VisitaService.GetVisitasByUserAsync(currentUser.Id);
+                }
             }
             else
             {
@@ -276,7 +354,7 @@
         }
         catch (Exception ex)
         {
-            await JSRuntime.InvokeVoidAsync("alert", $"Error al cargar visitas: {ex.Message}");
+            NotificationService.ShowError($"{ErrorMessages.VISITA_LOAD_ERROR} {ex.Message}");
         }
         finally
         {
@@ -354,47 +432,55 @@
         selectedVisita = null;
     }
 
-    private async Task CheckInVisita(int id)
+    private void ShowQrModal(VisitaDto visita)
+    {
+        selectedVisita = visita;
+        showQrModal = true;
+        StateHasChanged();
+    }
+
+    private void CloseQrModal()
+    {
+        showQrModal = false;
+        selectedVisita = null;
+        StateHasChanged();
+    }
+
+    private async Task DownloadQr(VisitaDto visita)
     {
         try
         {
-            var checkInDto = new VisitaCheckInDto
+            if (!string.IsNullOrEmpty(visita.QrCodeUrl))
             {
-                Id = id,
-                FechaLlegada = DateTime.Now,
-                IdGuardia = 1 // TODO: Obtener del usuario actual
-            };
-
-            await VisitaService.CheckInVisitaAsync(checkInDto);
-            await LoadVisitas();
-            await JSRuntime.InvokeVoidAsync("alert", "Check-in realizado exitosamente");
+                await JSRuntime.InvokeVoidAsync("downloadFile", visita.QrCodeUrl, $"visita_{visita.NumeroSolicitud}_qr.png");
+            }
         }
         catch (Exception ex)
         {
-            await JSRuntime.InvokeVoidAsync("alert", $"Error al realizar check-in: {ex.Message}");
+            NotificationService.ShowError($"{ErrorMessages.VISITA_QR_DOWNLOAD_ERROR} {ex.Message}");
         }
     }
 
-    private async Task CheckOutVisita(int id)
+    private async Task CopyQrUrl(VisitaDto visita)
     {
         try
         {
-            var checkOutDto = new VisitaCheckOutDto
+            if (!string.IsNullOrEmpty(visita.QrCodeUrl))
             {
-                Id = id,
-                FechaSalida = DateTime.Now,
-                IdGuardia = 1 // TODO: Obtener del usuario actual
-            };
-
-            await VisitaService.CheckOutVisitaAsync(checkOutDto);
-            await LoadVisitas();
-            await JSRuntime.InvokeVoidAsync("alert", "Check-out realizado exitosamente");
+                var fullUrl = $"{NavigationManager.BaseUri.TrimEnd('/')}{visita.QrCodeUrl}";
+                await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", fullUrl);
+                NotificationService.ShowSuccess(SuccessMessages.VISITA_QR_COPIED);
+            }
         }
         catch (Exception ex)
         {
-            await JSRuntime.InvokeVoidAsync("alert", $"Error al realizar check-out: {ex.Message}");
+            NotificationService.ShowError($"{ErrorMessages.VISITA_QR_COPY_ERROR} {ex.Message}");
         }
     }
+
+    // Los métodos de entrada/salida solo están disponibles en el Panel de Guardia
+
+    // Los métodos CheckInVisita y CheckOutVisita solo están disponibles en el Panel de Guardia
 
     private async Task CancelarVisita(int id)
     {
@@ -405,12 +491,12 @@
             {
                 await VisitaService.CancelarVisitaAsync(id);
                 await LoadVisitas();
-                await JSRuntime.InvokeVoidAsync("alert", "Visita cancelada exitosamente");
+                NotificationService.ShowSuccess(SuccessMessages.VISITA_CANCELED);
             }
         }
         catch (Exception ex)
         {
-            await JSRuntime.InvokeVoidAsync("alert", $"Error al cancelar visita: {ex.Message}");
+            NotificationService.ShowError($"{ErrorMessages.VISITA_CANCEL_ERROR} {ex.Message}");
         }
     }
 }

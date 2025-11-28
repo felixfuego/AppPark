@@ -27,6 +27,8 @@ namespace Park.Api.Services
                 .Include(u => u.Colaborador)
                     .ThenInclude(c => c.ColaboradorByCentros)
                         .ThenInclude(cbc => cbc.Centro)
+                .Include(u => u.ZonaAsignada)
+                    .ThenInclude(z => z.Sitio)
                 .Where(u => u.IsActive)
                 .ToListAsync();
 
@@ -43,6 +45,8 @@ namespace Park.Api.Services
                 .Include(u => u.Colaborador)
                     .ThenInclude(c => c.ColaboradorByCentros)
                         .ThenInclude(cbc => cbc.Centro)
+                .Include(u => u.ZonaAsignada)
+                    .ThenInclude(z => z.Sitio)
                 .FirstOrDefaultAsync(u => u.Id == id && u.IsActive);
 
             return user != null ? MapToDto(user) : null;
@@ -342,6 +346,40 @@ namespace Park.Api.Services
             return true;
         }
 
+        public async Task<bool> AssignZoneToUserAsync(AssignZoneToUserDto assignZoneDto)
+        {
+            try
+            {
+                var user = await _context.Users
+                    .Include(u => u.UserRoles)
+                        .ThenInclude(ur => ur.Role)
+                    .FirstOrDefaultAsync(u => u.Id == assignZoneDto.UserId && u.IsActive);
+
+                if (user == null)
+                {
+                    return false;
+                }
+
+                // Verificar que el usuario tenga rol de Guardia
+                var isGuardia = user.UserRoles.Any(ur => ur.Role.Name == "Guardia");
+                if (!isGuardia)
+                {
+                    return false;
+                }
+
+                // Asignar o quitar la zona
+                user.IdZonaAsignada = assignZoneDto.ZonaId;
+                user.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
         // Métodos auxiliares
         private static string HashPassword(string password)
         {
@@ -367,6 +405,7 @@ namespace Park.Api.Services
                 UpdatedAt = user.UpdatedAt,
                 IdColaborador = user.IdColaborador,
                 IdCompania = user.IdCompania,
+                IdZonaAsignada = user.IdZonaAsignada,
                 Roles = user.UserRoles?.Select(ur => new RoleDto
                 {
                     Id = ur.Role.Id,
@@ -425,6 +464,23 @@ namespace Park.Api.Services
                     CreatedAt = user.Compania.CreatedAt,
                     VisitsCount = 0, // TODO: Calcular desde visitas
                     IdSitio = user.Compania.IdSitio
+                } : null,
+                ZonaAsignada = user.ZonaAsignada != null ? new ZonaDto
+                {
+                    Id = user.ZonaAsignada.Id,
+                    IdSitio = user.ZonaAsignada.IdSitio,
+                    Nombre = user.ZonaAsignada.Nombre,
+                    Descripcion = user.ZonaAsignada.Descripcion,
+                    IsActive = user.ZonaAsignada.IsActive,
+                    CreatedAt = user.ZonaAsignada.CreatedAt,
+                    Sitio = user.ZonaAsignada.Sitio != null ? new SitioDto
+                    {
+                        Id = user.ZonaAsignada.Sitio.Id,
+                        Nombre = user.ZonaAsignada.Sitio.Nombre,
+                        Descripcion = user.ZonaAsignada.Sitio.Descripcion,
+                        IsActive = user.ZonaAsignada.Sitio.IsActive,
+                        CreatedAt = user.ZonaAsignada.Sitio.CreatedAt
+                    } : null
                 } : null,
                 AssignedCompanies = new List<CompanyDto>() // Mantener para compatibilidad
             };

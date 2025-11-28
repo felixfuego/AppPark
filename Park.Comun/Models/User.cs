@@ -16,6 +16,9 @@ namespace Park.Comun.Models
         public int? IdColaborador { get; set; }
         public int? IdCompania { get; set; }
         
+        // Zona asignada para usuarios Guardia
+        public int? IdZonaAsignada { get; set; }
+        
         // Relación muchos a muchos con Role
         public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
         
@@ -25,6 +28,7 @@ namespace Park.Comun.Models
         // Navigation properties para el nuevo modelo
         public virtual Colaborador? Colaborador { get; set; }
         public virtual Company? Compania { get; set; }
+        public virtual Zona? ZonaAsignada { get; set; }
         
     }
 }

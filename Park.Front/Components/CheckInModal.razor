@@ -1,0 +1,112 @@
+@using Park.Comun.DTOs
+@using Park.Comun.Enums
+
+<div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5);" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>Confirmar Entrada
+                </h5>
+                <button type="button" class="btn-close btn-close-white" @onclick="CloseModal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                @if (Visita != null)
+                {
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="bi bi-person me-2"></i>Información del Visitante</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Nombre:</strong> @Visita.NombreCompleto</p>
+                                    <p><strong>Identidad:</strong> @Visita.IdentidadVisitante</p>
+                                    <p><strong>Procedencia:</strong> @Visita.Procedencia</p>
+                                    <p><strong>Destino:</strong> @Visita.Destino</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="bi bi-building me-2"></i>Información de la Visita</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Número:</strong> @Visita.NumeroSolicitud</p>
+                                    <p><strong>Empresa:</strong> @Visita.Compania?.Name</p>
+                                    <p><strong>Centro:</strong> @Visita.Centro?.Nombre</p>
+                                    <p><strong>Recibido por:</strong> @Visita.RecibidoPor?.Nombre</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="bi bi-chat-text me-2"></i>Observaciones (Opcional)</h6>
+                                </div>
+                                <div class="card-body">
+                                    <textarea class="form-control" @bind="observaciones" rows="3" 
+                                              placeholder="Agregar observaciones sobre la entrada..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @onclick="CloseModal">Cancelar</button>
+                <button type="button" class="btn btn-success" @onclick="ConfirmCheckIn" disabled="@isLoading">
+                    @if (isLoading)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                    }
+                    <i class="bi bi-box-arrow-in-right me-1"></i>Confirmar Entrada
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public VisitaDto? Visita { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<VisitaCheckInDto> OnConfirm { get; set; }
+
+    private string observaciones = string.Empty;
+    private bool isLoading = false;
+
+    private async Task ConfirmCheckIn()
+    {
+        if (Visita == null) return;
+
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var checkInDto = new VisitaCheckInDto
+            {
+                Id = Visita.Id,
+                FechaLlegada = DateTime.Now,
+                IdGuardia = 1, // TODO: Obtener del usuario actual
+                Observaciones = observaciones
+            };
+
+            await OnConfirm.InvokeAsync(checkInDto);
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void CloseModal()
+    {
+        OnClose.InvokeAsync();
+    }
+}

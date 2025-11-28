@@ -77,9 +77,13 @@ namespace Park.Comun.DTOs
         public int? IdColaborador { get; set; }
         public int? IdCompania { get; set; }
         
+        // Zona asignada para usuarios Guardia
+        public int? IdZonaAsignada { get; set; }
+        
         // Propiedades de navegación
         public ColaboradorDto? Colaborador { get; set; }
         public CompanyDto? Compania { get; set; }
+        public ZonaDto? ZonaAsignada { get; set; }
     }
 
     public class RefreshTokenDto
@@ -99,6 +103,12 @@ namespace Park.Comun.DTOs
     {
         public int UserId { get; set; }
         public int CompanyId { get; set; }
+    }
+
+    public class AssignZoneToUserDto
+    {
+        public int UserId { get; set; }
+        public int? ZonaId { get; set; }
     }
 
     public class UserCompanyDto
@@ -132,6 +142,9 @@ namespace Park.Comun.DTOs
         public string LastName { get; set; } = string.Empty;
         
         public bool IsActive { get; set; } = true;
+        
+        // Zona asignada para usuarios Guardia
+        public int? IdZonaAsignada { get; set; }
     }
 
 

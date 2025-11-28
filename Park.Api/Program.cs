@@ -99,6 +99,15 @@ builder.Services.AddCors(options =>
               .AllowAnyMethod()
               .AllowAnyHeader();
     });
+    
+    // Política específica para desarrollo local
+    options.AddPolicy("AllowLocalhost", policy =>
+    {
+        policy.WithOrigins("http://localhost:5077", "https://localhost:5077")
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
+    });
 });
 
 // Add DbContext
@@ -125,6 +134,7 @@ builder.Services.AddDbContext<ParkDbContext>(options =>
         builder.Services.AddScoped<IColaboradorService, ColaboradorService>();
         builder.Services.AddScoped<IVisitorService, VisitorService>();
         builder.Services.AddScoped<IVisitaService, VisitaService>();
+        builder.Services.AddScoped<IQrService, QrService>();
         builder.Services.AddScoped<ExcelService>();
         builder.Services.AddScoped<IReportService, ReportService>();
         builder.Services.AddScoped<INotificationService, NotificationService>();
@@ -185,5 +195,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapControllerRoute(
+    name: "default",
+    pattern: "{controller}/{action}/{id?}");
 
 app.Run();

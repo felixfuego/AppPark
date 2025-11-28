@@ -1,111 +1,103 @@
-﻿@inherits LayoutComponentBase
+﻿@using MudBlazor
+@inherits LayoutComponentBase
 @inject IJSRuntime JSRuntime
 @inject AuthService AuthService
 @inject NavigationManager Navigation
+@inject RoleService RoleService
+
+<MudBlazor.MudThemeProvider />
+<MudBlazor.MudPopoverProvider />
+<MudBlazor.MudDialogProvider />
+<MudBlazor.MudSnackbarProvider />
 
 <div class="page">
-    <!-- Overlay para móviles -->
-    @if (sidebarVisible)
-    {
-        <div class="sidebar-overlay d-md-none" @onclick="ToggleSidebarVisibility"></div>
-    }
-    
-    <!-- Sidebar -->
-    <div class="sidebar @GetSidebarClasses()">
-        <!-- Header del Sidebar -->
-        <div class="navbar">
-            <a href="/" class="navbar-brand">
-                @if (!string.IsNullOrEmpty(LogoImageUrl))
-                {
-                    <img src="@LogoImageUrl" alt="Logo" class="logo" />
-                }
-                else
-                {
-                    <i class="bi bi-building"></i>
-                }
-                <span class="brand-text">Parkes Industriales</span>
-            </a>
-            @* Botón del sidebar oculto - se maneja desde la barra superior *@
-        </div>
-        
-        <!-- Menú de Navegación -->
-        <div class="nav-scrollable">
-            <NavMenu />
-        </div>
-    </div>
+    <main>
+        <MudBlazor.MudLayout>
+            <MudBlazor.MudAppBar Elevation="2" Dense="true" Fixed="true">
+                <MudBlazor.MudIconButton Icon="@Icons.Material.Rounded.Home" Color="Color.Inherit" Edge="MudBlazor.Edge.Start" Href="/"/>
+                <RoleGuard RequiredRole="Admin">
+                    <MudMenu Dense
+                             Variant="Variant.Text"
+                             Size="Size.Medium"
+                             Color="Color.Inherit"
+                             StartIcon="@Icons.Material.TwoTone.MoreVert"
+                             Label="Configuración">
+                        
+                        <MudMenuItem Href="/users"
+                                     ForceLoad
+                                     Icon="@Icons.Material.TwoTone.VerifiedUser"
+                                     IconColor="Color.Primary"
+                                     Label="Usuarios" />
 
-    <!-- Contenido Principal -->
-    <main class="@(sidebarCollapsed ? "sidebar-collapsed" : "")">
-        <!-- Header Superior -->
-        <div class="top-row">
-            <div class="d-flex justify-content-between align-items-center w-100">
-                <div class="d-flex align-items-center gap-3">
-                    <button class="btn btn-sm d-md-none" style="background-color: var(--bg-tertiary); color: var(--text-secondary);" @onclick="ToggleSidebarVisibility" title="@(sidebarVisible ? "Ocultar menú" : "Mostrar menú")">
-                        <i class="bi bi-list"></i>
-                    </button>
-                    <button class="btn btn-sm d-none d-md-inline-flex" style="background-color: var(--bg-tertiary); color: var(--text-secondary);" @onclick="ToggleSidebar" title="@(sidebarCollapsed ? "Mostrar menú" : "Ocultar menú")">
-                        <i class="bi bi-list"></i>
-                    </button>
-                    <h2 class="mb-0">Administración Parques</h2>
-                </div>
-                <div class="d-flex gap-2">
-                    <button class="btn" style="background-color: var(--bg-tertiary); color: var(--text-secondary);" title="Configuración">
-                        <i class="bi bi-gear"></i>
-                    </button>
-                    <button class="btn" style="background-color: var(--bg-tertiary); color: var(--text-secondary);" title="Cerrar Sesión" @onclick="HandleLogout">
-                        <i class="bi bi-box-arrow-right"></i>
-                    </button>
-                </div>
-            </div> 
-        </div>
+                        <MudMenuItem Href="/sites"
+                                     ForceLoad
+                                     Icon="@Icons.Material.Rounded.Build"
+                                     IconColor="Color.Primary"
+                                     Label="Sitios" />
+                        <MudMenuItem Href="/zones"
+                                     ForceLoad
+                                     Icon="@Icons.Material.Rounded.Circle"
+                                     IconColor="Color.Primary"
+                                     Label="Zonas" />
+                        <MudMenuItem Href="/centers"
+                                     ForceLoad
+                                     Icon="@Icons.Material.Rounded.DoorFront"
+                                     IconColor="Color.Primary"
+                                     Label="Centros" />
 
-        <!-- Contenido de la Página -->
-        <div class="content w-100">
-            @Body
-        </div>
+                        <MudMenuItem Href="/companies"
+                                     ForceLoad
+                                     Icon="@Icons.Material.Rounded.BusinessCenter"
+                                     IconColor="Color.Primary"
+                                     Label="Empresas" />
+                        <MudMenuItem Href="/colaboradores"
+                                     ForceLoad
+                                     Icon="@Icons.Material.Rounded.People"
+                                     IconColor="Color.Primary"
+                                     Label="Colaboradores" />
+                    </MudMenu>
+                </RoleGuard>
+                <!-- Gestión (Admin y Operador) -->
+                <RoleGuard RequiredRoles="@(new string[] { "Admin", "Operador" })">
+                    <MudMenu Dense
+                             Variant="Variant.Text"
+                             Size="Size.Medium"
+                             Color="Color.Inherit"
+                             StartIcon="@Icons.Material.TwoTone.MoreVert"
+                             Label="Gestión">
+                        
+                        <MudMenuItem Href="/visitas"
+                                     ForceLoad
+                                     Icon="@Icons.Material.TwoTone.VerifiedUser"
+                                     IconColor="Color.Primary"
+                                     Label="Visitas" />
+                        <MudMenuItem Href="/visitors"
+                                     ForceLoad
+                                     Icon="@Icons.Material.TwoTone.VerifiedUser"
+                                     IconColor="Color.Primary"
+                                     Label="Visitantes" />
+                    </MudMenu>
+                </RoleGuard>
+                <!-- Vigilancia (Solo Guardia) -->
+                <RoleGuard RequiredRole="Guardia">
+                    <MudLink Href="/guard-panel"
+                             Style="text-decoration: none; color: inherit; display: flex; align-items: center;">
+                        <MudIcon Icon="@Icons.Material.Rounded.Security" />
+                        <span style="margin-left: 8px;">Panel de Guardia</span>
+                     </MudLink>
+                </RoleGuard>
+                @* Aquí puedes agregar tu menú horizontal *@
+                <MudSpacer />
+                <MudIconButton Icon="@Icons.Material.Rounded.Logout" Color="Color.Inherit" Href="/login"/>
+            </MudBlazor.MudAppBar>
+
+            <MudBlazor.MudAppBarSpacer />
+
+            <MudBlazor.MudMainContent>
+                <div class="content px-1">
+                    @Body
+                </div>
+            </MudBlazor.MudMainContent>
+        </MudBlazor.MudLayout>
     </main>
 </div>
-
-@code {
-    private bool sidebarCollapsed = false;
-    private bool sidebarVisible = false;
-
-    // Propiedad para la imagen del logo
-    [Parameter] public string? LogoImageUrl { get; set; }
-
-    private async Task ToggleSidebar()
-    {
-        sidebarCollapsed = !sidebarCollapsed;
-        await JSRuntime.InvokeVoidAsync("layoutManager.toggleSidebar", sidebarCollapsed);
-    }
-
-    private async Task ToggleSidebarVisibility()
-    {
-        sidebarVisible = !sidebarVisible;
-        // En móvil, cuando se muestra el menú, también se debe expandir
-        if (sidebarVisible)
-        {
-            sidebarCollapsed = false;
-        }
-        await JSRuntime.InvokeVoidAsync("layoutManager.showMobileSidebar", sidebarVisible);
-    }
-
-    private string GetSidebarClasses()
-    {
-        var classes = new List<string>();
-        
-        if (sidebarCollapsed)
-            classes.Add("collapsed");
-            
-        if (sidebarVisible)
-            classes.Add("show");
-            
-        return string.Join(" ", classes);
-    }
-
-    private async Task HandleLogout()
-    {
-        await AuthService.LogoutAsync();
-        Navigation.NavigateTo("/login");
-    }
-}

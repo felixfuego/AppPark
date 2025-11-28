@@ -1,9 +1,13 @@
 @page "/visitors"
-@using Park.Comun.DTOs
 @using Park.Front.Services
-@inject VisitorService VisitorService
+@using Park.Comun.DTOs
+@using Park.Front.Components
+@using Park.Front.Constants
 @inject IJSRuntime JSRuntime
-@inject ILogger<Visitors> Logger
+@inject VisitorService VisitorService
+@inject CompanyService CompanyService
+@inject AuthService AuthService
+@inject NotificationService NotificationService
 
 <PageTitle>Gestión de Visitantes</PageTitle>
 
@@ -698,8 +702,8 @@
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error al cargar visitantes");
-            await JSRuntime.InvokeVoidAsync("alert", "Error al cargar los visitantes: " + ex.Message);
+
+            NotificationService.ShowError($"{ErrorMessages.VISITOR_LOAD_ERROR} {ex.Message}");
         }
         finally
         {
@@ -834,12 +838,12 @@
             await LoadVisitors();
             HideCreateModal();
             
-            await JSRuntime.InvokeVoidAsync("alert", "Visitante creado exitosamente");
+            NotificationService.ShowSuccess(SuccessMessages.VISITOR_CREATED);
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error al crear visitante");
-            await JSRuntime.InvokeVoidAsync("alert", "Error al crear el visitante: " + ex.Message);
+
+            NotificationService.ShowError($"{ErrorMessages.VISITOR_CREATE_ERROR} {ex.Message}");
         }
         finally
         {
@@ -859,12 +863,12 @@
             await LoadVisitors();
             HideEditModal();
             
-            await JSRuntime.InvokeVoidAsync("alert", "Visitante actualizado exitosamente");
+            NotificationService.ShowSuccess(SuccessMessages.VISITOR_UPDATED);
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error al actualizar visitante");
-            await JSRuntime.InvokeVoidAsync("alert", "Error al actualizar el visitante: " + ex.Message);
+
+            NotificationService.ShowError($"{ErrorMessages.VISITOR_UPDATE_ERROR} {ex.Message}");
         }
         finally
         {
@@ -884,13 +888,13 @@
             {
                 await VisitorService.DeleteVisitorAsync(id);
                 await LoadVisitors();
-                await JSRuntime.InvokeVoidAsync("alert", "Visitante eliminado exitosamente");
+                NotificationService.ShowSuccess(SuccessMessages.VISITOR_DELETED);
             }
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error al eliminar visitante");
-            await JSRuntime.InvokeVoidAsync("alert", "Error al eliminar el visitante: " + ex.Message);
+
+            NotificationService.ShowError($"{ErrorMessages.VISITOR_DELETE_ERROR} {ex.Message}");
         }
     }
 
@@ -900,12 +904,12 @@
         {
             await VisitorService.ActivateVisitorAsync(id);
             await LoadVisitors();
-            await JSRuntime.InvokeVoidAsync("alert", "Visitante activado exitosamente");
+            NotificationService.ShowSuccess(SuccessMessages.VISITOR_ACTIVATED);
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error al activar visitante");
-            await JSRuntime.InvokeVoidAsync("alert", "Error al activar el visitante: " + ex.Message);
+
+            NotificationService.ShowError($"Error al activar el visitante: {ex.Message}");
         }
     }
 
@@ -915,12 +919,12 @@
         {
             await VisitorService.DeactivateVisitorAsync(id);
             await LoadVisitors();
-            await JSRuntime.InvokeVoidAsync("alert", "Visitante desactivado exitosamente");
+            NotificationService.ShowSuccess(SuccessMessages.VISITOR_DEACTIVATED);
         }
         catch (Exception ex)
         {
-            Logger.LogError(ex, "Error al desactivar visitante");
-            await JSRuntime.InvokeVoidAsync("alert", "Error al desactivar el visitante: " + ex.Message);
+
+            NotificationService.ShowError($"Error al desactivar el visitante: {ex.Message}");
         }
     }
 

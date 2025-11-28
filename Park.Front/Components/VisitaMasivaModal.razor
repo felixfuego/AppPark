@@ -6,6 +6,7 @@
 @inject ColaboradorService ColaboradorService
 @inject CompanyService CompanyService
 @inject CentroService CentroService
+@inject AuthService AuthService
 
 <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5);" tabindex="-1" aria-labelledby="visitaMasivaModalLabel" aria-hidden="false">
     <div class="modal-dialog modal-xl">
@@ -134,10 +135,20 @@
                                 <div class="col-md-12">
                                     <div class="mb-3">
                                         <label for="destino" class="form-label fw-bold">Destino <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="destino" @bind="createVisitaMasiva.Destino" maxlength="200" required placeholder="Ej: Oficina Principal, Área de Producción">
-                                        <div class="form-text">
-                                            <i class="bi bi-geo-alt me-1"></i>Lugar específico dentro de la empresa
-                                        </div>
+                                        @if (isOperador && assignedCompany != null)
+                                        {
+                                            <input type="text" class="form-control" id="destino" @bind="createVisitaMasiva.Destino" maxlength="200" required readonly>
+                                            <div class="form-text">
+                                                <i class="bi bi-geo-alt me-1"></i>Destino pre-llenado con la empresa asignada
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <input type="text" class="form-control" id="destino" @bind="createVisitaMasiva.Destino" maxlength="200" required placeholder="Ej: Oficina Principal, Área de Producción">
+                                            <div class="form-text">
+                                                <i class="bi bi-geo-alt me-1"></i>Lugar específico dentro de la empresa
+                                            </div>
+                                        }
                                     </div>
                                 </div>
                             </div>
@@ -165,16 +176,27 @@
                                 <div class="col-md-12">
                                     <div class="mb-3">
                                         <label for="idCompania" class="form-label fw-bold">Empresa <span class="text-danger">*</span></label>
-                                        <select class="form-select" id="idCompania" @bind="createVisitaMasiva.IdCompania" required>
-                                            <option value="">Seleccionar empresa...</option>
-                                            @foreach (var empresa in empresas)
-                                            {
-                                                <option value="@empresa.Id">@empresa.Name</option>
-                                            }
-                                        </select>
-                                        <div class="form-text">
-                                            <i class="bi bi-building me-1"></i>Empresa donde se realizará la visita
-                                        </div>
+                                        @if (isOperador && assignedCompany != null)
+                                        {
+                                            <input type="text" class="form-control" value="@assignedCompany.Name" readonly>
+                                            <input type="hidden" @bind="createVisitaMasiva.IdCompania" />
+                                            <div class="form-text">
+                                                <i class="bi bi-building me-1"></i>Empresa asignada (no se puede cambiar)
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <select class="form-select" id="idCompania" @bind="createVisitaMasiva.IdCompania" required>
+                                                <option value="">Seleccionar empresa...</option>
+                                                @foreach (var empresa in empresas)
+                                                {
+                                                    <option value="@empresa.Id">@empresa.Name</option>
+                                                }
+                                            </select>
+                                            <div class="form-text">
+                                                <i class="bi bi-building me-1"></i>Empresa donde se realizará la visita
+                                            </div>
+                                        }
                                     </div>
                                 </div>
                             </div>
@@ -323,6 +345,12 @@
     private List<CentroDto> centros = new();
     private List<ColaboradorDto> colaboradores = new();
 
+    // Variables para lógica de roles
+    private UserDto? currentUser = null;
+    private bool isAdmin = false;
+    private bool isOperador = false;
+    private CompanyDto? assignedCompany = null;
+
     // Fecha como DateTime para el binding
     private DateTime fechaVisita
     {
@@ -346,27 +374,124 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // Obtener usuario actual y determinar rol
+        await LoadUserData();
         await LoadDropdownData();
         createVisitaMasiva.NumeroSolicitud = VisitaService.GenerarNumeroSolicitud();
+        
+        // Pre-llenar datos para operadores
+        if (isOperador && assignedCompany != null)
+        {
+            createVisitaMasiva.IdCompania = assignedCompany.Id;
+            createVisitaMasiva.Destino = assignedCompany.Name;
+        }
+    }
+
+    private async Task LoadUserData()
+    {
+        try
+        {
+            currentUser = await AuthService.GetCurrentUserAsync();
+            
+            // Debug: Log del usuario obtenido
+            Console.WriteLine($"Usuario obtenido: {currentUser?.FullName}");
+            Console.WriteLine($"Roles: {string.Join(", ", currentUser?.Roles.Select(r => r.Name) ?? new string[0])}");
+            Console.WriteLine($"AssignedCompanies: {currentUser?.AssignedCompanies?.Count ?? 0}");
+            Console.WriteLine($"IdCompania: {currentUser?.IdCompania}");
+            
+            if (currentUser != null)
+            {
+                isAdmin = currentUser.Roles.Any(r => r.Name == "Admin");
+                isOperador = currentUser.Roles.Any(r => r.Name == "Operador");
+                
+                Console.WriteLine($"isAdmin: {isAdmin}, isOperador: {isOperador}");
+                
+                // Obtener empresa asignada para operadores
+                if (isOperador)
+                {
+                    if (currentUser.AssignedCompanies?.Any() == true)
+                    {
+                        assignedCompany = currentUser.AssignedCompanies.First();
+                        Console.WriteLine($"Empresa asignada desde AssignedCompanies: {assignedCompany?.Name}");
+                    }
+                    else if (currentUser.IdCompania.HasValue)
+                    {
+                        assignedCompany = await CompanyService.GetCompanyByIdAsync(currentUser.IdCompania.Value);
+                        Console.WriteLine($"Empresa asignada desde IdCompania: {assignedCompany?.Name}");
+                    }
+                    else
+                    {
+                        Console.WriteLine("No se encontró empresa asignada para el operador");
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error al cargar datos del usuario: {ex.Message}");
+        }
     }
 
     private async Task LoadDropdownData()
     {
         try
         {
-            var empresasTask = CompanyService.GetAllCompaniesAsync();
-            var centrosTask = CentroService.GetAllCentrosAsync();
-            var colaboradoresTask = ColaboradorService.GetAllColaboradoresAsync();
+            // Cargar empresas según el rol
+            if (isAdmin)
+            {
+                empresas = await CompanyService.GetAllCompaniesAsync();
+            }
+            else if (isOperador && assignedCompany != null)
+            {
+                empresas = new List<CompanyDto> { assignedCompany };
+            }
+            else
+            {
+                empresas = await CompanyService.GetAllCompaniesAsync();
+            }
 
-            await Task.WhenAll(empresasTask, centrosTask, colaboradoresTask);
+            // Cargar colaboradores
+            colaboradores = await ColaboradorService.GetAllColaboradoresAsync();
 
-            empresas = empresasTask.Result;
-            centros = centrosTask.Result;
-            colaboradores = colaboradoresTask.Result;
+            // Cargar centros según la empresa seleccionada
+            await LoadCentrosForSelectedCompany();
         }
         catch (Exception ex)
         {
             await JSRuntime.InvokeVoidAsync("alert", $"Error al cargar datos: {ex.Message}");
+        }
+    }
+
+    private async Task LoadCentrosForSelectedCompany()
+    {
+        try
+        {
+            if (isOperador && assignedCompany != null)
+            {
+                // Para operadores, obtener las zonas de acceso de la empresa
+                var zonasEmpresa = assignedCompany.ZonasAcceso?.Select(z => z.Id).ToList() ?? new List<int>();
+                
+                if (zonasEmpresa.Any())
+                {
+                    // Cargar todos los centros y filtrar por las zonas de la empresa
+                    var allCentros = await CentroService.GetAllCentrosAsync();
+                    centros = allCentros.Where(c => zonasEmpresa.Contains(c.IdZona)).ToList();
+                }
+                else
+                {
+                    // Si no hay zonas asignadas, cargar todos los centros (fallback)
+                    centros = await CentroService.GetAllCentrosAsync();
+                }
+            }
+            else
+            {
+                // Para admin, cargar todos los centros
+                centros = await CentroService.GetAllCentrosAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error al cargar centros: {ex.Message}");
         }
     }
 

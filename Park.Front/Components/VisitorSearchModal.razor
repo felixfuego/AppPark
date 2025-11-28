@@ -1,0 +1,389 @@
+@using Park.Comun.DTOs
+@using Park.Front.Services
+@using Park.Front.Constants
+@inject IJSRuntime JSRuntime
+@inject VisitorService VisitorService
+@inject NotificationService NotificationService
+
+<div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5);" tabindex="-1" aria-labelledby="visitorSearchModalLabel" aria-hidden="false">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="visitorSearchModalLabel">
+                    <i class="bi bi-search me-2"></i>Buscar Visitante
+                </h5>
+                <button type="button" class="btn-close" @onclick="CloseModal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Búsqueda -->
+                <div class="mb-4">
+                    <label for="searchTerm" class="form-label fw-bold">Buscar por nombre o identidad</label>
+                    <div class="input-group">
+                        <input type="text" 
+                               class="form-control" 
+                               id="searchTerm" 
+                               @bind="searchTerm" 
+                               @onkeyup="OnSearchKeyUp"
+                               placeholder="Escriba nombre o número de identidad..."
+                               autocomplete="off">
+                        <button class="btn btn-outline-primary" type="button" @onclick="SearchVisitors" disabled="@isSearching">
+                            @if (isSearching)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                            }
+                            else
+                            {
+                                <i class="bi bi-search"></i>
+                            }
+                            Buscar
+                        </button>
+                        @if (!string.IsNullOrEmpty(searchTerm))
+                        {
+                            <button class="btn btn-outline-secondary" type="button" @onclick="ClearSearch">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        }
+                    </div>
+                    <div class="form-text">
+                        <i class="bi bi-info-circle me-1"></i>Busque por nombre completo o número de identidad, o seleccione de la lista
+                    </div>
+                </div>
+
+                <!-- Resultados -->
+                <div class="search-results">
+                    @if (isSearching)
+                    {
+                        <div class="text-center py-4">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Buscando...</span>
+                            </div>
+                            <p class="mt-2 text-muted">Cargando visitantes...</p>
+                        </div>
+                    }
+                    else if (searchResults.Any())
+                    {
+                        <div class="results-header mb-3">
+                            <h6 class="mb-0">
+                                <i class="bi bi-people me-2"></i>Resultados (@searchResults.Count)
+                            </h6>
+                        </div>
+                        <div class="list-group" style="max-height: 400px; overflow-y: auto;">
+                            @foreach (var visitor in searchResults)
+                            {
+                                <div class="list-group-item list-group-item-action cursor-pointer @(selectedVisitor?.Id == visitor.Id ? "active" : "")" 
+                                     @onclick="() => SelectVisitor(visitor)">
+                                    <div class="d-flex w-100 justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1 fw-bold">@visitor.FullName</h6>
+                                            <p class="mb-1 text-muted">
+                                                <i class="bi bi-card-text me-1"></i>@visitor.DocumentType: @visitor.DocumentNumber
+                                            </p>
+                                            @if (!string.IsNullOrEmpty(visitor.Email))
+                                            {
+                                                <p class="mb-1 text-muted">
+                                                    <i class="bi bi-envelope me-1"></i>@visitor.Email
+                                                </p>
+                                            }
+                                            @if (!string.IsNullOrEmpty(visitor.Company))
+                                            {
+                                                <p class="mb-0 text-muted">
+                                                    <i class="bi bi-building me-1"></i>@visitor.Company
+                                                </p>
+                                            }
+                                        </div>
+                                        <div class="text-end">
+                                            <span class="badge @(visitor.IsActive ? "bg-success" : "bg-secondary")">
+                                                @(visitor.IsActive ? "Activo" : "Inactivo")
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else if (!string.IsNullOrEmpty(searchTerm) && !isSearching)
+                    {
+                        <div class="text-center py-4">
+                            <i class="bi bi-search text-muted" style="font-size: 3rem;"></i>
+                            <h6 class="mt-3 text-muted">No se encontraron visitantes</h6>
+                            <p class="text-muted">Intente con otros términos de búsqueda</p>
+                            <button class="btn btn-outline-primary" @onclick="ShowCreateNewVisitor">
+                                <i class="bi bi-person-plus me-1"></i>Crear Nuevo Visitante
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <i class="bi bi-people text-muted" style="font-size: 3rem;"></i>
+                            <h6 class="mt-3 text-muted">Visitantes Disponibles</h6>
+                            <p class="text-muted">Seleccione un visitante o busque por nombre/identidad</p>
+                        </div>
+                    }
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @onclick="CloseModal">Cancelar</button>
+                <button type="button" class="btn btn-outline-primary" @onclick="ShowCreateNewVisitor">
+                    <i class="bi bi-person-plus me-1"></i>Nuevo Visitante
+                </button>
+                <button type="button" class="btn btn-primary" @onclick="ConfirmSelection" disabled="@(selectedVisitor == null)">
+                    <i class="bi bi-check me-1"></i>Seleccionar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para crear visitante (anidado) -->
+@if (showCreateModal)
+{
+    <div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.7); z-index: 1060;" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-person-plus me-2"></i>Nuevo Visitante
+                    </h5>
+                    <button type="button" class="btn-close" @onclick="HideCreateModal"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="newVisitor" OnValidSubmit="CreateVisitor">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary class="text-danger" />
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Nombre *</label>
+                                <InputText class="form-control" @bind-Value="newVisitor.FirstName" placeholder="Ingrese el nombre" />
+                                <ValidationMessage For="@(() => newVisitor.FirstName)" class="text-danger" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Apellido *</label>
+                                <InputText class="form-control" @bind-Value="newVisitor.LastName" placeholder="Ingrese el apellido" />
+                                <ValidationMessage For="@(() => newVisitor.LastName)" class="text-danger" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Email *</label>
+                                <InputText class="form-control" @bind-Value="newVisitor.Email" placeholder="correo@ejemplo.com" />
+                                <ValidationMessage For="@(() => newVisitor.Email)" class="text-danger" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Teléfono *</label>
+                                <InputText class="form-control" @bind-Value="newVisitor.Phone" placeholder="+504 9999-9999" />
+                                <ValidationMessage For="@(() => newVisitor.Phone)" class="text-danger" />
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Tipo de Documento *</label>
+                                <InputSelect class="form-select" @bind-Value="newVisitor.DocumentType">
+                                    <option value="">Seleccione...</option>
+                                    <option value="Cédula">Cédula</option>
+                                    <option value="Pasaporte">Pasaporte</option>
+                                    <option value="Licencia">Licencia</option>
+                                    <option value="Otro">Otro</option>
+                                </InputSelect>
+                                <ValidationMessage For="@(() => newVisitor.DocumentType)" class="text-danger" />
+                            </div>
+                            <div class="col-md-8">
+                                <label class="form-label">Número de Documento *</label>
+                                <InputText class="form-control" @bind-Value="newVisitor.DocumentNumber" placeholder="Ingrese el número de documento" />
+                                <ValidationMessage For="@(() => newVisitor.DocumentNumber)" class="text-danger" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Empresa *</label>
+                                <InputText class="form-control" @bind-Value="newVisitor.Company" placeholder="Nombre de la empresa" />
+                                <ValidationMessage For="@(() => newVisitor.Company)" class="text-danger" />
+                            </div>
+                        </div>
+                    </EditForm>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="HideCreateModal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" @onclick="CreateVisitor" disabled="@isCreating">
+                        @if (isCreating)
+                        {
+                            <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                        }
+                        Crear Visitante
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public EventCallback<VisitorDto> OnVisitorSelected { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private string searchTerm = string.Empty;
+    private List<VisitorDto> searchResults = new();
+    private VisitorDto? selectedVisitor;
+    private bool isSearching = false;
+    private Timer? searchTimer;
+    
+    // Variables para crear visitante
+    private bool showCreateModal = false;
+    private CreateVisitorDto newVisitor = new();
+    private bool isCreating = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Cargar visitantes por defecto
+        await LoadDefaultVisitors();
+    }
+
+    private async Task LoadDefaultVisitors()
+    {
+        isSearching = true;
+        StateHasChanged();
+        
+        try
+        {
+            var searchDto = new VisitorSearchDto
+            {
+                SearchTerm = null, // Sin filtro
+                Page = 1,
+                PageSize = 20,
+                IsActive = true,
+                SortBy = "FullName",
+                SortDescending = false
+            };
+            
+            var result = await VisitorService.SearchVisitorsAsync(searchDto);
+            searchResults = result.Data?.ToList() ?? new List<VisitorDto>();
+        }
+        catch (Exception ex)
+        {
+            NotificationService.ShowError($"Error al cargar visitantes: {ex.Message}");
+            searchResults.Clear();
+        }
+        finally
+        {
+            isSearching = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task OnSearchKeyUp()
+    {
+        // Debounce: esperar 500ms después del último keystroke
+        searchTimer?.Dispose();
+        searchTimer = new Timer(async _ => await InvokeAsync(SearchVisitors), null, 500, Timeout.Infinite);
+    }
+
+    private async Task SearchVisitors()
+    {
+        // Si está vacío, cargar todos
+        if (string.IsNullOrWhiteSpace(searchTerm))
+        {
+            await LoadDefaultVisitors();
+            return;
+        }
+
+        isSearching = true;
+        StateHasChanged();
+
+        try
+        {
+            var searchDto = new VisitorSearchDto
+            {
+                SearchTerm = searchTerm.Trim(),
+                Page = 1,
+                PageSize = 20,
+                IsActive = true // Solo buscar visitantes activos
+            };
+
+            var result = await VisitorService.SearchVisitorsAsync(searchDto);
+            searchResults = result.Data?.ToList() ?? new List<VisitorDto>();
+        }
+        catch (Exception ex)
+        {
+            NotificationService.ShowError($"Error al buscar visitantes: {ex.Message}");
+            searchResults.Clear();
+        }
+        finally
+        {
+            isSearching = false;
+            StateHasChanged();
+        }
+    }
+    
+    private async Task ClearSearch()
+    {
+        searchTerm = string.Empty;
+        await LoadDefaultVisitors();
+    }
+
+    private void SelectVisitor(VisitorDto visitor)
+    {
+        selectedVisitor = visitor;
+        StateHasChanged();
+    }
+
+    private async Task ConfirmSelection()
+    {
+        if (selectedVisitor != null)
+        {
+            await OnVisitorSelected.InvokeAsync(selectedVisitor);
+            await CloseModal();
+        }
+    }
+
+    private void ShowCreateNewVisitor()
+    {
+        newVisitor = new CreateVisitorDto
+        {
+            IsActive = true
+        };
+        showCreateModal = true;
+        StateHasChanged();
+    }
+    
+    private void HideCreateModal()
+    {
+        showCreateModal = false;
+        newVisitor = new CreateVisitorDto();
+        StateHasChanged();
+    }
+
+    private async Task CreateVisitor()
+    {
+        isCreating = true;
+        StateHasChanged();
+        
+        try
+        {
+            var createdVisitor = await VisitorService.CreateVisitorAsync(newVisitor);
+            NotificationService.ShowSuccess(SuccessMessages.VISITOR_CREATED);
+            
+            // Seleccionar automáticamente el visitante recién creado
+            selectedVisitor = createdVisitor;
+            
+            // Recargar la lista
+            await LoadDefaultVisitors();
+            
+            // Cerrar modal de creación
+            HideCreateModal();
+        }
+        catch (Exception ex)
+        {
+            NotificationService.ShowError($"{ErrorMessages.VISITOR_CREATE_ERROR} {ex.Message}");
+        }
+        finally
+        {
+            isCreating = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task CloseModal()
+    {
+        await OnCancel.InvokeAsync();
+    }
+
+    public void Dispose()
+    {
+        searchTimer?.Dispose();
+    }
+}

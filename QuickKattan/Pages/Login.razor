@@ -1,0 +1,133 @@
+@page "/login"
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+@inject ISnackbar Snackbar
+
+<PageTitle>QuickKattan - Iniciar Sesión</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-8">
+    <MudPaper Class="pa-8" Elevation="3">
+        <div class="text-center mb-6">
+            <MudIcon Icon="Icons.Material.Filled.TrendingUp" Size="MudBlazor.Size.Large" Color="MudBlazor.Color.Primary" />
+            <MudText Typo="Typo.h4" Class="mt-2">QuickKattan</MudText>
+            <MudText Typo="Typo.body1" Color="MudBlazor.Color.Secondary">Sistema de Análisis Financiero</MudText>
+        </div>
+
+        <EditForm Model="@loginModel" OnValidSubmit="OnSubmit">
+            <DataAnnotationsValidator />
+            <MudGrid>
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="loginModel.Username"
+                                  Label="Nombre de Usuario"
+                                  Variant="Variant.Outlined"
+                                  InputType="InputType.Text"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="Icons.Material.Filled.Person"
+                                  For="@(() => loginModel.Username)" />
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="loginModel.Password"
+                                  Label="Contraseña"
+                                  Variant="Variant.Outlined"
+                                  InputType="@passwordInput"
+                                  Adornment="Adornment.End"
+                                  AdornmentIcon="@passwordInputIcon"
+                                  OnAdornmentClick="TogglePasswordVisibility"
+                                  AdornmentAriaLabel="Mostrar/ocultar contraseña"
+                                  For="@(() => loginModel.Password)" />
+                </MudItem>
+
+                <MudItem xs="12">
+                    <div class="d-flex justify-space-between align-center">
+                        <MudCheckBox @bind-Value="rememberMe" Label="Recordarme" Color="MudBlazor.Color.Primary" />
+                        <MudButton Variant="Variant.Text" Color="MudBlazor.Color.Primary" Size="MudBlazor.Size.Small">
+                            ¿Olvidaste tu contraseña?
+                        </MudButton>
+                    </div>
+                </MudItem>
+
+                <MudItem xs="12" Class="pt-4">
+                    <MudButton ButtonType="ButtonType.Submit"
+                               Variant="Variant.Filled"
+                               Color="MudBlazor.Color.Primary"
+                               Size="MudBlazor.Size.Large"
+                               FullWidth="true"
+                               StartIcon="Icons.Material.Filled.Login"
+                               Disabled="@isLoading">
+                        @if (isLoading)
+                        {
+                            <MudProgressCircular Class="ms-n1" Size="MudBlazor.Size.Small" Indeterminate="true" />
+                            <MudText Class="ms-2">Iniciando sesión...</MudText>
+                        }
+                        else
+                        {
+                            <MudText>Iniciar Sesión</MudText>
+                        }
+                    </MudButton>
+                </MudItem>
+
+                <MudItem xs="12" Class="text-center mt-4">
+                    <MudDivider />
+                    <MudText Typo="Typo.body2" Class="mt-4" Color="MudBlazor.Color.Secondary">
+                        Sistema integrado con Park API
+                    </MudText>
+                </MudItem>
+            </MudGrid>
+        </EditForm>
+    </MudPaper>
+</MudContainer>
+
+@code {
+    private LoginDto loginModel = new();
+    private bool isLoading = false;
+    private bool rememberMe = false;
+    private bool isPasswordShow;
+    private InputType passwordInput = InputType.Password;
+    private string passwordInputIcon = Icons.Material.Filled.VisibilityOff;
+
+    private void TogglePasswordVisibility()
+    {
+        if (isPasswordShow)
+        {
+            isPasswordShow = false;
+            passwordInputIcon = Icons.Material.Filled.VisibilityOff;
+            passwordInput = InputType.Password;
+        }
+        else
+        {
+            isPasswordShow = true;
+            passwordInputIcon = Icons.Material.Filled.Visibility;
+            passwordInput = InputType.Text;
+        }
+    }
+
+    private async Task OnSubmit()
+    {
+        if (isLoading) return;
+
+        isLoading = true;
+        try
+        {
+            var result = await AuthService.LoginAsync(loginModel);
+
+            if (result.Success)
+            {
+                Snackbar.Add("Inicio de sesión exitoso", Severity.Success);
+                Navigation.NavigateTo("/");
+            }
+            else
+            {
+                Snackbar.Add(result.Message ?? "Error al iniciar sesión", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error de conexión: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

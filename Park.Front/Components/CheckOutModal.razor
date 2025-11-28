@@ -1,0 +1,121 @@
+@using Park.Comun.DTOs
+@using Park.Comun.Enums
+
+<div class="modal fade show d-block" style="background-color: rgba(0,0,0,0.5);" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title">
+                    <i class="bi bi-box-arrow-right me-2"></i>Confirmar Salida
+                </h5>
+                <button type="button" class="btn-close" @onclick="CloseModal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                @if (Visita != null)
+                {
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="bi bi-person me-2"></i>Información del Visitante</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Nombre:</strong> @Visita.NombreCompleto</p>
+                                    <p><strong>Identidad:</strong> @Visita.IdentidadVisitante</p>
+                                    <p><strong>Procedencia:</strong> @Visita.Procedencia</p>
+                                    <p><strong>Destino:</strong> @Visita.Destino</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="bi bi-clock me-2"></i>Información de Tiempo</h6>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Entrada:</strong> @(Visita.FechaLlegada?.ToString("dd/MM/yyyy HH:mm") ?? "No registrado")</p>
+                                    <p><strong>Duración:</strong> @GetDuracionVisita()</p>
+                                    <p><strong>Estado:</strong> 
+                                        <span class="badge bg-warning">@Visita.Estado.ToString()</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header bg-light">
+                                    <h6 class="mb-0"><i class="bi bi-chat-text me-2"></i>Observaciones (Opcional)</h6>
+                                </div>
+                                <div class="card-body">
+                                    <textarea class="form-control" @bind="observaciones" rows="3" 
+                                              placeholder="Agregar observaciones sobre la salida..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @onclick="CloseModal">Cancelar</button>
+                <button type="button" class="btn btn-warning" @onclick="ConfirmCheckOut" disabled="@isLoading">
+                    @if (isLoading)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                    }
+                    <i class="bi bi-box-arrow-right me-1"></i>Confirmar Salida
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public VisitaDto? Visita { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<VisitaCheckOutDto> OnConfirm { get; set; }
+
+    private string observaciones = string.Empty;
+    private bool isLoading = false;
+
+    private string GetDuracionVisita()
+    {
+        if (Visita?.FechaLlegada == null) return "No disponible";
+        
+        var duracion = DateTime.Now - Visita.FechaLlegada.Value;
+        return $"{duracion.Hours}h {duracion.Minutes}m";
+    }
+
+    private async Task ConfirmCheckOut()
+    {
+        if (Visita == null) return;
+
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            var checkOutDto = new VisitaCheckOutDto
+            {
+                Id = Visita.Id,
+                FechaSalida = DateTime.Now,
+                IdGuardia = 1, // TODO: Obtener del usuario actual
+                Observaciones = observaciones
+            };
+
+            await OnConfirm.InvokeAsync(checkOutDto);
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void CloseModal()
+    {
+        OnClose.InvokeAsync();
+    }
+}

@@ -1,0 +1,531 @@
+@page "/guard-panel"
+@using Park.Front.Services
+@using Park.Comun.DTOs
+@using Park.Comun.Enums
+@using Park.Front.Components
+@using Park.Front.Constants
+@inject IJSRuntime JSRuntime
+@inject VisitaService VisitaService
+@inject AuthService AuthService
+@inject ZonaService ZonaService
+@inject NotificationService NotificationService
+
+<PageTitle>Panel de Guardia - Park.Front</PageTitle>
+
+<RoleGuard RequiredRole="Guardia">
+    <div class="guard-panel-container">
+        <div class="page-header">
+            <div class="page-title">
+                <h1><i class="bi bi-shield-check me-2"></i>Panel de Guardia</h1>
+                <p>Control de entrada y salida de visitantes</p>
+            </div>
+            <div class="page-actions">
+                <div class="guard-info">
+                    <span class="guard-name">@currentUser?.FullName</span>
+                    <span class="guard-role">Guardia de Seguridad</span>
+                    @if (currentUser?.ZonaAsignada != null)
+                    {
+                        <span class="guard-zone">Zona: @currentUser.ZonaAsignada.Nombre</span>
+                    }
+                    else if (zonaAsignada != null)
+                    {
+                        <span class="guard-zone">Zona: @zonaAsignada.Nombre</span>
+                    }
+                    else if (currentUser?.IdZonaAsignada.HasValue == true)
+                    {
+                        <span class="guard-zone text-warning">Zona ID: @currentUser.IdZonaAsignada (sin datos completos)</span>
+                    }
+                    else
+                    {
+                        <span class="guard-zone text-warning">Sin zona asignada</span>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @if (isLoading)
+        {
+            <div class="loading-container">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <p class="mt-3">Cargando visitas...</p>
+            </div>
+        }
+        else
+        {
+            <!-- Estadísticas rápidas -->
+            <div class="stats-grid mb-4">
+                <div class="stat-card">
+                    <div class="stat-icon bg-primary">
+                        <i class="bi bi-calendar-check"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>@visitasHoy</h3>
+                        <p>Visitas Hoy</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon bg-warning">
+                        <i class="bi bi-clock"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>@visitasEnProceso</h3>
+                        <p>En Proceso</p>
+                    </div>
+                </div>
+                
+                <div class="stat-card">
+                    <div class="stat-icon bg-success">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>@visitasCompletadas</h3>
+                        <p>Completadas</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Búsqueda unificada -->
+            <div class="search-container mb-4">
+                <div class="row">
+                    <div class="col-12">
+                        <label class="form-label">
+                            <i class="bi bi-search me-2"></i>Búsqueda Unificada
+                        </label>
+                        <div class="input-group">
+                            <input type="text" class="form-control form-control-lg" @bind="unifiedSearch" @onkeyup="UnifiedSearch" 
+                                   placeholder="Buscar por: número de visita, nombre, empresa, identidad..." />
+                            <button class="btn btn-primary" @onclick="UnifiedSearch">
+                                <i class="bi bi-search me-1"></i>Buscar
+                            </button>
+                            <button class="btn btn-outline-secondary" @onclick="ClearSearch">
+                                <i class="bi bi-x-lg me-1"></i>Limpiar
+                            </button>
+                        </div>
+                        <div class="form-text">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Puedes buscar por: número de solicitud, nombre del visitante, empresa, identidad o cualquier combinación
+                        </div>
+                        
+                        <!-- Componente de demostración -->
+                        <SearchDemo />
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visitas del día -->
+            <div class="visitas-section">
+                <div class="section-header">
+                    <h2><i class="bi bi-calendar-day me-2"></i>Visitas del Día</h2>
+                    <div class="section-actions">
+                        <button class="btn btn-outline-primary btn-sm" @onclick="RefreshVisitas">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Actualizar
+                        </button>
+                    </div>
+                </div>
+
+                <div class="visitas-grid">
+                    @foreach (var visita in visitasDelDia)
+                    {
+                        <div class="visita-card @GetVisitaCardClass(visita.Estado)">
+                            <div class="visita-header">
+                                <div class="visita-number">
+                                    <strong>@visita.NumeroSolicitud</strong>
+                                </div>
+                                <div class="visita-status">
+                                    @switch (visita.Estado)
+                                    {
+                                        case VisitStatus.Programada:
+                                            <span class="badge bg-primary">Programada</span>
+                                            break;
+                                        case VisitStatus.EnProceso:
+                                            <span class="badge bg-warning">En Proceso</span>
+                                            break;
+                                        case VisitStatus.Terminada:
+                                            <span class="badge bg-success">Terminada</span>
+                                            break;
+                                        case VisitStatus.Cancelada:
+                                            <span class="badge bg-danger">Cancelada</span>
+                                            break;
+                                        case VisitStatus.Expirada:
+                                            <span class="badge bg-secondary">Expirada</span>
+                                            break;
+                                    }
+                                </div>
+                            </div>
+                            
+                            <div class="visita-body">
+                                <div class="visita-info">
+                                    <div class="info-row">
+                                        <i class="bi bi-person"></i>
+                                        <span>@visita.NombreCompleto</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <i class="bi bi-card-text"></i>
+                                        <span>@visita.IdentidadVisitante</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <i class="bi bi-building"></i>
+                                        <span>@visita.Compania?.Name</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <i class="bi bi-geo-alt"></i>
+                                        <span>@visita.Centro?.Nombre</span>
+                                    </div>
+                                    <div class="info-row">
+                                        <i class="bi bi-clock"></i>
+                                        <span>@visita.Fecha.ToString("HH:mm")</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="visita-actions">
+                                @if (visita.Estado == VisitStatus.Programada)
+                                {
+                                    <button class="btn btn-success btn-sm" @onclick="() => ShowEntradaModal(visita)">
+                                        <i class="bi bi-box-arrow-in-right me-1"></i>Entrada
+                                    </button>
+                                }
+                                @if (visita.Estado == VisitStatus.EnProceso)
+                                {
+                                    <button class="btn btn-warning btn-sm" @onclick="() => ShowSalidaModal(visita)">
+                                        <i class="bi bi-box-arrow-right me-1"></i>Salida
+                                    </button>
+                                }
+                                <button class="btn btn-outline-info btn-sm" @onclick="() => ShowDetailsModal(visita)">
+                                    <i class="bi bi-eye me-1"></i>Detalles
+                                </button>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                @if (!visitasDelDia.Any())
+                {
+                    <div class="no-data-container">
+                        <div class="text-center py-5">
+                            <i class="bi bi-calendar-x display-1 text-muted"></i>
+                            <h3 class="mt-3">No hay visitas programadas</h3>
+                            <p class="text-muted">No se encontraron visitas para el día de hoy</p>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</RoleGuard>
+
+<!-- Modal para entrada -->
+@if (showEntradaModal)
+{
+    <CheckInModal Visita="selectedVisita" 
+                  OnClose="CloseEntradaModal" 
+                  OnConfirm="OnEntradaConfirmed" />
+}
+
+<!-- Modal para salida -->
+@if (showSalidaModal)
+{
+    <CheckOutModal Visita="selectedVisita" 
+                   OnClose="CloseSalidaModal" 
+                   OnConfirm="OnSalidaConfirmed" />
+}
+
+<!-- Modal para ver detalles -->
+@if (showDetailsModal)
+{
+    <VisitaDetailsModal Visita="selectedVisita" 
+                        OnClose="CloseDetailsModal" />
+}
+
+@code {
+    private UserDto? currentUser = null;
+    private List<VisitaDto> visitasDelDia = new();
+    private VisitaDto? selectedVisita;
+    private bool isLoading = true;
+    private bool showEntradaModal = false;
+    private bool showSalidaModal = false;
+    private bool showDetailsModal = false;
+
+    // Búsqueda unificada
+    private string unifiedSearch = "";
+
+    // Estadísticas
+    private int visitasHoy = 0;
+    private int visitasEnProceso = 0;
+    private int visitasCompletadas = 0;
+    
+    // Zona asignada
+    private ZonaDto? zonaAsignada = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadGuardPanelData();
+    }
+
+    private async Task LoadGuardPanelData()
+    {
+        try
+        {
+            isLoading = true;
+            StateHasChanged();
+
+            // Obtener usuario actual
+            currentUser = await AuthService.GetCurrentUserAsync();
+            
+            // Si el usuario tiene ID de zona pero no datos completos, cargar la zona por separado
+            if (currentUser != null && currentUser.IdZonaAsignada.HasValue && currentUser.ZonaAsignada == null)
+            {
+                try
+                {
+                    var zonas = await ZonaService.GetAllZonasAsync();
+                    zonaAsignada = zonas.FirstOrDefault(z => z.Id == currentUser.IdZonaAsignada.Value);
+                    await JSRuntime.InvokeVoidAsync("console.log", $"Zona cargada por separado: {zonaAsignada?.Nombre ?? "no encontrada"}");
+                }
+                catch (Exception ex)
+                {
+                    await JSRuntime.InvokeVoidAsync("console.log", $"Error cargando zona: {ex.Message}");
+                }
+            }
+            
+            // Debug: Mostrar información del usuario
+            if (currentUser != null)
+            {
+                await JSRuntime.InvokeVoidAsync("console.log", $"Usuario: {currentUser.FullName}");
+                await JSRuntime.InvokeVoidAsync("console.log", $"Roles: {string.Join(", ", currentUser.Roles.Select(r => r.Name))}");
+                await JSRuntime.InvokeVoidAsync("console.log", $"ID Zona Asignada: {currentUser.IdZonaAsignada}");
+                await JSRuntime.InvokeVoidAsync("console.log", $"Zona Asignada (del usuario): {currentUser.ZonaAsignada?.Nombre ?? "null"}");
+                await JSRuntime.InvokeVoidAsync("console.log", $"Zona Asignada (cargada): {zonaAsignada?.Nombre ?? "null"}");
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("console.log", "Usuario actual es null");
+            }
+            
+            // Cargar visitas del día
+            await LoadVisitasDelDia();
+            
+            // Calcular estadísticas
+            CalculateStats();
+        }
+        catch (Exception ex)
+        {
+            NotificationService.ShowError($"Error al cargar datos: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadVisitasDelDia()
+    {
+        try
+        {
+            var hoy = DateTime.Today;
+            
+            // Si el usuario es Guardia y tiene zona asignada, filtrar por zona
+            if (currentUser != null && currentUser.Roles.Any(r => r.Name == "Guardia") && 
+                (currentUser.IdZonaAsignada.HasValue || zonaAsignada != null))
+            {
+                await JSRuntime.InvokeVoidAsync("console.log", $"Cargando visitas por zona del guardia ID: {currentUser.Id}");
+                await JSRuntime.InvokeVoidAsync("console.log", $"Zona asignada: {currentUser.IdZonaAsignada} - {zonaAsignada?.Nombre ?? "No cargada"}");
+                
+                var visitas = await VisitaService.GetVisitasByGuardiaZonaAsync(currentUser.Id);
+                await JSRuntime.InvokeVoidAsync("console.log", $"Total visitas obtenidas del servicio: {visitas.Count()}");
+                
+                visitasDelDia = visitas.Where(v => v.Fecha.Date == hoy).OrderBy(v => v.Fecha).ToList();
+                await JSRuntime.InvokeVoidAsync("console.log", $"Visitas del día filtradas: {visitasDelDia.Count}");
+                
+                // Debug adicional: mostrar información de las visitas
+                foreach (var visita in visitasDelDia.Take(3))
+                {
+                    await JSRuntime.InvokeVoidAsync("console.log", 
+                        $"Visita {visita.NumeroSolicitud}: Centro {visita.Centro?.Nombre ?? "Sin centro"} - Zona {visita.Centro?.Zona?.Nombre ?? "Sin zona"}");
+                }
+            }
+            else
+            {
+                await JSRuntime.InvokeVoidAsync("console.log", "Cargando todas las visitas del día (sin filtro de zona)");
+                await JSRuntime.InvokeVoidAsync("console.log", $"Usuario: {currentUser?.FullName ?? "null"}, Roles: {string.Join(", ", currentUser?.Roles.Select(r => r.Name) ?? new string[0])}");
+                await JSRuntime.InvokeVoidAsync("console.log", $"Zona asignada: {currentUser?.IdZonaAsignada?.ToString() ?? "null"}");
+                
+                // Para otros roles o guardias sin zona asignada, cargar todas las visitas del día
+                var visitas = await VisitaService.GetVisitasByFechaAsync(hoy);
+                visitasDelDia = visitas.OrderBy(v => v.Fecha).ToList();
+                await JSRuntime.InvokeVoidAsync("console.log", $"Visitas encontradas (todas): {visitasDelDia.Count}");
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationService.ShowError($"{ErrorMessages.VISITA_LOAD_ERROR} {ex.Message}");
+        }
+    }
+
+    private void CalculateStats()
+    {
+        visitasHoy = visitasDelDia.Count;
+        visitasEnProceso = visitasDelDia.Count(v => v.Estado == VisitStatus.EnProceso);
+        visitasCompletadas = visitasDelDia.Count(v => v.Estado == VisitStatus.Terminada);
+    }
+
+    private string GetVisitaCardClass(VisitStatus estado)
+    {
+        return estado switch
+        {
+            VisitStatus.Programada => "visita-programada",
+            VisitStatus.EnProceso => "visita-en-proceso",
+            VisitStatus.Terminada => "visita-terminada",
+            VisitStatus.Cancelada => "visita-cancelada",
+            VisitStatus.Expirada => "visita-expirada",
+            _ => ""
+        };
+    }
+
+    private async Task UnifiedSearch()
+    {
+        if (string.IsNullOrWhiteSpace(unifiedSearch))
+        {
+            await LoadVisitasDelDia();
+            return;
+        }
+
+        try
+        {
+            var hoy = DateTime.Today;
+            List<VisitaDto> visitas;
+            
+            // Si el usuario es Guardia y tiene zona asignada, filtrar por zona
+            if (currentUser != null && currentUser.Roles.Any(r => r.Name == "Guardia") && currentUser.IdZonaAsignada.HasValue)
+            {
+                visitas = await VisitaService.GetVisitasByGuardiaZonaAsync(currentUser.Id);
+            }
+            else
+            {
+                visitas = await VisitaService.GetVisitasByFechaAsync(hoy);
+            }
+            
+            var searchTerm = unifiedSearch.Trim();
+            
+            // Búsqueda unificada por múltiples criterios
+            visitasDelDia = visitas.Where(v => 
+                v.Fecha.Date == hoy && (
+                    // Búsqueda por número de solicitud
+                    v.NumeroSolicitud.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    // Búsqueda por nombre del visitante
+                    v.NombreCompleto.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    // Búsqueda por identidad del visitante
+                    v.IdentidadVisitante.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    // Búsqueda por nombre de la empresa
+                    (v.Compania?.Name?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    // Búsqueda por nombre del centro
+                    (v.Centro?.Nombre?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    // Búsqueda por nombre del solicitante
+                    (v.Solicitante?.Nombre?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                    // Búsqueda por nombre de quien recibe
+                    (v.RecibidoPor?.Nombre?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false)
+                ))
+                .OrderBy(v => v.Fecha).ToList();
+                
+            // Si no se encontraron resultados, mostrar mensaje
+            if (!visitasDelDia.Any())
+            {
+                await JSRuntime.InvokeVoidAsync("console.log", $"No se encontraron visitas que coincidan con: '{searchTerm}'");
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationService.ShowError($"Error en la búsqueda: {ex.Message}");
+        }
+    }
+
+    private async Task ClearSearch()
+    {
+        unifiedSearch = "";
+        await LoadVisitasDelDia();
+        CalculateStats();
+    }
+
+    private async Task RefreshVisitas()
+    {
+        await LoadVisitasDelDia();
+        CalculateStats();
+    }
+
+    private void ShowEntradaModal(VisitaDto visita)
+    {
+        selectedVisita = visita;
+        showEntradaModal = true;
+        StateHasChanged();
+    }
+
+    private void CloseEntradaModal()
+    {
+        showEntradaModal = false;
+        selectedVisita = null;
+        StateHasChanged();
+    }
+
+    private void ShowSalidaModal(VisitaDto visita)
+    {
+        selectedVisita = visita;
+        showSalidaModal = true;
+        StateHasChanged();
+    }
+
+    private void CloseSalidaModal()
+    {
+        showSalidaModal = false;
+        selectedVisita = null;
+        StateHasChanged();
+    }
+
+    private void ShowDetailsModal(VisitaDto visita)
+    {
+        selectedVisita = visita;
+        showDetailsModal = true;
+        StateHasChanged();
+    }
+
+    private void CloseDetailsModal()
+    {
+        showDetailsModal = false;
+        selectedVisita = null;
+        StateHasChanged();
+    }
+
+    private async Task OnEntradaConfirmed(VisitaCheckInDto entradaDto)
+    {
+        try
+        {
+            await VisitaService.CheckInVisitaAsync(entradaDto);
+            await LoadVisitasDelDia();
+            CalculateStats();
+            CloseEntradaModal();
+            NotificationService.ShowSuccess(SuccessMessages.VISITA_CHECKIN);
+        }
+        catch (Exception ex)
+        {
+            NotificationService.ShowError($"{ErrorMessages.VISITA_CHECKIN_ERROR} {ex.Message}");
+        }
+    }
+
+    private async Task OnSalidaConfirmed(VisitaCheckOutDto salidaDto)
+    {
+        try
+        {
+            await VisitaService.CheckOutVisitaAsync(salidaDto);
+            await LoadVisitasDelDia();
+            CalculateStats();
+            CloseSalidaModal();
+            NotificationService.ShowSuccess(SuccessMessages.VISITA_CHECKOUT);
+        }
+        catch (Exception ex)
+        {
+            NotificationService.ShowError($"{ErrorMessages.VISITA_CHECKOUT_ERROR} {ex.Message}");
+        }
+    }
+}

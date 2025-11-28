@@ -1,0 +1,21 @@
+﻿<MudThemeProvider />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<Router AppAssembly="@typeof(App).Assembly">
+    <Found Context="routeData">
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(Layout.MainLayout)" />
+        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+    </Found>
+    <NotFound>
+        <PageTitle>QuickKattan - Not found</PageTitle>
+        <LayoutView Layout="@typeof(Layout.MainLayout)">
+            <MudContainer>
+                <MudAlert Severity="Severity.Warning">
+                    <MudText>Lo sentimos, no hay nada en esta dirección.</MudText>
+                </MudAlert>
+            </MudContainer>
+        </LayoutView>
+    </NotFound>
+</Router>

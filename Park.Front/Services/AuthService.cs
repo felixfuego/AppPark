@@ -31,7 +31,7 @@ namespace Park.Front.Services
                 var json = JsonSerializer.Serialize(loginDto, _jsonOptions);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                var response = await _httpClient.PostAsync("/api/auth/login", content);
+                var response = await _httpClient.PostAsync("api/auth/login", content);
                 var responseContent = await response.Content.ReadAsStringAsync();
 
                 if (response.IsSuccessStatusCode)
@@ -88,7 +88,7 @@ namespace Park.Front.Services
                 var json = JsonSerializer.Serialize(registerDto, _jsonOptions);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                var response = await _httpClient.PostAsync("/api/auth/register", content);
+                var response = await _httpClient.PostAsync("api/auth/register", content);
                 var responseContent = await response.Content.ReadAsStringAsync();
 
                 if (response.IsSuccessStatusCode)
@@ -135,7 +135,7 @@ namespace Park.Front.Services
                 if (!string.IsNullOrEmpty(token))
                 {
                     var content = new StringContent($"\"{token}\"", Encoding.UTF8, "application/json");
-                    await _httpClient.PostAsync("/api/auth/logout", content);
+                    await _httpClient.PostAsync("api/auth/logout", content);
                 }
             }
             catch (Exception ex)
@@ -168,7 +168,7 @@ namespace Park.Front.Services
                 _httpClient.DefaultRequestHeaders.Authorization = 
                     new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
 
-                var response = await _httpClient.GetAsync("/api/auth/me");
+                var response = await _httpClient.GetAsync("api/auth/me");
                 if (response.IsSuccessStatusCode)
                 {
                     var content = await response.Content.ReadAsStringAsync();
@@ -224,7 +224,7 @@ namespace Park.Front.Services
                 var json = JsonSerializer.Serialize(refreshDto, _jsonOptions);
                 var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-                var response = await _httpClient.PostAsync("/api/auth/refresh-token", content);
+                var response = await _httpClient.PostAsync("api/auth/refresh-token", content);
                 if (response.IsSuccessStatusCode)
                 {
                     var responseContent = await response.Content.ReadAsStringAsync();

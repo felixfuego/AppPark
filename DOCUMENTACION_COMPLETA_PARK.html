@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentación Completa - Sistema Park</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --secondary-color: #6c757d;
+            --success-color: #198754;
+            --info-color: #0dcaf0;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--dark-color);
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: 280px;
+            background: linear-gradient(135deg, var(--primary-color), #0a58ca);
+            color: white;
+            overflow-y: auto;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+        }
+
+        .sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+
+        .sidebar-header {
+            padding: 1.5rem 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .sidebar-nav {
+            padding: 1rem 0;
+        }
+
+        .nav-item {
+            margin: 0.25rem 0;
+        }
+
+        .nav-link {
+            color: rgba(255,255,255,0.8);
+            padding: 0.75rem 1.5rem;
+            border-radius: 0;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: white;
+            background: rgba(255,255,255,0.1);
+            border-left-color: white;
+        }
+
+        .nav-link i {
+            width: 20px;
+            margin-right: 0.75rem;
+        }
+
+        .main-content {
+            margin-left: 280px;
+            padding: 2rem;
+            transition: margin-left 0.3s ease;
+        }
+
+        .main-content.expanded {
+            margin-left: 0;
+        }
+
+        .section-header {
+            background: linear-gradient(135deg, var(--primary-color), #0a58ca);
+            color: white;
+            padding: 2rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);
+        }
+
+        .section-header h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+
+        .section-header p {
+            margin: 0.5rem 0 0 0;
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, var(--light-color), #e9ecef);
+            border-bottom: 2px solid var(--primary-color);
+            border-radius: 15px 15px 0 0 !important;
+            padding: 1.5rem;
+        }
+
+        .card-title {
+            color: var(--primary-color);
+            font-weight: 700;
+            margin: 0;
+            font-size: 1.3rem;
+        }
+
+        .card-body {
+            padding: 2rem;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .feature-card {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-left: 5px solid var(--primary-color);
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary-color), #0a58ca);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .architecture-diagram {
+            background: #f8f9fa;
+            border: 2px solid var(--primary-color);
+            border-radius: 15px;
+            padding: 2rem;
+            margin: 2rem 0;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+        }
+
+        .code-block {
+            background: #2d3748;
+            color: #e2e8f0;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+        }
+
+        .role-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            font-weight: 600;
+            margin: 0.25rem;
+        }
+
+        .role-admin {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+        }
+
+        .role-operator {
+            background: linear-gradient(135deg, #198754, #157347);
+            color: white;
+        }
+
+        .role-guard {
+            background: linear-gradient(135deg, #ffc107, #e0a800);
+            color: #212529;
+        }
+
+        .toggle-sidebar {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1001;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, var(--primary-color), #0a58ca);
+            color: white;
+            padding: 2rem;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(13, 110, 253, 0.3);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .toggle-sidebar {
+                display: flex;
+            }
+            
+            .section-header h1 {
+                font-size: 2rem;
+            }
+            
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .search-box {
+            position: sticky;
+            top: 20px;
+            z-index: 100;
+            margin-bottom: 2rem;
+        }
+
+        .highlight {
+            background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+            padding: 0.25rem 0.5rem;
+            border-radius: 5px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <!-- Toggle Button for Mobile -->
+    <button class="toggle-sidebar" onclick="toggleSidebar()">
+        <i class="bi bi-list"></i>
+    </button>
+
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h4><i class="bi bi-shield-check me-2"></i>Sistema Park</h4>
+            <p class="mb-0">Documentación Completa</p>
+        </div>
+        
+        <div class="sidebar-nav">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link" href="#overview">
+                        <i class="bi bi-house-door"></i>Resumen General
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#architecture">
+                        <i class="bi bi-diagram-3"></i>Arquitectura
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#roles">
+                        <i class="bi bi-people"></i>Roles y Permisos
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#modules">
+                        <i class="bi bi-grid"></i>Módulos del Sistema
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#guard-panel">
+                        <i class="bi bi-shield"></i>Panel de Guardia
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#technical">
+                        <i class="bi bi-gear"></i>Datos Técnicos
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#deployment">
+                        <i class="bi bi-cloud-upload"></i>Despliegue
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#support">
+                        <i class="bi bi-headset"></i>Soporte
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content" id="mainContent">
+        <!-- Search Box -->
+        <div class="search-box">
+            <div class="input-group">
+                <input type="text" class="form-control" id="searchInput" placeholder="Buscar en la documentación...">
+                <button class="btn btn-primary" onclick="searchContent()">
+                    <i class="bi bi-search"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Overview Section -->
+        <section id="overview">
+            <div class="section-header">
+                <h1><i class="bi bi-house-door me-3"></i>Sistema Park</h1>
+                <p>Gestión Integral de Visitas Empresariales</p>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="bi bi-info-circle me-2"></i>Resumen del Sistema</h3>
+                        </div>
+                        <div class="card-body">
+                            <p class="lead">El <strong>Sistema Park</strong> es una aplicación web moderna desarrollada para la gestión integral y automatizada de visitas empresariales. La plataforma permite controlar, monitorear y optimizar el flujo de visitantes en nuestras instalaciones.</p>
+                            
+                            <div class="stats-grid">
+                                <div class="stat-card">
+                                    <div class="stat-number">3</div>
+                                    <div class="stat-label">Roles de Usuario</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-number">8</div>
+                                    <div class="stat-label">Módulos Principales</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-number">100%</div>
+                                    <div class="stat-label">Responsive</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-number">24/7</div>
+                                    <div class="stat-label">Disponibilidad</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="bi bi-link me-2"></i>Acceso al Sistema</h3>
+                        </div>
+                        <div class="card-body">
+                            <h5>URLs de Acceso:</h5>
+                            <ul class="list-unstyled">
+                                <li><strong>Producción:</strong><br>
+                                    <code>https://fintotal.kattangroup.com/park</code>
+                                </li>
+                                <li><strong>Desarrollo:</strong><br>
+                                    <code>http://localhost:5077</code>
+                                </li>
+                            </ul>
+                            
+                            <div class="alert alert-info mt-3">
+                                <i class="bi bi-info-circle me-2"></i>
+                                <strong>Credenciales:</strong> Se proporcionarán credenciales individuales según el rol asignado.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Architecture Section -->
+        <section id="architecture">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="bi bi-diagram-3 me-2"></i>Arquitectura del Sistema</h3>
+                </div>
+                <div class="card-body">
+                    <div class="architecture-diagram">
+                        <pre>
+┌─────────────────────────────────────────────────────────────────┐
+│                        SISTEMA PARK                            │
+├─────────────────────────────────────────────────────────────────┤
+│  Frontend (Blazor WebAssembly)  │  Backend (.NET Core API)     │
+│  ┌─────────────────────────────┐ │  ┌─────────────────────────────┐ │
+│  │ • UI Components             │ │  │ • Controllers               │ │
+│  │ • Services                  │ │  │ • Services                  │ │
+│  │ • Authentication             │ │  │ • Business Logic            │ │
+│  │ • Role Management            │ │  │ • Data Access               │ │
+│  └─────────────────────────────┘ │  └─────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    Base de Datos (SQL Server)                  │
+│  ┌─────────────────────────────────────────────────────────────┐ │
+│  │ • Users, Roles, Permissions                               │ │
+│  │ • Companies, Centers, Zones                               │ │
+│  │ • Collaborators, Visitors                                │ │
+│  │ • Visits, Check-ins, Check-outs                          │ │
+│  └─────────────────────────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────────────────────┘
+                        </pre>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-md-4">
+                            <div class="feature-card">
+                                <div class="feature-icon">
+                                    <i class="bi bi-laptop"></i>
+                                </div>
+                                <h5>Frontend</h5>
+                                <p><strong>Blazor WebAssembly</strong> + MudBlazor</p>
+                                <ul>
+                                    <li>Interfaz moderna y responsive</li>
+                                    <li>Autenticación JWT</li>
+                                    <li>Control de acceso por roles</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="feature-card">
+                                <div class="feature-icon">
+                                    <i class="bi bi-server"></i>
+                                </div>
+                                <h5>Backend</h5>
+                                <p><strong>.NET Core 8.0</strong> + Entity Framework</p>
+                                <ul>
+                                    <li>API REST completa</li>
+                                    <li>Lógica de negocio robusta</li>
+                                    <li>Seguridad JWT</li>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="feature-card">
+                                <div class="feature-icon">
+                                    <i class="bi bi-database"></i>
+                                </div>
+                                <h5>Base de Datos</h5>
+                                <p><strong>SQL Server</strong></p>
+                                <ul>
+                                    <li>Datos relacionales</li>
+                                    <li>Índices optimizados</li>
+                                    <li>Auditoría completa</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Roles Section -->
+        <section id="roles">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="bi bi-people me-2"></i>Roles y Permisos</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-4">
+                            <div class="card h-100">
+                                <div class="card-header bg-danger text-white">
+                                    <h5 class="mb-0"><i class="bi bi-shield-fill me-2"></i>Administrador</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="role-badge role-admin">Admin</div>
+                                    <h6>Funciones Principales:</h6>
+                                    <ul>
+                                        <li>Gestión completa de usuarios</li>
+                                        <li>Configuración del sistema</li>
+                                        <li>Acceso a todos los reportes</li>
+                                        <li>Creación de visitas para cualquier empresa</li>
+                                    </ul>
+                                    <h6>Módulos Disponibles:</h6>
+                                    <ul>
+                                        <li>👥 Gestión de Usuarios</li>
+                                        <li>🏢 Gestión de Empresas</li>
+                                        <li>📍 Gestión de Centros y Zonas</li>
+                                        <li>👤 Gestión de Colaboradores</li>
+                                        <li>📊 Reportes y Estadísticas</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-4">
+                            <div class="card h-100">
+                                <div class="card-header bg-success text-white">
+                                    <h5 class="mb-0"><i class="bi bi-person-badge me-2"></i>Operador</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="role-badge role-operator">Operador</div>
+                                    <h6>Funciones Principales:</h6>
+                                    <ul>
+                                        <li>Creación de visitas (empresa asignada)</li>
+                                        <li>Acceso a centros asignados</li>
+                                        <li>Reportes de su área</li>
+                                        <li>Gestión de colaboradores</li>
+                                    </ul>
+                                    <h6>Módulos Disponibles:</h6>
+                                    <ul>
+                                        <li>📅 Gestión de Visitas</li>
+                                        <li>👥 Gestión de Colaboradores</li>
+                                        <li>📊 Reportes de Área</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-4">
+                            <div class="card h-100">
+                                <div class="card-header bg-warning text-dark">
+                                    <h5 class="mb-0"><i class="bi bi-shield me-2"></i>Guardia</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="role-badge role-guard">Guardia</div>
+                                    <h6>Funciones Principales:</h6>
+                                    <ul>
+                                        <li>Control de entrada/salida</li>
+                                        <li>Búsqueda de visitas</li>
+                                        <li>Registro de tiempos</li>
+                                        <li>Solo visitas de su zona</li>
+                                    </ul>
+                                    <h6>Características Especiales:</h6>
+                                    <ul>
+                                        <li>🔍 Búsqueda Unificada</li>
+                                        <li>📱 Interfaz Móvil</li>
+                                        <li>⚡ Búsqueda en Tiempo Real</li>
+                                        <li>📊 Dashboard de Estadísticas</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Modules Section -->
+        <section id="modules">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="bi bi-grid me-2"></i>Módulos del Sistema</h3>
+                </div>
+                <div class="card-body">
+                    <div class="feature-grid">
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="bi bi-house"></i>
+                            </div>
+                            <h5>Dashboard Principal</h5>
+                            <p>Estadísticas generales, visitas del día, alertas y acceso rápido a funciones principales.</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="bi bi-people"></i>
+                            </div>
+                            <h5>Gestión de Usuarios</h5>
+                            <p>Creación, administración de cuentas, asignación de roles y permisos, monitoreo de actividad.</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="bi bi-building"></i>
+                            </div>
+                            <h5>Gestión de Empresas</h5>
+                            <p>Registro de empresas visitantes, configuración de datos corporativos, asignación de colaboradores.</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="bi bi-geo-alt"></i>
+                            </div>
+                            <h5>Gestión de Centros y Zonas</h5>
+                            <p>Configuración de ubicaciones, definición de zonas de acceso, asignación de guardias por zona.</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="bi bi-person-badge"></i>
+                            </div>
+                            <h5>Gestión de Colaboradores</h5>
+                            <p>Registro de personal interno, asignación a empresas y centros, gestión de permisos de acceso.</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="bi bi-calendar-check"></i>
+                            </div>
+                            <h5>Gestión de Visitas</h5>
+                            <p>Creación y programación de visitas, gestión de estados, asignación de colaboradores responsables.</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="bi bi-shield-check"></i>
+                            </div>
+                            <h5>Panel de Guardia</h5>
+                            <p>Búsqueda unificada avanzada, control de entrada/salida, estadísticas del día, interfaz móvil.</p>
+                        </div>
+                        
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <i class="bi bi-graph-up"></i>
+                            </div>
+                            <h5>Reportes y Estadísticas</h5>
+                            <p>Reportes de visitas por período, estadísticas por empresa y centro, análisis de tendencias.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Guard Panel Section -->
+        <section id="guard-panel">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="bi bi-shield me-2"></i>Panel de Guardia - Búsqueda Unificada</h3>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-lightbulb me-2"></i>
+                        <strong>Nueva Funcionalidad:</strong> Búsqueda unificada que permite buscar por múltiples criterios en un solo campo.
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <h5>🔍 Criterios de Búsqueda:</h5>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex align-items-center">
+                                    <i class="bi bi-hash text-primary me-2"></i>
+                                    <strong>Número de Solicitud:</strong> VIS-2024-01-15-123456
+                                </li>
+                                <li class="list-group-item d-flex align-items-center">
+                                    <i class="bi bi-person text-success me-2"></i>
+                                    <strong>Nombre del Visitante:</strong> Juan Pérez
+                                </li>
+                                <li class="list-group-item d-flex align-items-center">
+                                    <i class="bi bi-building text-info me-2"></i>
+                                    <strong>Empresa:</strong> Kattan Group
+                                </li>
+                                <li class="list-group-item d-flex align-items-center">
+                                    <i class="bi bi-card-text text-warning me-2"></i>
+                                    <strong>Identidad:</strong> 0801-1990-12345
+                                </li>
+                                <li class="list-group-item d-flex align-items-center">
+                                    <i class="bi bi-geo-alt text-secondary me-2"></i>
+                                    <strong>Centro:</strong> Nombre del centro
+                                </li>
+                            </ul>
+                        </div>
+                        
+                        <div class="col-lg-6">
+                            <h5>⚡ Características Avanzadas:</h5>
+                            <div class="feature-grid">
+                                <div class="feature-card">
+                                    <div class="feature-icon">
+                                        <i class="bi bi-search"></i>
+                                    </div>
+                                    <h6>Búsqueda Inteligente</h6>
+                                    <p>Encuentra coincidencias parciales automáticamente.</p>
+                                </div>
+                                
+                                <div class="feature-card">
+                                    <div class="feature-icon">
+                                        <i class="bi bi-lightning"></i>
+                                    </div>
+                                    <h6>Tiempo Real</h6>
+                                    <p>Resultados mientras escribes, sin necesidad de presionar buscar.</p>
+                                </div>
+                                
+                                <div class="feature-card">
+                                    <div class="feature-icon">
+                                        <i class="bi bi-shield-lock"></i>
+                                    </div>
+                                    <h6>Filtrado por Zona</h6>
+                                    <p>Solo muestra visitas de la zona asignada al guardia.</p>
+                                </div>
+                                
+                                <div class="feature-card">
+                                    <div class="feature-icon">
+                                        <i class="bi bi-phone"></i>
+                                    </div>
+                                    <h6>Interfaz Móvil</h6>
+                                    <p>Optimizada para tablets y dispositivos móviles.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h5>📊 Estadísticas del Día:</h5>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="stat-card">
+                                    <div class="stat-number">15</div>
+                                    <div class="stat-label">Visitas Hoy</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stat-card">
+                                    <div class="stat-number">3</div>
+                                    <div class="stat-label">En Proceso</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="stat-card">
+                                    <div class="stat-number">12</div>
+                                    <div class="stat-label">Completadas</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Technical Section -->
+        <section id="technical">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="bi bi-gear me-2"></i>Datos Técnicos</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <h5>🖥️ Frontend</h5>
+                            <div class="code-block">
+                                <strong>Tecnología:</strong> Blazor WebAssembly<br>
+                                <strong>UI Framework:</strong> MudBlazor<br>
+                                <strong>Lenguaje:</strong> C# + Razor<br>
+                                <strong>Autenticación:</strong> JWT Token<br>
+                                <strong>Responsive:</strong> Bootstrap 5
+                            </div>
+                            
+                            <h5 class="mt-4">🔧 Backend</h5>
+                            <div class="code-block">
+                                <strong>Framework:</strong> .NET Core 8.0<br>
+                                <strong>ORM:</strong> Entity Framework Core<br>
+                                <strong>Base de Datos:</strong> SQL Server<br>
+                                <strong>Autenticación:</strong> JWT + Identity<br>
+                                <strong>CORS:</strong> Configurado para Frontend
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-6">
+                            <h5>🗄️ Base de Datos</h5>
+                            <div class="architecture-diagram">
+                                <pre>
+┌─────────────────────────────────┐
+│        ENTIDADES PRINCIPALES    │
+├─────────────────────────────────┤
+│ Users ←→ Roles ←→ UserRoles     │
+│   ↓                             │
+│ Colaboradores ←→ Companies      │
+│   ↓                             │
+│ ColaboradorByCentros ←→ Centers │
+│   ↓                             │
+│ Visits ←→ CheckIns/CheckOuts   │
+└─────────────────────────────────┘
+                                </pre>
+                            </div>
+                            
+                            <h5 class="mt-4">🔐 Seguridad</h5>
+                            <ul>
+                                <li><strong>JWT Tokens:</strong> Autenticación segura</li>
+                                <li><strong>RBAC:</strong> Control de acceso basado en roles</li>
+                                <li><strong>Encriptación:</strong> Datos sensibles protegidos</li>
+                                <li><strong>Auditoría:</strong> Registro completo de acciones</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h5>📈 Optimizaciones de Rendimiento</h5>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="feature-card">
+                                    <div class="feature-icon">
+                                        <i class="bi bi-lightning-charge"></i>
+                                    </div>
+                                    <h6>Frontend</h6>
+                                    <ul>
+                                        <li>Lazy Loading</li>
+                                        <li>Caching local</li>
+                                        <li>Compresión de assets</li>
+                                        <li>CDN para recursos</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="feature-card">
+                                    <div class="feature-icon">
+                                        <i class="bi bi-server"></i>
+                                    </div>
+                                    <h6>Backend</h6>
+                                    <ul>
+                                        <li>Connection Pooling</li>
+                                        <li>Cache de consultas</li>
+                                        <li>Async/Await</li>
+                                        <li>Paginación</li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="feature-card">
+                                    <div class="feature-icon">
+                                        <i class="bi bi-database"></i>
+                                    </div>
+                                    <h6>Base de Datos</h6>
+                                    <ul>
+                                        <li>Índices optimizados</li>
+                                        <li>Stored Procedures</li>
+                                        <li>Views para consultas</li>
+                                        <li>Partitioning</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Deployment Section -->
+        <section id="deployment">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="bi bi-cloud-upload me-2"></i>Despliegue y Configuración</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <h5>🚀 Producción</h5>
+                            <div class="code-block">
+                                <strong>Frontend:</strong><br>
+                                URL: https://fintotal.kattangroup.com/park<br>
+                                Hosting: IIS / Azure Static Web Apps<br><br>
+                                
+                                <strong>Backend:</strong><br>
+                                URL: https://fintotal.kattangroup.com/park/api<br>
+                                Hosting: IIS / Azure App Service<br>
+                                Base de Datos: SQL Server en Azure
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-6">
+                            <h5>💻 Desarrollo</h5>
+                            <div class="code-block">
+                                <strong>Frontend:</strong><br>
+                                URL: http://localhost:5077<br>
+                                Framework: Blazor WebAssembly<br><br>
+                                
+                                <strong>Backend:</strong><br>
+                                URL: https://localhost:7000<br>
+                                Framework: .NET Core 8.0<br>
+                                Base de Datos: SQL Server Local
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4">
+                        <h5>⚙️ Configuración de Servicios</h5>
+                        <div class="row">
+                            <div class="col-lg-6">
+                                <h6>Frontend Services:</h6>
+                                <div class="code-block">
+builder.Services.AddScoped&lt;HttpClient&gt;();<br>
+builder.Services.AddScoped&lt;AuthService&gt;();<br>
+builder.Services.AddScoped&lt;VisitaService&gt;();<br>
+builder.Services.AddScoped&lt;UserService&gt;();<br>
+builder.Services.AddScoped&lt;CompanyService&gt;();<br>
+builder.Services.AddScoped&lt;CenterService&gt;();<br>
+builder.Services.AddScoped&lt;ZonaService&gt;();
+                                </div>
+                            </div>
+                            
+                            <div class="col-lg-6">
+                                <h6>Backend Services:</h6>
+                                <div class="code-block">
+builder.Services.AddDbContext&lt;ApplicationDbContext&gt;();<br>
+builder.Services.AddScoped&lt;IAuthService, AuthService&gt;();<br>
+builder.Services.AddScoped&lt;IVisitaService, VisitaService&gt;();<br>
+builder.Services.AddScoped&lt;IUserService, UserService&gt;();<br>
+builder.Services.AddScoped&lt;ICompanyService, CompanyService&gt;();<br>
+builder.Services.AddScoped&lt;ICenterService, CenterService&gt;();<br>
+builder.Services.AddScoped&lt;IZonaService, ZonaService&gt;();
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Support Section -->
+        <section id="support">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title"><i class="bi bi-headset me-2"></i>Soporte y Contacto</h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <h5>🆘 Canales de Soporte</h5>
+                            <div class="list-group">
+                                <div class="list-group-item d-flex align-items-center">
+                                    <i class="bi bi-envelope text-primary me-3"></i>
+                                    <div>
+                                        <strong>Email:</strong><br>
+                                        soporte@kattangroup.com
+                                    </div>
+                                </div>
+                                <div class="list-group-item d-flex align-items-center">
+                                    <i class="bi bi-telephone text-success me-3"></i>
+                                    <div>
+                                        <strong>Teléfono:</strong><br>
+                                        +504 1234-5678
+                                    </div>
+                                </div>
+                                <div class="list-group-item d-flex align-items-center">
+                                    <i class="bi bi-chat-dots text-info me-3"></i>
+                                    <div>
+                                        <strong>Chat en línea:</strong><br>
+                                        Disponible en horario laboral
+                                    </div>
+                                </div>
+                                <div class="list-group-item d-flex align-items-center">
+                                    <i class="bi bi-ticket text-warning me-3"></i>
+                                    <div>
+                                        <strong>Sistema de tickets:</strong><br>
+                                        Para seguimiento de problemas
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-6">
+                            <h5>⏰ Horarios de Atención</h5>
+                            <div class="alert alert-info">
+                                <h6><i class="bi bi-calendar-week me-2"></i>Horario Regular:</h6>
+                                <ul class="mb-0">
+                                    <li><strong>Lunes a Viernes:</strong> 8:00 AM - 5:00 PM</li>
+                                    <li><strong>Sábados:</strong> 8:00 AM - 12:00 PM</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="alert alert-warning">
+                                <h6><i class="bi bi-exclamation-triangle me-2"></i>Emergencias:</h6>
+                                <p class="mb-0">24/7 para problemas críticos del sistema</p>
+                            </div>
+                            
+                            <h5>📚 Recursos Adicionales</h5>
+                            <ul>
+                                <li><i class="bi bi-play-circle me-2"></i>Video tutoriales disponibles</li>
+                                <li><i class="bi bi-question-circle me-2"></i>FAQ en el sistema</li>
+                                <li><i class="bi bi-book me-2"></i>Base de conocimientos</li>
+                                <li><i class="bi bi-file-text me-2"></i>Manual de usuario</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="mt-5 py-4 bg-light text-center">
+            <div class="container">
+                <p class="mb-0">
+                    <strong>Sistema Park</strong> - Gestión Integral de Visitas Empresariales<br>
+                    <small class="text-muted">Desarrollado por Equipo de Desarrollo - Kattan Group | Diciembre 2024</small>
+                </p>
+            </div>
+        </footer>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Toggle sidebar for mobile
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            
+            sidebar.classList.toggle('show');
+            mainContent.classList.toggle('expanded');
+        }
+
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href').substring(1);
+                const targetElement = document.getElementById(targetId);
+                
+                if (targetElement) {
+                    targetElement.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                    
+                    // Close sidebar on mobile after clicking
+                    if (window.innerWidth <= 768) {
+                        toggleSidebar();
+                    }
+                }
+            });
+        });
+
+        // Search functionality
+        function searchContent() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const sections = document.querySelectorAll('section');
+            
+            sections.forEach(section => {
+                const content = section.textContent.toLowerCase();
+                if (content.includes(searchTerm)) {
+                    section.style.display = 'block';
+                    section.style.backgroundColor = '#fff3cd';
+                    setTimeout(() => {
+                        section.style.backgroundColor = '';
+                    }, 2000);
+                } else if (searchTerm === '') {
+                    section.style.display = 'block';
+                } else {
+                    section.style.display = 'none';
+                }
+            });
+        }
+
+        // Highlight search terms
+        function highlightSearchTerm(text, term) {
+            if (!term) return text;
+            const regex = new RegExp(`(${term})`, 'gi');
+            return text.replace(regex, '<span class="highlight">$1</span>');
+        }
+
+        // Auto-hide sidebar on mobile when clicking outside
+        document.addEventListener('click', function(e) {
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.querySelector('.toggle-sidebar');
+            
+            if (window.innerWidth <= 768 && 
+                !sidebar.contains(e.target) && 
+                !toggleBtn.contains(e.target)) {
+                sidebar.classList.remove('show');
+                document.getElementById('mainContent').classList.remove('expanded');
+            }
+        });
+
+        // Add active class to navigation links based on scroll position
+        window.addEventListener('scroll', function() {
+            const sections = document.querySelectorAll('section');
+            const navLinks = document.querySelectorAll('.nav-link');
+            
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.clientHeight;
+                if (scrollY >= (sectionTop - 200)) {
+                    current = section.getAttribute('id');
+                }
+            });
+            
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === '#' + current) {
+                    link.classList.add('active');
+                }
+            });
+        });
+
+        // Initialize tooltips
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    </script>
+</body>
+</html>

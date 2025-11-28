@@ -15,12 +15,14 @@ namespace Park.Api.Controllers
     {
         private readonly IVisitaService _visitaService;
         private readonly ExcelService _excelService;
+        private readonly IQrService _qrService;
         private readonly ILogger<VisitaController> _logger;
 
-        public VisitaController(IVisitaService visitaService, ExcelService excelService, ILogger<VisitaController> logger)
+        public VisitaController(IVisitaService visitaService, ExcelService excelService, IQrService qrService, ILogger<VisitaController> logger)
         {
             _visitaService = visitaService;
             _excelService = excelService;
+            _qrService = qrService;
             _logger = logger;
         }
 
@@ -583,6 +585,27 @@ namespace Park.Api.Controllers
         }
 
         /// <summary>
+        /// Endpoint de debug para verificar integridad de datos de visitas, centros y zonas
+        /// </summary>
+        /// <param name="guardiaId">ID del guardia para debug específico (opcional)</param>
+        /// <returns>Información de debug</returns>
+        [HttpGet("debug/visitas-centros-zonas")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<object>> DebugVisitasCentrosZonas([FromQuery] int? guardiaId = null)
+        {
+            try
+            {
+                var debugInfo = await _visitaService.DebugVisitasCentrosZonasAsync(guardiaId);
+                return Ok(debugInfo);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error en debug de visitas, centros y zonas");
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        /// <summary>
         /// Check-in de visita (endpoint específico)
         /// </summary>
         /// <param name="id">ID de la visita</param>
@@ -690,5 +713,163 @@ namespace Park.Api.Controllers
                 return StatusCode(500, "Error interno del servidor");
             }
         }
+
+        /// <summary>
+        /// Genera un código QR para una visita específica
+        /// </summary>
+        /// <param name="id">ID de la visita</param>
+        /// <param name="size">Tamaño del QR en píxeles (opcional, por defecto 300)</param>
+        /// <returns>Imagen PNG del código QR</returns>
+        [HttpGet("{id}/qr")]
+        public async Task<IActionResult> GenerateQrCode(int id, [FromQuery] int size = 300)
+        {
+            // TODO: Implementar cuando se resuelva el problema con QRCoder
+            return NotFound("Funcionalidad de QR temporalmente deshabilitada");
+            
+            /*
+            try
+            {
+                // Verificar que la visita existe
+                var visita = await _visitaService.GetVisitaByIdAsync(id);
+                if (visita == null)
+                {
+                    return NotFound($"Visita con ID {id} no encontrada");
+                }
+
+                // Validar tamaño del QR
+                if (size < 100 || size > 1000)
+                {
+                    return BadRequest("El tamaño del QR debe estar entre 100 y 1000 píxeles");
+                }
+
+                // Generar el código QR
+                var qrCodeBytes = _qrService.GenerateVisitaQrCode(id, size);
+
+                // Retornar la imagen como PNG
+                return File(qrCodeBytes, "image/png", $"visita_{id}_qr.png");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al generar código QR para visita con ID {Id}", id);
+                return StatusCode(500, "Error interno del servidor");
+            }
+            */
+        }
+
+        /// <summary>
+        /// Obtener visitas por zona asignada al guardia
+        /// </summary>
+        /// <param name="guardiaId">ID del guardia</param>
+        /// <returns>Lista de visitas de la zona asignada al guardia</returns>
+        [HttpGet("guardia-zona/{guardiaId}")]
+        [Authorize(Roles = "Admin,Operador,Guardia")]
+        public async Task<ActionResult<IEnumerable<VisitaDto>>> GetVisitasByGuardiaZona(int guardiaId)
+        {
+            try
+            {
+                var visitas = await _visitaService.GetVisitasByGuardiaZonaAsync(guardiaId);
+                return Ok(visitas);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener visitas por zona del guardia {GuardiaId}", guardiaId);
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        /// <summary>
+        /// Obtener empresas disponibles para el usuario actual según su rol
+        /// </summary>
+        /// <returns>Lista de empresas disponibles</returns>
+        [HttpGet("empresas-disponibles")]
+        [Authorize(Roles = "Admin,Operador")]
+        public async Task<ActionResult<IEnumerable<CompanyDto>>> GetEmpresasDisponibles()
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                if (userId == null)
+                {
+                    return Unauthorized("Usuario no autenticado");
+                }
+
+                var empresas = await _visitaService.GetEmpresasDisponiblesAsync(userId.Value);
+                return Ok(empresas);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener empresas disponibles para el usuario");
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        /// <summary>
+        /// Obtener centros disponibles para el usuario actual según su rol
+        /// </summary>
+        /// <param name="idCompania">ID de la empresa (opcional, para filtrar centros)</param>
+        /// <returns>Lista de centros disponibles</returns>
+        [HttpGet("centros-disponibles")]
+        [Authorize(Roles = "Admin,Operador")]
+        public async Task<ActionResult<IEnumerable<CentroDto>>> GetCentrosDisponibles([FromQuery] int? idCompania = null)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                if (userId == null)
+                {
+                    return Unauthorized("Usuario no autenticado");
+                }
+
+                var centros = await _visitaService.GetCentrosDisponiblesAsync(userId.Value, idCompania);
+                return Ok(centros);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener centros disponibles para el usuario");
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        /// <summary>
+        /// Obtener colaboradores disponibles para el usuario actual según su rol
+        /// </summary>
+        /// <param name="idCompania">ID de la empresa (opcional, para filtrar colaboradores)</param>
+        /// <returns>Lista de colaboradores disponibles</returns>
+        [HttpGet("colaboradores-disponibles")]
+        [Authorize(Roles = "Admin,Operador")]
+        public async Task<ActionResult<IEnumerable<ColaboradorDto>>> GetColaboradoresDisponibles([FromQuery] int? idCompania = null)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                if (userId == null)
+                {
+                    return Unauthorized("Usuario no autenticado");
+                }
+
+                var colaboradores = await _visitaService.GetColaboradoresDisponiblesAsync(userId.Value, idCompania);
+                return Ok(colaboradores);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener colaboradores disponibles para el usuario");
+                return StatusCode(500, "Error interno del servidor");
+            }
+        }
+
+        /// <summary>
+        /// Obtener el ID del usuario actual desde los claims del JWT
+        /// </summary>
+        /// <returns>ID del usuario o null si no está autenticado</returns>
+        private int? GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
+            if (userIdClaim != null && int.TryParse(userIdClaim.Value, out var userId))
+            {
+                return userId;
+            }
+            return null;
+        }
+
     }
 }

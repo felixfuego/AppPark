@@ -11,11 +11,13 @@ namespace Park.Api.Services
     {
         private readonly ParkDbContext _context;
         private readonly ILogger<VisitaService> _logger;
+        private readonly IQrService _qrService;
 
-        public VisitaService(ParkDbContext context, ILogger<VisitaService> logger)
+        public VisitaService(ParkDbContext context, ILogger<VisitaService> logger, IQrService qrService)
         {
             _context = context;
             _logger = logger;
+            _qrService = qrService;
         }
 
         public async Task<IEnumerable<VisitaDto>> GetAllVisitasAsync()
@@ -241,6 +243,10 @@ namespace Park.Api.Services
 
                 _context.Visitas.Add(visita);
                 await _context.SaveChangesAsync();
+
+                // TODO: Generar URL del QR cuando se implemente correctamente
+                // visita.QrCodeUrl = $"/api/visita/{visita.Id}/qr";
+                // await _context.SaveChangesAsync();
 
                 _logger.LogInformation("Visita creada exitosamente: {NumeroSolicitud}", visita.NumeroSolicitud);
                 return MapToDto(visita);
@@ -776,6 +782,7 @@ namespace Park.Api.Services
                 IdVisitaPadre = visita.IdVisitaPadre,
                 EsVisitaMasiva = visita.EsVisitaMasiva,
                 IdVisitor = visita.IdVisitor,
+                QrCodeUrl = visita.QrCodeUrl,
                 CreatedAt = visita.CreatedAt,
                 UpdatedAt = visita.UpdatedAt,
                 IsActive = visita.IsActive,
@@ -1073,6 +1080,456 @@ namespace Park.Api.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al buscar o crear visitante con identidad {Identidad}", identidad);
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<VisitaDto>> GetVisitasByGuardiaZonaAsync(int guardiaId)
+        {
+            try
+            {
+                _logger.LogInformation("Iniciando búsqueda de visitas para guardia ID: {GuardiaId}", guardiaId);
+
+                // Obtener el usuario guardia con su zona asignada
+                var guardia = await _context.Users
+                    .Include(u => u.ZonaAsignada)
+                    .FirstOrDefaultAsync(u => u.Id == guardiaId && u.IsActive);
+
+                if (guardia == null)
+                {
+                    _logger.LogWarning("Guardia con ID {GuardiaId} no encontrado o inactivo", guardiaId);
+                    return new List<VisitaDto>();
+                }
+
+                if (guardia.ZonaAsignada == null)
+                {
+                    _logger.LogWarning("Guardia {GuardiaId} no tiene zona asignada", guardiaId);
+                    return new List<VisitaDto>();
+                }
+
+                _logger.LogInformation("Guardia {GuardiaId} tiene zona asignada: {ZonaId} - {ZonaNombre}", 
+                    guardiaId, guardia.ZonaAsignada.Id, guardia.ZonaAsignada.Nombre);
+
+                // Obtener todos los centros de la zona asignada al guardia
+                var centrosDeLaZona = await _context.Centros
+                    .Where(c => c.IdZona == guardia.ZonaAsignada.Id && c.IsActive)
+                    .Select(c => c.Id)
+                    .ToListAsync();
+
+                _logger.LogInformation("Centros encontrados en la zona {ZonaId}: {CentrosCount} centros", 
+                    guardia.ZonaAsignada.Id, centrosDeLaZona.Count);
+
+                if (!centrosDeLaZona.Any())
+                {
+                    _logger.LogWarning("No se encontraron centros activos en la zona {ZonaId}", guardia.ZonaAsignada.Id);
+                    return new List<VisitaDto>();
+                }
+
+                // Obtener visitas que estén en los centros de la zona del guardia
+                var visitas = await _context.Visitas
+                    .Include(v => v.Solicitante)
+                    .Include(v => v.Compania)
+                    .Include(v => v.RecibidoPor)
+                    .Include(v => v.Centro)
+                        .ThenInclude(c => c.Zona)
+                    .Where(v => centrosDeLaZona.Contains(v.IdCentro))
+                    .OrderByDescending(v => v.Fecha)
+                    .ToListAsync();
+
+                _logger.LogInformation("Visitas encontradas para guardia {GuardiaId}: {VisitasCount} visitas", 
+                    guardiaId, visitas.Count);
+
+                // Log adicional para debug
+                foreach (var visita in visitas.Take(5)) // Solo las primeras 5 para no saturar el log
+                {
+                    _logger.LogDebug("Visita {VisitaId}: Centro {CentroId}, Zona {ZonaId}", 
+                        visita.Id, visita.IdCentro, visita.Centro?.IdZona);
+                }
+
+                return visitas.Select(MapToDto);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener visitas por zona del guardia {GuardiaId}", guardiaId);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Método de debug para verificar la integridad de los datos de visitas, centros y zonas
+        /// </summary>
+        public async Task<object> DebugVisitasCentrosZonasAsync(int? guardiaId = null)
+        {
+            try
+            {
+                var debugInfo = new Dictionary<string, object>
+                {
+                    ["TotalVisitas"] = await _context.Visitas.CountAsync(),
+                    ["VisitasConCentro"] = await _context.Visitas.CountAsync(v => v.IdCentro > 0),
+                    ["VisitasSinCentro"] = await _context.Visitas.CountAsync(v => v.IdCentro <= 0),
+                    ["TotalCentros"] = await _context.Centros.CountAsync(),
+                    ["CentrosActivos"] = await _context.Centros.CountAsync(c => c.IsActive),
+                    ["CentrosConZona"] = await _context.Centros.CountAsync(c => c.IdZona > 0),
+                    ["CentrosSinZona"] = await _context.Centros.CountAsync(c => c.IdZona <= 0),
+                    ["TotalZonas"] = await _context.Zonas.CountAsync(),
+                    ["ZonasActivas"] = await _context.Zonas.CountAsync(z => z.IsActive),
+                    ["TotalUsuarios"] = await _context.Users.CountAsync(),
+                    ["UsuariosGuardia"] = await _context.Users.CountAsync(u => u.Roles.Any(r => r.Name == "Guardia")),
+                    ["GuardiasConZona"] = await _context.Users.CountAsync(u => u.Roles.Any(r => r.Name == "Guardia") && u.IdZonaAsignada.HasValue),
+                    ["GuardiasSinZona"] = await _context.Users.CountAsync(u => u.Roles.Any(r => r.Name == "Guardia") && !u.IdZonaAsignada.HasValue)
+                };
+
+                if (guardiaId.HasValue)
+                {
+                    var guardia = await _context.Users
+                        .Include(u => u.ZonaAsignada)
+                        .FirstOrDefaultAsync(u => u.Id == guardiaId.Value);
+
+                    if (guardia != null)
+                    {
+                        var centrosDeLaZona = await _context.Centros
+                            .Where(c => c.IdZona == guardia.ZonaAsignada!.Id && c.IsActive)
+                            .ToListAsync();
+
+                        var visitasDelGuardia = await _context.Visitas
+                            .Include(v => v.Centro)
+                            .Where(v => centrosDeLaZona.Select(c => c.Id).Contains(v.IdCentro))
+                            .ToListAsync();
+
+                        var guardiaEspecifico = new Dictionary<string, object>
+                        {
+                            ["GuardiaId"] = guardia.Id,
+                            ["GuardiaNombre"] = $"{guardia.FirstName} {guardia.LastName}",
+                            ["ZonaAsignada"] = guardia.ZonaAsignada != null ? new Dictionary<string, object>
+                            {
+                                ["Id"] = guardia.ZonaAsignada.Id,
+                                ["Nombre"] = guardia.ZonaAsignada.Nombre
+                            } : null,
+                            ["CentrosEnZona"] = centrosDeLaZona.Select(c => new Dictionary<string, object>
+                            {
+                                ["Id"] = c.Id,
+                                ["Nombre"] = c.Nombre,
+                                ["IdZona"] = c.IdZona
+                            }),
+                            ["VisitasEnCentros"] = visitasDelGuardia.Select(v => new Dictionary<string, object>
+                            {
+                                ["Id"] = v.Id,
+                                ["NumeroSolicitud"] = v.NumeroSolicitud,
+                                ["IdCentro"] = v.IdCentro,
+                                ["CentroNombre"] = v.Centro?.Nombre ?? "Sin centro"
+                            })
+                        };
+
+                        debugInfo["GuardiaEspecifico"] = guardiaEspecifico;
+                    }
+                }
+
+                return debugInfo;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error en debug de visitas, centros y zonas");
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<CompanyDto>> GetEmpresasDisponiblesAsync(int userId)
+        {
+            try
+            {
+                // Obtener información del usuario
+                var user = await _context.Users
+                    .Include(u => u.UserRoles)
+                        .ThenInclude(ur => ur.Role)
+                    .Include(u => u.Colaborador)
+                        .ThenInclude(c => c.Compania)
+                    .FirstOrDefaultAsync(u => u.Id == userId);
+
+                if (user == null)
+                {
+                    throw new ArgumentException($"Usuario con ID {userId} no encontrado");
+                }
+
+                // Verificar si es Admin
+                var isAdmin = user.UserRoles?.Any(ur => ur.IsActive && ur.Role.IsActive && ur.Role.Name == "Admin") ?? false;
+
+                if (isAdmin)
+                {
+                    // Admin puede ver todas las empresas activas
+                    var empresas = await _context.Companies
+                        .Where(c => c.IsActive)
+                        .ToListAsync();
+
+                    return empresas.Select(e => new CompanyDto
+                    {
+                        Id = e.Id,
+                        Name = e.Name,
+                        Description = e.Description,
+                        IsActive = e.IsActive,
+                        CreatedAt = e.CreatedAt,
+                        IdSitio = e.IdSitio
+                    });
+                }
+                else
+                {
+                    // Operador solo puede ver su empresa asignada
+                    if (user.IdCompania.HasValue)
+                    {
+                        var empresa = await _context.Companies
+                            .FirstOrDefaultAsync(c => c.Id == user.IdCompania.Value && c.IsActive);
+
+                        if (empresa != null)
+                        {
+                            return new List<CompanyDto>
+                            {
+                                new CompanyDto
+                                {
+                                    Id = empresa.Id,
+                                    Name = empresa.Name,
+                                    Description = empresa.Description,
+                                    IsActive = empresa.IsActive,
+                                    CreatedAt = empresa.CreatedAt,
+                                    IdSitio = empresa.IdSitio
+                                }
+                            };
+                        }
+                    }
+
+                    return new List<CompanyDto>();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener empresas disponibles para el usuario {UserId}", userId);
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<CentroDto>> GetCentrosDisponiblesAsync(int userId, int? idCompania = null)
+        {
+            try
+            {
+                // Obtener información del usuario
+                var user = await _context.Users
+                    .Include(u => u.UserRoles)
+                        .ThenInclude(ur => ur.Role)
+                    .Include(u => u.Colaborador)
+                        .ThenInclude(c => c.ColaboradorByCentros)
+                            .ThenInclude(cbc => cbc.Centro)
+                    .FirstOrDefaultAsync(u => u.Id == userId);
+
+                if (user == null)
+                {
+                    throw new ArgumentException($"Usuario con ID {userId} no encontrado");
+                }
+
+                // Verificar si es Admin
+                var isAdmin = user.UserRoles?.Any(ur => ur.IsActive && ur.Role.IsActive && ur.Role.Name == "Admin") ?? false;
+
+                if (isAdmin)
+                {
+                    // Admin puede ver todos los centros activos
+                    var query = _context.Centros
+                        .Include(c => c.Zona)
+                        .Where(c => c.IsActive);
+
+                    // Si se especifica una empresa, filtrar por centros de esa empresa
+                    if (idCompania.HasValue)
+                    {
+                        query = query.Where(c => c.CompanyCentros.Any(cc => cc.IdCompania == idCompania.Value && cc.IsActive));
+                    }
+
+                    var centros = await query.ToListAsync();
+
+                    return centros.Select(c => new CentroDto
+                    {
+                        Id = c.Id,
+                        IdZona = c.IdZona,
+                        Nombre = c.Nombre,
+                        Localidad = c.Localidad,
+                        IsActive = c.IsActive,
+                        CreatedAt = c.CreatedAt,
+                        UpdatedAt = c.UpdatedAt,
+                        Zona = c.Zona != null ? new ZonaDto
+                        {
+                            Id = c.Zona.Id,
+                            IdSitio = c.Zona.IdSitio,
+                            Nombre = c.Zona.Nombre,
+                            Descripcion = c.Zona.Descripcion,
+                            IsActive = c.Zona.IsActive,
+                            CreatedAt = c.Zona.CreatedAt,
+                            UpdatedAt = c.Zona.UpdatedAt
+                        } : null
+                    });
+                }
+                else
+                {
+                    // Operador solo puede ver los centros a los que tiene acceso
+                    var centrosIds = user.Colaborador?.ColaboradorByCentros?
+                        .Where(cbc => cbc.IsActive)
+                        .Select(cbc => cbc.IdCentro) ?? new List<int>();
+
+                    if (!centrosIds.Any())
+                    {
+                        return new List<CentroDto>();
+                    }
+
+                    var query = _context.Centros
+                        .Include(c => c.Zona)
+                        .Where(c => centrosIds.Contains(c.Id) && c.IsActive);
+
+                    // Si se especifica una empresa, verificar que el centro pertenece a esa empresa
+                    if (idCompania.HasValue)
+                    {
+                        query = query.Where(c => c.CompanyCentros.Any(cc => cc.IdCompania == idCompania.Value && cc.IsActive));
+                    }
+
+                    var centros = await query.ToListAsync();
+
+                    return centros.Select(c => new CentroDto
+                    {
+                        Id = c.Id,
+                        IdZona = c.IdZona,
+                        Nombre = c.Nombre,
+                        Localidad = c.Localidad,
+                        IsActive = c.IsActive,
+                        CreatedAt = c.CreatedAt,
+                        UpdatedAt = c.UpdatedAt,
+                        Zona = c.Zona != null ? new ZonaDto
+                        {
+                            Id = c.Zona.Id,
+                            IdSitio = c.Zona.IdSitio,
+                            Nombre = c.Zona.Nombre,
+                            Descripcion = c.Zona.Descripcion,
+                            IsActive = c.Zona.IsActive,
+                            CreatedAt = c.Zona.CreatedAt,
+                            UpdatedAt = c.Zona.UpdatedAt
+                        } : null
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener centros disponibles para el usuario {UserId}", userId);
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<ColaboradorDto>> GetColaboradoresDisponiblesAsync(int userId, int? idCompania = null)
+        {
+            try
+            {
+                // Obtener información del usuario
+                var user = await _context.Users
+                    .Include(u => u.UserRoles)
+                        .ThenInclude(ur => ur.Role)
+                    .Include(u => u.Colaborador)
+                        .ThenInclude(c => c.Compania)
+                    .FirstOrDefaultAsync(u => u.Id == userId);
+
+                if (user == null)
+                {
+                    throw new ArgumentException($"Usuario con ID {userId} no encontrado");
+                }
+
+                // Verificar si es Admin
+                var isAdmin = user.UserRoles?.Any(ur => ur.IsActive && ur.Role.IsActive && ur.Role.Name == "Admin") ?? false;
+
+                if (isAdmin)
+                {
+                    // Admin puede ver todos los colaboradores activos
+                    var query = _context.Colaboradores
+                        .Include(c => c.Compania)
+                        .Where(c => c.IsActive);
+
+                    // Si se especifica una empresa, filtrar por esa empresa
+                    if (idCompania.HasValue)
+                    {
+                        query = query.Where(c => c.IdCompania == idCompania.Value);
+                    }
+
+                    var colaboradores = await query.ToListAsync();
+
+                    return colaboradores.Select(c => new ColaboradorDto
+                    {
+                        Id = c.Id,
+                        IdCompania = c.IdCompania,
+                        Identidad = c.Identidad,
+                        Nombre = c.Nombre,
+                        Puesto = c.Puesto,
+                        Email = c.Email,
+                        Tel1 = c.Tel1,
+                        Tel2 = c.Tel2,
+                        Tel3 = c.Tel3,
+                        PlacaVehiculo = c.PlacaVehiculo,
+                        Comentario = c.Comentario,
+                        IsBlackList = c.IsBlackList,
+                        IsActive = c.IsActive,
+                        CreatedAt = c.CreatedAt,
+                        UpdatedAt = c.UpdatedAt,
+                        Compania = c.Compania != null ? new CompanyDto
+                        {
+                            Id = c.Compania.Id,
+                            Name = c.Compania.Name,
+                            Description = c.Compania.Description,
+                            IsActive = c.Compania.IsActive,
+                            CreatedAt = c.Compania.CreatedAt,
+                            IdSitio = c.Compania.IdSitio
+                        } : null
+                    });
+                }
+                else
+                {
+                    // Operador solo puede ver colaboradores de su empresa
+                    if (!user.IdCompania.HasValue)
+                    {
+                        return new List<ColaboradorDto>();
+                    }
+
+                    var query = _context.Colaboradores
+                        .Include(c => c.Compania)
+                        .Where(c => c.IdCompania == user.IdCompania.Value && c.IsActive);
+
+                    // Si se especifica una empresa diferente, verificar que sea la misma
+                    if (idCompania.HasValue && idCompania.Value != user.IdCompania.Value)
+                    {
+                        return new List<ColaboradorDto>();
+                    }
+
+                    var colaboradores = await query.ToListAsync();
+
+                    return colaboradores.Select(c => new ColaboradorDto
+                    {
+                        Id = c.Id,
+                        IdCompania = c.IdCompania,
+                        Identidad = c.Identidad,
+                        Nombre = c.Nombre,
+                        Puesto = c.Puesto,
+                        Email = c.Email,
+                        Tel1 = c.Tel1,
+                        Tel2 = c.Tel2,
+                        Tel3 = c.Tel3,
+                        PlacaVehiculo = c.PlacaVehiculo,
+                        Comentario = c.Comentario,
+                        IsBlackList = c.IsBlackList,
+                        IsActive = c.IsActive,
+                        CreatedAt = c.CreatedAt,
+                        UpdatedAt = c.UpdatedAt,
+                        Compania = c.Compania != null ? new CompanyDto
+                        {
+                            Id = c.Compania.Id,
+                            Name = c.Compania.Name,
+                            Description = c.Compania.Description,
+                            IsActive = c.Compania.IsActive,
+                            CreatedAt = c.Compania.CreatedAt,
+                            IdSitio = c.Compania.IdSitio
+                        } : null
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener colaboradores disponibles para el usuario {UserId}", userId);
                 throw;
             }
         }

@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Park.Android.Views.CheckInPage"
+             xmlns:viewmodels="clr-namespace:Park.Android.ViewModels"
+             x:DataType="viewmodels:CheckInViewModel"
+             Title="Check-In de Visita"
+             BackgroundColor="{StaticResource BackgroundLight}">
+
+    <ScrollView>
+        <VerticalStackLayout Spacing="15" Padding="15">
+
+            <!-- Título -->
+            <Label Text="✅ Registrar Entrada" 
+                   Style="{StaticResource LabelTitle}"
+                   HorizontalOptions="Center"
+                   Margin="0,0,0,20" />
+
+            <!-- Información de la Visita -->
+            <Frame Style="{StaticResource CardFrame}" 
+                   IsVisible="{Binding Visita, Converter={StaticResource ObjectToBoolConverter}}">
+                <VerticalStackLayout Spacing="10">
+                    
+                    <Label Text="Información del Visitante" 
+                           Style="{StaticResource LabelSubtitle}" />
+
+                    <Grid ColumnDefinitions="Auto,*" RowSpacing="8" ColumnSpacing="10">
+                        
+                        <Label Grid.Row="0" Grid.Column="0"
+                              Text="Nombre:" 
+                              Style="{StaticResource LabelBody}"
+                              FontAttributes="Bold" />
+                        <Label Grid.Row="0" Grid.Column="1"
+                              Text="{Binding Visita.NombreCompleto}" 
+                              Style="{StaticResource LabelBody}" />
+
+                        <Label Grid.Row="1" Grid.Column="0"
+                              Text="Identidad:" 
+                              Style="{StaticResource LabelBody}"
+                              FontAttributes="Bold" />
+                        <Label Grid.Row="1" Grid.Column="1"
+                              Text="{Binding Visita.IdentidadVisitante}" 
+                              Style="{StaticResource LabelBody}" />
+
+                        <Label Grid.Row="2" Grid.Column="0"
+                              Text="Número:" 
+                              Style="{StaticResource LabelBody}"
+                              FontAttributes="Bold" />
+                        <Label Grid.Row="2" Grid.Column="1"
+                              Text="{Binding Visita.NumeroSolicitud}" 
+                              Style="{StaticResource LabelBody}" />
+
+                        <Label Grid.Row="3" Grid.Column="0"
+                              Text="Estado:" 
+                              Style="{StaticResource LabelBody}"
+                              FontAttributes="Bold" />
+                        <Label Grid.Row="3" Grid.Column="1"
+                              Text="{Binding Visita.Estado}" 
+                              Style="{StaticResource LabelBody}"
+                              TextColor="{StaticResource Success}" />
+
+                        <Label Grid.Row="4" Grid.Column="0"
+                              Text="Compañía:" 
+                              Style="{StaticResource LabelBody}"
+                              FontAttributes="Bold" />
+                        <Label Grid.Row="4" Grid.Column="1"
+                              Text="{Binding Visita.Compania.Name}" 
+                              Style="{StaticResource LabelBody}" />
+
+                    </Grid>
+
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Observaciones -->
+            <Frame Style="{StaticResource CardFrame}">
+                <VerticalStackLayout Spacing="10">
+                    
+                    <Label Text="Observaciones (Opcional)" 
+                           Style="{StaticResource LabelBody}"
+                           FontAttributes="Bold" />
+
+                    <Editor Text="{Binding Observaciones}"
+                           Placeholder="Ingrese observaciones sobre la entrada..."
+                           HeightRequest="100"
+                           BackgroundColor="{StaticResource Surface}" />
+
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Mensaje de Error -->
+            <Label Text="{Binding ErrorMessage}" 
+                   TextColor="{StaticResource Danger}"
+                   IsVisible="{Binding ErrorMessage, Converter={StaticResource StringToBoolConverter}}"
+                   Style="{StaticResource LabelBody}"
+                   Margin="10,0" />
+
+            <!-- Botones -->
+            <VerticalStackLayout Spacing="10" Margin="0,20,0,0">
+                
+                <Button Text="✅ Confirmar Check-In" 
+                        Command="{Binding ConfirmCheckInCommand}"
+                        Style="{StaticResource ButtonSuccess}"
+                        IsEnabled="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}" />
+
+                <Button Text="Cancelar" 
+                        Command="{Binding CancelCommand}"
+                        BackgroundColor="{StaticResource TextSecondary}"
+                        TextColor="White"
+                        CornerRadius="8"
+                        HeightRequest="50"
+                        IsEnabled="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}" />
+
+            </VerticalStackLayout>
+
+            <!-- Loading Indicator -->
+            <ActivityIndicator IsRunning="{Binding IsLoading}"
+                             IsVisible="{Binding IsLoading}"
+                             Color="{StaticResource Primary}"
+                             HorizontalOptions="Center"
+                             Margin="0,20,0,0" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

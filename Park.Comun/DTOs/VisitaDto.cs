@@ -42,6 +42,9 @@ namespace Park.Comun.DTOs
         public bool EsVisitaMasiva { get; set; } = false;
         public int? IdVisitor { get; set; }
         
+        // Código QR
+        public string QrCodeUrl { get; set; } = string.Empty;
+        
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
         public bool IsActive { get; set; }
@@ -173,6 +176,7 @@ namespace Park.Comun.DTOs
         public int Id { get; set; }
         public DateTime FechaLlegada { get; set; }
         public int IdGuardia { get; set; }
+        public string? Observaciones { get; set; }
     }
 
     public class VisitaCheckOutDto
@@ -180,6 +184,7 @@ namespace Park.Comun.DTOs
         public int Id { get; set; }
         public DateTime FechaSalida { get; set; }
         public int IdGuardia { get; set; }
+        public string? Observaciones { get; set; }
     }
 
     // DTOs para visitas masivas

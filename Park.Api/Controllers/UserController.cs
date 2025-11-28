@@ -359,6 +359,32 @@ namespace Park.Api.Controllers
         }
 
         /// <summary>
+        /// Asignar zona a un usuario Guardia
+        /// </summary>
+        /// <param name="assignZoneDto">Datos de asignación de zona</param>
+        /// <returns>Resultado de la operación</returns>
+        [HttpPost("assign-zone")]
+        [Authorize(Roles = "Admin")]
+        public async Task<ActionResult<bool>> AssignZoneToUser(AssignZoneToUserDto assignZoneDto)
+        {
+            try
+            {
+                var result = await _userService.AssignZoneToUserAsync(assignZoneDto);
+                
+                if (!result)
+                {
+                    return NotFound("Usuario no encontrado o no es un Guardia");
+                }
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Error asignando zona: {ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// Obtener el ID del usuario actual desde el token JWT
         /// </summary>
         /// <returns>ID del usuario o null si no se puede obtener</returns>

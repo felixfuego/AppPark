@@ -1,0 +1,80 @@
+@using ApexCharts
+
+<MudCard Elevation="3" Class="ma-2">
+    <MudCardHeader>
+        <CardHeaderContent>
+            <MudText Typo="Typo.h6">@Title</MudText>
+            <MudText Typo="Typo.body2">@Subtitle</MudText>
+        </CardHeaderContent>
+    </MudCardHeader>
+    <MudCardContent>
+        <div style="height: @Height">
+            <ApexChart TItem="StockData" 
+                       Title="@ChartTitle"
+                       Height="@ChartHeight"
+                       Options="@chartOptions">
+                
+                <ApexPointSeries TItem="StockData"
+                                 Items="@Data"
+                                 Name="@SeriesName"
+                                 SeriesType="@SeriesType"
+                                 XValue="@(e => e.Date.ToString("yyyy-MM-dd"))"
+                                 YValue="@GetYValue" />
+            </ApexChart>
+        </div>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    [Parameter] public string Title { get; set; } = "Gráfico Financiero";
+    [Parameter] public string Subtitle { get; set; } = "";
+    [Parameter] public string ChartTitle { get; set; } = "";
+    [Parameter] public string SeriesName { get; set; } = "Precio";
+    [Parameter] public List<StockData> Data { get; set; } = new();
+    [Parameter] public string Height { get; set; } = "400px";
+    [Parameter] public SeriesType SeriesType { get; set; } = SeriesType.Line;
+    [Parameter] public Func<StockData, decimal?> GetYValue { get; set; } = e => e.Close;
+    
+    private int ChartHeight => int.Parse(Height.Replace("px", ""));
+    
+    private ApexChartOptions<StockData> chartOptions = new()
+    {
+        Chart = new Chart
+        {
+            Toolbar = new Toolbar { Show = true },
+            Zoom = new Zoom { Enabled = true }
+        },
+        Xaxis = new XAxis
+        {
+            Type = XAxisType.Datetime,
+            Title = new AxisTitle { Text = "Fecha" }
+        },
+        Yaxis = new List<YAxis>
+        {
+            new YAxis
+            {
+                Title = new AxisTitle { Text = "Precio ($)" },
+                Labels = new YAxisLabels
+                {
+                    Formatter = "function(value) { return '$' + value.toFixed(2); }"
+                }
+            }
+        },
+        Stroke = new Stroke
+        {
+            Width = new List<int> { 2 },
+            Curve = Curve.Smooth
+        },
+        Colors = new List<string> { "#00E676", "#FF5722", "#2196F3" },
+        Grid = new Grid
+        {
+            BorderColor = "#e0e0e0",
+            StrokeDashArray = 3
+        },
+        Tooltip = new Tooltip
+        {
+            Enabled = true,
+            Theme = Mode.Light
+        }
+    };
+}

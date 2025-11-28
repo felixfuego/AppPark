@@ -3,16 +3,18 @@
 @inject RoleService RoleService
 
 <nav class="nav flex-column">
-    <!-- Dashboard -->
-    <div class="nav-item">
-        <NavLink class="nav-link" href="" Match="NavLinkMatch.All" title="Dashboard">
-            <i class="bi bi-speedometer2"></i>
-            <span>Dashboard</span>
-        </NavLink>
-    </div>
+    <!-- Dashboard - Para Admin y Operador (no para Guardia) -->
+    <RoleGuard RequiredRoles="@(new string[] {"Admin", "Operador"})">
+        <div class="nav-item">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All" title="Dashboard">
+                <i class="bi bi-speedometer2"></i>
+                <span>Dashboard</span>
+            </NavLink>
+        </div>
+    </RoleGuard>
 
-    <!-- Configuración (Admin) -->
-    <RoleGuard RequiredSection="configuracion">
+    <!-- Configuración (Solo Admin) -->
+    <RoleGuard RequiredRole="Admin">
         <div class="nav-section">
             <div class="nav-section-header">
                 <i class="bi bi-gear-fill"></i>
@@ -59,8 +61,8 @@
         </div>
     </RoleGuard>
 
-    <!-- Gestión (Admin, Operador) -->
-    <RoleGuard RequiredSection="gestion">
+    <!-- Gestión (Admin y Operador) -->
+    <RoleGuard RequiredRoles="@(new string[] {"Admin", "Operador"})">
         <div class="nav-section">
             <div class="nav-section-header">
                 <i class="bi bi-clipboard-data-fill"></i>
@@ -83,8 +85,8 @@
         </div>
     </RoleGuard>
 
-    <!-- Vigilancia (Admin, Operador, Guardia) -->
-    <RoleGuard RequiredSection="vigilancia">
+    <!-- Vigilancia (Solo Guardia) -->
+    <RoleGuard RequiredRole="Guardia">
         <div class="nav-section">
             <div class="nav-section-header">
                 <i class="bi bi-shield-check-fill"></i>
@@ -92,9 +94,9 @@
             </div>
             <div class="nav-section-items">
                 <div class="nav-item">
-                    <NavLink class="nav-link" href="guard-panel" title="Panel de Guardias">
-                        <i class="bi bi-camera-video-fill"></i>
-                        <span>Panel de Guardias</span>
+                    <NavLink class="nav-link" href="guard-panel" title="Panel de Guardia">
+                        <i class="bi bi-shield-check-fill"></i>
+                        <span>Panel de Guardia</span>
                     </NavLink>
                 </div>
             </div>

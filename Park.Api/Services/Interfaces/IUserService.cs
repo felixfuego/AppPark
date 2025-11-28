@@ -20,5 +20,6 @@ namespace Park.Api.Services.Interfaces
         Task<IEnumerable<CompanyDto>> GetUserCompaniesAsync(int userId);
         Task<bool> AssignColaboradorToUserAsync(int userId, int colaboradorId);
         Task<bool> RemoveColaboradorFromUserAsync(int userId);
+        Task<bool> AssignZoneToUserAsync(AssignZoneToUserDto assignZoneDto);
     }
 }

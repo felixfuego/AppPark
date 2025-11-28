@@ -1,4 +1,10 @@
 ﻿
+@using MudBlazor
+
+<MudThemeProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
 <AuthStateProvider>
     <Router AppAssembly="@typeof(App).Assembly">
         <Found Context="routeData">

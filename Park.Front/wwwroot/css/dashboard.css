@@ -20,7 +20,7 @@
 .page-title h1 {
     color: var(--text-primary);
     margin-bottom: 0.5rem;
-    font-weight: 600;
+    font-weight: 300;
 }
 
 .page-title p {
@@ -34,7 +34,7 @@
 
 .user-name {
     display: block;
-    font-weight: 600;
+    font-weight: 300;
     color: var(--text-primary);
     font-size: 1.1rem;
 }
@@ -172,6 +172,108 @@
     margin: 0;
     font-size: 0.9rem;
     line-height: 1.4;
+}
+
+/* Tarjetas de información del usuario */
+.info-card {
+    background: var(--bg-primary);
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-sm);
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: all 0.2s ease;
+}
+
+.info-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+    border-color: var(--primary-color);
+}
+
+.info-card .card-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: var(--border-radius);
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+.info-card .card-content h4 {
+    color: var(--text-primary);
+    margin: 0 0 0.5rem 0;
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.info-card .card-content p {
+    color: var(--text-secondary);
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.4;
+}
+
+/* Lista de empresas y estadísticas de visitas */
+.company-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+}
+
+.company-tag {
+    background: var(--primary-color);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.visits-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+}
+
+.visit-stat {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    padding: 0.25rem 0.5rem;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border: 1px solid var(--border-color);
+}
+
+/* Badges para estados */
+.badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-success {
+    background-color: #10b981;
+    color: white;
+}
+
+.badge-secondary {
+    background-color: #6b7280;
+    color: white;
 }
 
 /* Lista de actividad */

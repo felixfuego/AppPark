@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Park.Android.Views.LoginPage"
+             xmlns:viewmodels="clr-namespace:Park.Android.ViewModels"
+             x:DataType="viewmodels:LoginViewModel"
+             Shell.NavBarIsVisible="False"
+             BackgroundColor="{StaticResource BackgroundLight}">
+
+    <ScrollView>
+        <VerticalStackLayout Spacing="20" Padding="30" VerticalOptions="Center">
+            
+            <!-- Logo y Título -->
+            <VerticalStackLayout Spacing="10" Margin="0,0,0,40">
+                <Image Source="logo.png" 
+                       HeightRequest="100" 
+                       WidthRequest="100"
+                       HorizontalOptions="Center" />
+                
+                <Label Text="Park Guardia" 
+                       Style="{StaticResource LabelTitle}"
+                       HorizontalOptions="Center" />
+                
+                <Label Text="Sistema de Control de Visitas" 
+                       Style="{StaticResource LabelCaption}"
+                       HorizontalOptions="Center" />
+            </VerticalStackLayout>
+
+            <!-- Formulario de Login -->
+            <Frame Style="{StaticResource CardFrame}">
+                <VerticalStackLayout Spacing="15">
+                    
+                    <Label Text="Iniciar Sesión" 
+                           Style="{StaticResource LabelSubtitle}" />
+
+                    <!-- Usuario -->
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Usuario" 
+                               Style="{StaticResource LabelBody}" />
+                        <Entry Text="{Binding Username}" 
+                               Placeholder="Ingrese su usuario"
+                               Keyboard="Email"
+                               ReturnType="Next" />
+                    </VerticalStackLayout>
+
+                    <!-- Contraseña -->
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="Contraseña" 
+                               Style="{StaticResource LabelBody}" />
+                        <Entry Text="{Binding Password}" 
+                               Placeholder="Ingrese su contraseña"
+                               IsPassword="True"
+                               ReturnType="Done" />
+                    </VerticalStackLayout>
+
+                    <!-- Mensaje de Error -->
+                    <Label Text="{Binding ErrorMessage}" 
+                           TextColor="{StaticResource Danger}"
+                           IsVisible="{Binding ErrorMessage, Converter={StaticResource StringToBoolConverter}}"
+                           Style="{StaticResource LabelCaption}" />
+
+                    <!-- Botón Login -->
+                    <Button Text="Iniciar Sesión" 
+                            Command="{Binding LoginCommand}"
+                            Style="{StaticResource ButtonPrimary}"
+                            IsEnabled="{Binding IsLoading, Converter={StaticResource InvertedBoolConverter}}" />
+
+                    <!-- Loading Indicator -->
+                    <ActivityIndicator IsRunning="{Binding IsLoading}"
+                                     IsVisible="{Binding IsLoading}"
+                                     Color="{StaticResource Primary}"
+                                     HorizontalOptions="Center" />
+
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Información adicional -->
+            <Label Text="Versión 1.0.0" 
+                   Style="{StaticResource LabelCaption}"
+                   HorizontalOptions="Center"
+                   Margin="0,20,0,0" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

@@ -33,6 +33,22 @@ namespace Park.Api.Services
                 new Claim("LastName", user.LastName)
             };
 
+            // Agregar información del colaborador si existe
+            if (user.IdColaborador.HasValue)
+            {
+                claims.Add(new Claim("IdColaborador", user.IdColaborador.Value.ToString()));
+            }
+
+            if (user.IdCompania.HasValue)
+            {
+                claims.Add(new Claim("IdCompania", user.IdCompania.Value.ToString()));
+            }
+
+            if (user.IdZonaAsignada.HasValue)
+            {
+                claims.Add(new Claim("IdZonaAsignada", user.IdZonaAsignada.Value.ToString()));
+            }
+
             // Agregar roles como claims
             if (user.UserRoles != null)
             {

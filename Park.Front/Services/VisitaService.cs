@@ -87,6 +87,21 @@ namespace Park.Front.Services
             }
         }
 
+        public async Task<List<VisitaDto>> GetVisitasByGuardiaZonaAsync(int guardiaId)
+        {
+            try
+            {
+                await SetAuthorizationHeader();
+                var response = await _httpClient.GetFromJsonAsync<List<VisitaDto>>($"api/visita/guardia-zona/{guardiaId}");
+                return response ?? new List<VisitaDto>();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al obtener visitas por zona del guardia {GuardiaId}", guardiaId);
+                throw;
+            }
+        }
+
         public async Task<List<VisitaDto>> GetVisitasByCompaniaAsync(int idCompania)
         {
             try

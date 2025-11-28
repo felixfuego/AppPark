@@ -37,6 +37,9 @@ namespace Park.Comun.Models
         public bool EsVisitaMasiva { get; set; } = false;
         public int? IdVisitor { get; set; }
         
+        // Código QR
+        public string QrCodeUrl { get; set; } = string.Empty;
+        
         // Navigation properties
         public virtual Colaborador Solicitante { get; set; } = null!;
         public virtual Company Compania { get; set; } = null!;

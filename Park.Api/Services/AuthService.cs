@@ -24,6 +24,11 @@ namespace Park.Api.Services
             var user = await _context.Users
                 .Include(u => u.UserRoles)
                     .ThenInclude(ur => ur.Role)
+                .Include(u => u.Colaborador)
+                    .ThenInclude(c => c.Compania)
+                .Include(u => u.Colaborador)
+                    .ThenInclude(c => c.ColaboradorByCentros)
+                        .ThenInclude(cbc => cbc.Centro)
                 .FirstOrDefaultAsync(u => u.Username == loginDto.Username && u.IsActive);
 
             if (user == null)
@@ -247,6 +252,13 @@ namespace Park.Api.Services
             var user = await _context.Users
                 .Include(u => u.UserRoles)
                     .ThenInclude(ur => ur.Role)
+                .Include(u => u.ZonaAsignada)
+                    .ThenInclude(z => z.Sitio)
+                .Include(u => u.Colaborador)
+                    .ThenInclude(c => c.Compania)
+                .Include(u => u.Colaborador)
+                    .ThenInclude(c => c.ColaboradorByCentros)
+                        .ThenInclude(cbc => cbc.Centro)
                 .FirstOrDefaultAsync(u => u.Id == id && u.IsActive);
 
             return user != null ? MapToUserDto(user) : null;
@@ -285,6 +297,9 @@ namespace Park.Api.Services
                 Email = user.Email,
                 FirstName = user.FirstName,
                 LastName = user.LastName,
+                IdZonaAsignada = user.IdZonaAsignada,
+                IdColaborador = user.IdColaborador,
+                IdCompania = user.IdCompania,
                 Roles = user.UserRoles?
                     .Where(ur => ur.IsActive && ur.Role.IsActive)
                     .Select(ur => new RoleDto
@@ -296,6 +311,61 @@ namespace Park.Api.Services
                         CreatedAt = ur.Role.CreatedAt
                     })
                     .ToList() ?? new List<RoleDto>(),
+                ZonaAsignada = user.ZonaAsignada != null ? new ZonaDto
+                {
+                    Id = user.ZonaAsignada.Id,
+                    IdSitio = user.ZonaAsignada.IdSitio,
+                    Nombre = user.ZonaAsignada.Nombre,
+                    Descripcion = user.ZonaAsignada.Descripcion,
+                    IsActive = user.ZonaAsignada.IsActive,
+                    CreatedAt = user.ZonaAsignada.CreatedAt,
+                    Sitio = user.ZonaAsignada.Sitio != null ? new SitioDto
+                    {
+                        Id = user.ZonaAsignada.Sitio.Id,
+                        Nombre = user.ZonaAsignada.Sitio.Nombre,
+                        Descripcion = user.ZonaAsignada.Sitio.Descripcion,
+                        IsActive = user.ZonaAsignada.Sitio.IsActive,
+                        CreatedAt = user.ZonaAsignada.Sitio.CreatedAt
+                    } : null
+                } : null,
+                Colaborador = user.Colaborador != null ? new ColaboradorDto
+                {
+                    Id = user.Colaborador.Id,
+                    IdCompania = user.Colaborador.IdCompania,
+                    Identidad = user.Colaborador.Identidad,
+                    Nombre = user.Colaborador.Nombre,
+                    Puesto = user.Colaborador.Puesto,
+                    Email = user.Colaborador.Email,
+                    Tel1 = user.Colaborador.Tel1,
+                    Tel2 = user.Colaborador.Tel2,
+                    Tel3 = user.Colaborador.Tel3,
+                    PlacaVehiculo = user.Colaborador.PlacaVehiculo,
+                    Comentario = user.Colaborador.Comentario,
+                    IsBlackList = user.Colaborador.IsBlackList,
+                    IsActive = user.Colaborador.IsActive,
+                    CreatedAt = user.Colaborador.CreatedAt,
+                    UpdatedAt = user.Colaborador.UpdatedAt,
+                    Compania = user.Colaborador.Compania != null ? new CompanyDto
+                    {
+                        Id = user.Colaborador.Compania.Id,
+                        Name = user.Colaborador.Compania.Name,
+                        Description = user.Colaborador.Compania.Description,
+                        IsActive = user.Colaborador.Compania.IsActive,
+                        CreatedAt = user.Colaborador.Compania.CreatedAt,
+                        IdSitio = user.Colaborador.Compania.IdSitio
+                    } : null,
+                    ColaboradorByCentros = user.Colaborador.ColaboradorByCentros?
+                        .Where(cbc => cbc.IsActive)
+                        .Select(cbc => new ColaboradorByCentroDto
+                        {
+                            Id = cbc.Id,
+                            IdCentro = cbc.IdCentro,
+                            IdColaborador = cbc.IdColaborador,
+                            IsActive = cbc.IsActive,
+                            CreatedAt = cbc.CreatedAt,
+                            UpdatedAt = cbc.UpdatedAt
+                        }).ToList() ?? new List<ColaboradorByCentroDto>()
+                } : null,
                 IsActive = user.IsActive,
                 LastLogin = user.LastLogin,
                 CreatedAt = user.CreatedAt

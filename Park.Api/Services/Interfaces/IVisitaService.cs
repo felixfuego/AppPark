@@ -33,5 +33,16 @@ namespace Park.Api.Services.Interfaces
         
         // Método para gestión de visitantes desde visitas
         Task<VisitorExisteDto> BuscarOCrearVisitorAsync(string identidad, CrearVisitorDesdeVisitaDto datos);
+        
+        // Método para obtener visitas por zona del guardia
+        Task<IEnumerable<VisitaDto>> GetVisitasByGuardiaZonaAsync(int guardiaId);
+        
+        // Método de debug para verificar integridad de datos
+        Task<object> DebugVisitasCentrosZonasAsync(int? guardiaId = null);
+        
+        // Métodos para obtener datos disponibles según el rol del usuario
+        Task<IEnumerable<CompanyDto>> GetEmpresasDisponiblesAsync(int userId);
+        Task<IEnumerable<CentroDto>> GetCentrosDisponiblesAsync(int userId, int? idCompania = null);
+        Task<IEnumerable<ColaboradorDto>> GetColaboradoresDisponiblesAsync(int userId, int? idCompania = null);
     }
 }

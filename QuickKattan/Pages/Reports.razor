@@ -1,0 +1,171 @@
+@page "/reports"
+@using System.Collections.Generic
+@inject IAuthService AuthService
+
+<PageTitle>Reportes Financieros</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large">
+    <MudText Typo="Typo.h4" GutterBottom="true">Reportes Financieros</MudText>
+
+    <MudGrid>
+        <MudItem xs="12" md="6">
+            <MudSelect T="string" Label="Tipo de Reporte" @bind-Value="selectedReport" Variant="Variant.Outlined">
+                <MudSelectItem Value="@("balance")">Balance General</MudSelectItem>
+                <MudSelectItem Value="@("income")">Estado de Resultados</MudSelectItem>
+                <MudSelectItem Value="@("cashflow")">Flujo de Caja</MudSelectItem>
+                <MudSelectItem Value="@("multi")">Informe Multiempresa</MudSelectItem>
+            </MudSelect>
+        </MudItem>
+        <MudItem xs="12" md="6">
+            <MudSelect T="string" Label="Empresa" @bind-Value="selectedCompany" Variant="Variant.Outlined">
+                <MudSelectItem Value="@("all")">Todas las Empresas</MudSelectItem>
+                <MudSelectItem Value="@("empresa1")">Empresa 1</MudSelectItem>
+                <MudSelectItem Value="@("empresa2")">Empresa 2</MudSelectItem>
+            </MudSelect>
+        </MudItem>
+    </MudGrid>
+
+    <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Primary" StartIcon="Icons.Material.Filled.GetApp" OnClick="GenerateReport" Class="mt-3">
+        Generar Reporte
+    </MudButton>
+
+    @if (reportData != null)
+    {
+        <MudCard Class="mt-4">
+            <MudCardHeader>
+                <CardHeaderContent>
+                    <MudText Typo="Typo.h6">@GetReportTitle()</MudText>
+                </CardHeaderContent>
+            </MudCardHeader>
+            <MudCardContent>
+                @if (selectedReport == "balance")
+                {
+                    <MudTable Items="reportData" Dense="true" Hover="true">
+                        <HeaderContent>
+                            <MudTh>Cuenta</MudTh>
+                            <MudTh>Valor</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd>@context.Key</MudTd>
+                            <MudTd>@context.Value.ToString("C")</MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                }
+                else if (selectedReport == "income")
+                {
+                    <MudTable Items="reportData" Dense="true" Hover="true">
+                        <HeaderContent>
+                            <MudTh>Concepto</MudTh>
+                            <MudTh>Valor</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd>@context.Key</MudTd>
+                            <MudTd>@context.Value.ToString("C")</MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                }
+                else if (selectedReport == "cashflow")
+                {
+                    <MudTable Items="reportData" Dense="true" Hover="true">
+                        <HeaderContent>
+                            <MudTh>Actividad</MudTh>
+                            <MudTh>Flujo</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd>@context.Key</MudTd>
+                            <MudTd>@context.Value.ToString("C")</MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                }
+                else if (selectedReport == "multi")
+                {
+                    <MudTable Items="multiCompanyData" Dense="true" Hover="true">
+                        <HeaderContent>
+                            <MudTh>Empresa</MudTh>
+                            <MudTh>Ingresos</MudTh>
+                            <MudTh>Gastos</MudTh>
+                            <MudTh>Utilidad</MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd>@context.Company</MudTd>
+                            <MudTd>@context.Revenue.ToString("C")</MudTd>
+                            <MudTd>@context.Expenses.ToString("C")</MudTd>
+                            <MudTd>@context.Profit.ToString("C")</MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                }
+            </MudCardContent>
+        </MudCard>
+    }
+</MudContainer>
+
+@code {
+    private string selectedReport = "balance";
+    private string selectedCompany = "all";
+    private Dictionary<string, decimal>? reportData;
+    private List<MultiCompanyReport>? multiCompanyData;
+
+    private void GenerateReport()
+    {
+        if (selectedReport == "multi")
+        {
+            multiCompanyData = new List<MultiCompanyReport>
+            {
+                new MultiCompanyReport { Company = "Empresa 1", Revenue = 150000, Expenses = 120000, Profit = 30000 },
+                new MultiCompanyReport { Company = "Empresa 2", Revenue = 200000, Expenses = 180000, Profit = 20000 },
+                new MultiCompanyReport { Company = "Empresa 3", Revenue = 100000, Expenses = 95000, Profit = 5000 }
+            };
+            reportData = null;
+        }
+        else
+        {
+            reportData = selectedReport switch
+            {
+                "balance" => new Dictionary<string, decimal>
+                {
+                    { "Activos Corrientes", 50000 },
+                    { "Activos Fijos", 150000 },
+                    { "Pasivos Corrientes", 30000 },
+                    { "Pasivos a Largo Plazo", 80000 },
+                    { "Capital", 90000 }
+                },
+                "income" => new Dictionary<string, decimal>
+                {
+                    { "Ingresos por Ventas", 200000 },
+                    { "Costos de Ventas", 120000 },
+                    { "Gastos Operativos", 50000 },
+                    { "Utilidad Neta", 30000 }
+                },
+                "cashflow" => new Dictionary<string, decimal>
+                {
+                    { "Flujo de Operaciones", 40000 },
+                    { "Flujo de Inversión", -20000 },
+                    { "Flujo de Financiamiento", -10000 },
+                    { "Flujo Neto", 10000 }
+                },
+                _ => new Dictionary<string, decimal>()
+            };
+            multiCompanyData = null;
+        }
+    }
+
+    private string GetReportTitle()
+    {
+        return selectedReport switch
+        {
+            "balance" => "Balance General",
+            "income" => "Estado de Resultados",
+            "cashflow" => "Flujo de Caja",
+            "multi" => "Informe Multiempresa",
+            _ => "Reporte"
+        };
+    }
+
+    public class MultiCompanyReport
+    {
+        public string Company { get; set; } = "";
+        public decimal Revenue { get; set; }
+        public decimal Expenses { get; set; }
+        public decimal Profit { get; set; }
+    }
+}

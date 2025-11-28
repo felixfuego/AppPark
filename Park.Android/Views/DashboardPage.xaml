@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Park.Android.Views.DashboardPage"
+             xmlns:viewmodels="clr-namespace:Park.Android.ViewModels"
+             x:DataType="viewmodels:DashboardViewModel"
+             Title="Panel de Guardia"
+             BackgroundColor="{StaticResource BackgroundLight}">
+
+    <ScrollView>
+        <VerticalStackLayout Spacing="15" Padding="15">
+
+            <!-- Header con información del guardia -->
+            <Frame Style="{StaticResource CardFrame}" 
+                   BackgroundColor="{StaticResource Primary}">
+                <VerticalStackLayout Spacing="5">
+                    <Label Text="{Binding CurrentUser.FullName}" 
+                           TextColor="White"
+                           FontSize="20"
+                           FontAttributes="Bold" />
+                    <Label Text="{Binding CurrentUserRole}" 
+                           TextColor="White"
+                           FontSize="14" />
+                    <Label Text="{Binding CurrentUser.ZonaAsignada, StringFormat='Zona: {0}'}" 
+                           TextColor="White"
+                           FontSize="12"
+                           IsVisible="{Binding CurrentUser.ZonaAsignada, Converter={StaticResource StringToBoolConverter}}" />
+                </VerticalStackLayout>
+            </Frame>
+
+            <!-- Estadísticas del día -->
+            <Label Text="Estadísticas del Día" 
+                   Style="{StaticResource LabelSubtitle}" />
+
+            <Grid ColumnDefinitions="*,*" 
+                  RowDefinitions="Auto,Auto"
+                  ColumnSpacing="10"
+                  RowSpacing="10">
+
+                <!-- Total Visitas -->
+                <Frame Grid.Row="0" Grid.Column="0" 
+                       Style="{StaticResource CardFrame}"
+                       BackgroundColor="{StaticResource Info}">
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="{Binding TotalVisitasHoy}" 
+                               TextColor="White"
+                               FontSize="32"
+                               FontAttributes="Bold"
+                               HorizontalOptions="Center" />
+                        <Label Text="Total Visitas" 
+                               TextColor="White"
+                               FontSize="12"
+                               HorizontalOptions="Center" />
+                    </VerticalStackLayout>
+                </Frame>
+
+                <!-- Pendientes -->
+                <Frame Grid.Row="0" Grid.Column="1" 
+                       Style="{StaticResource CardFrame}"
+                       BackgroundColor="{StaticResource Warning}">
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="{Binding VisitasPendientes}" 
+                               TextColor="White"
+                               FontSize="32"
+                               FontAttributes="Bold"
+                               HorizontalOptions="Center" />
+                        <Label Text="Pendientes" 
+                               TextColor="White"
+                               FontSize="12"
+                               HorizontalOptions="Center" />
+                    </VerticalStackLayout>
+                </Frame>
+
+                <!-- En Proceso -->
+                <Frame Grid.Row="1" Grid.Column="0" 
+                       Style="{StaticResource CardFrame}"
+                       BackgroundColor="{StaticResource Primary}">
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="{Binding VisitasEnProceso}" 
+                               TextColor="White"
+                               FontSize="32"
+                               FontAttributes="Bold"
+                               HorizontalOptions="Center" />
+                        <Label Text="En Proceso" 
+                               TextColor="White"
+                               FontSize="12"
+                               HorizontalOptions="Center" />
+                    </VerticalStackLayout>
+                </Frame>
+
+                <!-- Completadas -->
+                <Frame Grid.Row="1" Grid.Column="1" 
+                       Style="{StaticResource CardFrame}"
+                       BackgroundColor="{StaticResource Success}">
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="{Binding VisitasCompletadas}" 
+                               TextColor="White"
+                               FontSize="32"
+                               FontAttributes="Bold"
+                               HorizontalOptions="Center" />
+                        <Label Text="Completadas" 
+                               TextColor="White"
+                               FontSize="12"
+                               HorizontalOptions="Center" />
+                    </VerticalStackLayout>
+                </Frame>
+
+            </Grid>
+
+            <!-- Acciones Rápidas -->
+            <Label Text="Acciones Rápidas" 
+                   Style="{StaticResource LabelSubtitle}"
+                   Margin="0,20,0,0" />
+
+            <Button Text="📋 Ver Lista de Visitas" 
+                    Command="{Binding NavigateToVisitasListCommand}"
+                    Style="{StaticResource ButtonPrimary}" />
+
+            <Button Text="🔄 Actualizar Datos" 
+                    Command="{Binding LoadDashboardDataCommand}"
+                    BackgroundColor="{StaticResource Info}"
+                    TextColor="White"
+                    CornerRadius="8"
+                    HeightRequest="50" />
+
+            <Button Text="🚪 Cerrar Sesión" 
+                    Command="{Binding LogoutCommand}"
+                    Style="{StaticResource ButtonDanger}"
+                    Margin="0,20,0,0" />
+
+            <!-- Loading Indicator -->
+            <ActivityIndicator IsRunning="{Binding IsLoading}"
+                             IsVisible="{Binding IsLoading}"
+                             Color="{StaticResource Primary}"
+                             HorizontalOptions="Center"
+                             Margin="0,20,0,0" />
+
+        </VerticalStackLayout>
+    </ScrollView>
+
+</ContentPage>

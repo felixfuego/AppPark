@@ -1,0 +1,225 @@
+﻿@page "/"
+@inject IFinancialDataService FinancialDataService
+@inject IAuthService AuthService
+
+<PageTitle>QuickKattan - Dashboard Financiero</PageTitle>
+
+<MudGrid>
+    <MudItem xs="12">
+        <MudPaper Class="pa-4" Elevation="3">
+            <MudText Typo="Typo.h4" Align="MudBlazor.Align.Center" GutterBottom="true">
+                <MudIcon Icon="Icons.Material.Filled.TrendingUp" Class="mr-2" />
+                QuickKattan Dashboard
+            </MudText>
+            <MudText Typo="Typo.h6" Align="MudBlazor.Align.Center" Color="MudBlazor.Color.Secondary">
+                Sistema de Análisis Financiero Empresarial
+            </MudText>
+        </MudPaper>
+    </MudItem>
+
+    @if (isAuthenticated)
+    {
+        <!-- KPIs Cards -->
+        <MudItem xs="12" md="3">
+            <MudCard Elevation="3" Class="pa-4">
+                <MudCardContent>
+                    <div class="d-flex align-center">
+                        <MudIcon Icon="Icons.Material.Filled.Business" Size="MudBlazor.Size.Large" Color="MudBlazor.Color.Primary" />
+                        <div class="ml-4">
+                            <MudText Typo="Typo.h3">@companiesCount</MudText>
+                            <MudText Typo="Typo.body2">Empresas</MudText>
+                        </div>
+                    </div>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" md="3">
+            <MudCard Elevation="3" Class="pa-4">
+                <MudCardContent>
+                    <div class="d-flex align-center">
+                        <MudIcon Icon="Icons.Material.Filled.AttachMoney" Size="MudBlazor.Size.Large" Color="MudBlazor.Color.Success" />
+                        <div class="ml-4">
+                            <MudText Typo="Typo.h3">@totalRevenue.ToString("C0")</MudText>
+                            <MudText Typo="Typo.body2">Ingresos Totales</MudText>
+                        </div>
+                    </div>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" md="3">
+            <MudCard Elevation="3" Class="pa-4">
+                <MudCardContent>
+                    <div class="d-flex align-center">
+                        <MudIcon Icon="Icons.Material.Filled.TrendingUp" Size="MudBlazor.Size.Large" Color="MudBlazor.Color.Info" />
+                        <div class="ml-4">
+                            <MudText Typo="Typo.h3">@totalProfit.ToString("C0")</MudText>
+                            <MudText Typo="Typo.body2">Ganancias Totales</MudText>
+                        </div>
+                    </div>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12" md="3">
+            <MudCard Elevation="3" Class="pa-4">
+                <MudCardContent>
+                    <div class="d-flex align-center">
+                        <MudIcon Icon="Icons.Material.Filled.AccountBalance" Size="MudBlazor.Size.Large" Color="MudBlazor.Color.Warning" />
+                        <div class="ml-4">
+                            <MudText Typo="Typo.h3">@totalMarketCap.ToString("C0")</MudText>
+                            <MudText Typo="Typo.body2">Cap. de Mercado</MudText>
+                        </div>
+                    </div>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <!-- Gráfico de ejemplo -->
+        <MudItem xs="12" md="6">
+            @if (stockData.Any())
+            {
+                <StockChart Title="Tendencia de Precios - Ejemplo"
+                            Subtitle="Últimos 30 días"
+                            Data="@stockData"
+                            SeriesName="Precio de Cierre"
+                            Height="350px" />
+            }
+            else
+            {
+                <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="350px" />
+            }
+        </MudItem>
+
+        <MudItem xs="12" md="6">
+            @if (stockData.Any())
+            {
+                <CandlestickChart Symbol="EJEMPLO"
+                                  Data="@stockData"
+                                  Height="350px" />
+            }
+            else
+            {
+                <MudSkeleton SkeletonType="SkeletonType.Rectangle" Height="350px" />
+            }
+        </MudItem>
+
+        <!-- Tabla de empresas -->
+        <MudItem xs="12">
+            <MudCard Elevation="3">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h6">
+                            <MudIcon Icon="Icons.Material.Filled.Business" Class="mr-2" />
+                            Resumen de Empresas
+                        </MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    @if (companies.Any())
+                    {
+                        <MudTable Items="@companies" Hover="true" Dense="true" Elevation="0">
+                            <HeaderContent>
+                                <MudTh>Empresa</MudTh>
+                                <MudTh>Símbolo</MudTh>
+                                <MudTh>Ingresos</MudTh>
+                                <MudTh>Ganancias</MudTh>
+                                <MudTh>Margen (%)</MudTh>
+                                <MudTh>Última Actualización</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd DataLabel="Empresa">@context.Name</MudTd>
+                                <MudTd DataLabel="Símbolo">
+                                    <MudChip T="string" Size="MudBlazor.Size.Small" Color="MudBlazor.Color.Primary">@context.Symbol</MudChip>
+                                </MudTd>
+                                <MudTd DataLabel="Ingresos">@context.RevenueFormatted</MudTd>
+                                <MudTd DataLabel="Ganancias">
+                                    <MudText Color="@(context.IsProfitable ? MudBlazor.Color.Success : MudBlazor.Color.Error)">
+                                        @context.ProfitFormatted
+                                    </MudText>
+                                </MudTd>
+                                <MudTd DataLabel="Margen">@context.ProfitMarginFormatted</MudTd>
+                                <MudTd DataLabel="Última Actualización">@context.LastUpdate.ToString("dd/MM/yyyy HH:mm")</MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    }
+                    else
+                    {
+                        <div class="text-center pa-4">
+                            <MudProgressCircular Indeterminate="true" />
+                            <MudText Class="mt-2">Cargando datos financieros...</MudText>
+                        </div>
+                    }
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    }
+    else
+    {
+        <MudItem xs="12">
+            <MudCard Elevation="3" Class="pa-6">
+                <MudCardContent>
+                    <div class="text-center">
+                        <MudIcon Icon="Icons.Material.Filled.Lock" Size="MudBlazor.Size.Large" Color="MudBlazor.Color.Primary" />
+                        <MudText Typo="Typo.h5" Class="mt-4">Bienvenido a QuickKattan</MudText>
+                        <MudText Typo="Typo.body1" Class="mt-2 mb-4">
+                            Sistema profesional de análisis financiero empresarial.
+                            Inicia sesión para acceder a los datos en tiempo real.
+                        </MudText>
+                        <MudButton Variant="Variant.Filled" 
+                                   Color="MudBlazor.Color.Primary" 
+                                   StartIcon="Icons.Material.Filled.Login"
+                                   Href="/login"
+                                   Size="MudBlazor.Size.Large">
+                            Iniciar Sesión
+                        </MudButton>
+                    </div>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    }
+</MudGrid>
+
+@code {
+    private bool isAuthenticated = false;
+    private List<CompanyFinancialData> companies = new();
+    private List<StockData> stockData = new();
+    
+    // KPIs
+    private int companiesCount => companies.Count;
+    private decimal totalRevenue => companies.Sum(c => c.Revenue);
+    private decimal totalProfit => companies.Sum(c => c.Profit);
+    private decimal totalMarketCap => companies.Sum(c => c.MarketCap);
+
+    protected override async Task OnInitializedAsync()
+    {
+        isAuthenticated = await AuthService.IsAuthenticatedAsync();
+        
+        if (isAuthenticated)
+        {
+            await LoadData();
+        }
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            // Cargar datos de empresas
+            companies = await FinancialDataService.GetCompaniesFinancialDataAsync();
+            
+            // Generar datos de ejemplo para gráficos
+            var endDate = DateTime.Now.Date;
+            var startDate = endDate.AddDays(-30);
+            stockData = await FinancialDataService.GetStockDataAsync("EJEMPLO", startDate, endDate);
+            
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            // Manejar errores si es necesario
+            Console.WriteLine($"Error loading data: {ex.Message}");
+        }
+    }
+}

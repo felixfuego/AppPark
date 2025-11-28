@@ -4,6 +4,8 @@
 @using Park.Front.Components
 @inject AuthService AuthService
 @inject RoleService RoleService
+@inject CompanyService CompanyService
+@inject VisitaService VisitaService
 
 <PageTitle>Dashboard - Park.Front</PageTitle>
 
@@ -78,6 +80,80 @@
             </div>
         </div>
 
+        <!-- Información específica del usuario -->
+        @if (userCompanies.Any() || userVisitas.Any())
+        {
+            <div class="dashboard-section">
+                <h2><i class="bi bi-info-circle-fill"></i> Información del Usuario</h2>
+                <div class="section-grid">
+                    @if (isAdmin)
+                    {
+                        <div class="info-card">
+                            <div class="card-icon">
+                                <i class="bi bi-building-fill"></i>
+                            </div>
+                            <div class="card-content">
+                                <h4>Todas las Empresas</h4>
+                                <p>@userCompanies.Count empresas registradas</p>
+                            </div>
+                        </div>
+                        
+                        <div class="info-card">
+                            <div class="card-icon">
+                                <i class="bi bi-calendar-check-fill"></i>
+                            </div>
+                            <div class="card-content">
+                                <h4>Todas las Visitas</h4>
+                                <p>@userVisitas.Count visitas registradas</p>
+                            </div>
+                        </div>
+                    }
+                    else if (isOperador)
+                    {
+                        <div class="info-card">
+                            <div class="card-icon">
+                                <i class="bi bi-building-fill"></i>
+                            </div>
+                            <div class="card-content">
+                                <h4>Mis Empresas</h4>
+                                <p>@userCompanies.Count empresas asignadas</p>
+                                @if (userCompanies.Any())
+                                {
+                                    <div class="company-list">
+                                        @foreach (var company in userCompanies.Take(3))
+                                        {
+                                            <span class="company-tag">@company.Name</span>
+                                        }
+                                        @if (userCompanies.Count > 3)
+                                        {
+                                            <span class="company-tag">+@(userCompanies.Count - 3) más</span>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                        
+                        <div class="info-card">
+                            <div class="card-icon">
+                                <i class="bi bi-calendar-check-fill"></i>
+                            </div>
+                            <div class="card-content">
+                                <h4>Mis Visitas</h4>
+                                <p>@userVisitas.Count visitas de mis empresas</p>
+                                @if (userVisitas.Any())
+                                {
+                                    <div class="visits-stats">
+                                        <span class="visit-stat">Activas: @userVisitas.Count(v => v.EsActiva)</span>
+                                        <span class="visit-stat">Hoy: @userVisitas.Count(v => v.Fecha.Date == DateTime.Today)</span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
         <!-- Secciones según el rol del usuario -->
         <div class="dashboard-sections">
             
@@ -140,11 +216,11 @@
             </RoleGuard>
 
             <!-- Sección para Admin y Operador -->
-            <RoleGuard RequiredSection="gestion">
+            <RoleGuard RequiredRoles="@(new string[] {"Admin", "Operador"})">
                 <div class="dashboard-section">
                     <h2><i class="bi bi-clipboard-data-fill"></i> Gestión</h2>
                     <div class="section-grid">
-                        <div class="section-card" @onclick="@(() => NavigateTo("/visits"))">
+                        <div class="section-card" @onclick="@(() => NavigateTo("/visitas"))">
                             <div class="card-icon">
                                 <i class="bi bi-calendar-check-fill"></i>
                             </div>
@@ -167,6 +243,48 @@
                 </div>
             </RoleGuard>
 
+            <!-- Visitas recientes específicas del usuario -->
+            @if (userVisitas.Any())
+            {
+                <div class="dashboard-section">
+                    <h2>
+                        <i class="bi bi-clock-history"></i> 
+                        @if (isAdmin)
+                        {
+                            <span>Visitas Recientes (Todas)</span>
+                        }
+                        else
+                        {
+                            <span>Mis Visitas Recientes</span>
+                        }
+                    </h2>
+                    <div class="activity-list">
+                        @foreach (var visita in userVisitas.Take(5).OrderByDescending(v => v.CreatedAt))
+                        {
+                            <div class="activity-item">
+                                <div class="activity-icon">
+                                    <i class="bi bi-calendar-check"></i>
+                                </div>
+                                <div class="activity-content">
+                                    <p>@visita.NombreCompleto - @visita.Compania?.Name</p>
+                                    <div class="activity-time">
+                                        @visita.Fecha.ToString("dd/MM/yyyy HH:mm") - 
+                                        @if (visita.EsActiva)
+                                        {
+                                            <span class="badge badge-success">Activa</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-secondary">@visita.Estado</span>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
             <!-- Sección para Admin, Operador y Guardia -->
             <RoleGuard RequiredSection="vigilancia">
                 <div class="dashboard-section">
@@ -174,11 +292,11 @@
                     <div class="section-grid">
                         <div class="section-card" @onclick="@(() => NavigateTo("/guard-panel"))">
                             <div class="card-icon">
-                                <i class="bi bi-camera-video-fill"></i>
+                                <i class="bi bi-shield-check-fill"></i>
                             </div>
                             <div class="card-content">
-                                <h4>Panel de Guardias</h4>
-                                <p>Control de acceso y vigilancia</p>
+                                <h4>Panel de Guardia</h4>
+                                <p>Control de entrada y salida</p>
                             </div>
                         </div>
                     </div>
@@ -209,6 +327,8 @@
 </div>
 
 @code {
+    [Inject] private NavigationManager NavigationManager { get; set; } = null!;
+    
     private UserDto? currentUser = null;
     private bool isLoading = true;
     private int totalSites = 0;
@@ -216,6 +336,10 @@
     private int totalCenters = 0;
     private int totalCompanies = 0;
     private List<ActivityItem> recentActivities = new();
+    private List<CompanyDto> userCompanies = new();
+    private List<VisitaDto> userVisitas = new();
+    private bool isAdmin = false;
+    private bool isOperador = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -229,19 +353,31 @@
             isLoading = true;
             
             // Obtener usuario actual
-            currentUser = await AuthService.GetStoredUserAsync();
+            currentUser = await AuthService.GetCurrentUserAsync();
             
-            // TODO: Implementar llamadas al API para obtener estadísticas
-            // totalSites = await SiteService.GetTotalSitesAsync();
-            // totalZones = await ZoneService.GetTotalZonesAsync();
-            // totalCenters = await CenterService.GetTotalCentersAsync();
-            // totalCompanies = await CompanyService.GetTotalCompaniesAsync();
+            // Si el usuario es Guardia, redirigir al Panel de Guardia
+            if (currentUser != null && currentUser.Roles.Any(r => r.Name == "Guardia"))
+            {
+                NavigationManager.NavigateTo("/guard-panel");
+                return;
+            }
             
-            // Datos de prueba
-            totalSites = 3;
-            totalZones = 8;
-            totalCenters = 12;
-            totalCompanies = 25;
+            // Determinar el rol del usuario
+            if (currentUser != null)
+            {
+                isAdmin = currentUser.Roles.Any(r => r.Name == "Admin");
+                isOperador = currentUser.Roles.Any(r => r.Name == "Operador");
+            }
+            
+            // Cargar datos según el rol
+            if (isAdmin)
+            {
+                await LoadAdminData();
+            }
+            else if (isOperador)
+            {
+                await LoadOperadorData();
+            }
             
             // Actividad reciente
             recentActivities = new List<ActivityItem>
@@ -262,10 +398,126 @@
         }
     }
 
+    private async Task LoadAdminData()
+    {
+        try
+        {
+            // Admin ve todas las empresas y estadísticas globales
+            userCompanies = await CompanyService.GetAllCompaniesAsync();
+            userVisitas = await VisitaService.GetAllVisitasAsync();
+            
+            // Calcular estadísticas globales
+            totalCompanies = userCompanies.Count;
+            totalSites = userCompanies.Select(c => c.IdSitio).Distinct().Count();
+            totalZones = userCompanies.SelectMany(c => c.ZonasAcceso).Select(z => z.Id).Distinct().Count();
+            totalCenters = userVisitas.Select(v => v.IdCentro).Distinct().Count();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error cargando datos de admin: {ex.Message}");
+            // Datos de prueba como fallback
+            totalSites = 3;
+            totalZones = 8;
+            totalCenters = 12;
+            totalCompanies = 25;
+        }
+    }
+
+    private async Task LoadOperadorData()
+    {
+        try
+        {
+            // Operador ve solo las empresas asignadas
+            if (currentUser != null)
+            {
+                // Debug: Log del usuario obtenido
+                Console.WriteLine($"=== DEBUG OPERADOR ===");
+                Console.WriteLine($"Usuario: {currentUser.FullName}");
+                Console.WriteLine($"Roles: {string.Join(", ", currentUser.Roles.Select(r => r.Name))}");
+                Console.WriteLine($"AssignedCompanies: {currentUser.AssignedCompanies?.Count ?? 0}");
+                Console.WriteLine($"IdCompania: {currentUser.IdCompania}");
+                
+                // Obtener empresas asignadas al usuario
+                userCompanies = currentUser.AssignedCompanies ?? new List<CompanyDto>();
+                Console.WriteLine($"userCompanies inicial: {userCompanies.Count}");
+                
+                // Si no hay empresas asignadas, intentar diferentes métodos de fallback
+                if (userCompanies.Count == 0)
+                {
+                    Console.WriteLine("No hay empresas asignadas, intentando métodos de fallback...");
+                    
+                    // Método 1: Usar IdCompania del usuario
+                    if (currentUser.IdCompania.HasValue)
+                    {
+                        Console.WriteLine($"Intentando obtener empresa por IdCompania: {currentUser.IdCompania.Value}");
+                        var company = await CompanyService.GetCompanyByIdAsync(currentUser.IdCompania.Value);
+                        if (company != null)
+                        {
+                            userCompanies = new List<CompanyDto> { company };
+                            Console.WriteLine($"Empresa obtenida por IdCompania: {company.Name}");
+                        }
+                        else
+                        {
+                            Console.WriteLine("No se pudo obtener la empresa por IdCompania");
+                        }
+                    }
+                    
+                    // Método 2: Si aún no hay empresas, buscar por nombre de usuario o email
+                    if (userCompanies.Count == 0)
+                    {
+                        Console.WriteLine("Intentando buscar empresa por nombre de usuario...");
+                        // Aquí podrías implementar una búsqueda adicional si es necesario
+                        // Por ejemplo, buscar empresas que contengan el nombre del usuario
+                    }
+                    
+                    // Método 3: Si aún no hay empresas, mostrar mensaje de error
+                    if (userCompanies.Count == 0)
+                    {
+                        Console.WriteLine("ERROR: No se encontraron empresas asignadas para el operador");
+                        // Podrías mostrar un mensaje al usuario aquí
+                    }
+                }
+                
+                Console.WriteLine($"userCompanies final: {userCompanies.Count}");
+                
+                // Obtener visitas de las empresas asignadas
+                userVisitas = new List<VisitaDto>();
+                foreach (var company in userCompanies)
+                {
+                    Console.WriteLine($"Obteniendo visitas para empresa: {company.Name} (ID: {company.Id})");
+                    var visitas = await VisitaService.GetVisitasByCompaniaAsync(company.Id);
+                    userVisitas.AddRange(visitas);
+                    Console.WriteLine($"Visitas obtenidas: {visitas.Count}");
+                }
+                
+                // Calcular estadísticas filtradas
+                totalCompanies = userCompanies.Count;
+                totalSites = userCompanies.Select(c => c.IdSitio).Distinct().Count();
+                totalZones = userCompanies.SelectMany(c => c.ZonasAcceso).Select(z => z.Id).Distinct().Count();
+                totalCenters = userVisitas.Select(v => v.IdCentro).Distinct().Count();
+                
+                Console.WriteLine($"=== ESTADÍSTICAS FINALES ===");
+                Console.WriteLine($"totalCompanies: {totalCompanies}");
+                Console.WriteLine($"totalSites: {totalSites}");
+                Console.WriteLine($"totalZones: {totalZones}");
+                Console.WriteLine($"totalCenters: {totalCenters}");
+                Console.WriteLine($"userVisitas: {userVisitas.Count}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error cargando datos de operador: {ex.Message}");
+            // Datos de prueba como fallback
+            totalSites = 1;
+            totalZones = 2;
+            totalCenters = 1;
+            totalCompanies = 1;
+        }
+    }
+
     private void NavigateTo(string url)
     {
-        // TODO: Implementar navegación usando NavigationManager
-        Console.WriteLine($"Navegando a: {url}");
+        NavigationManager.NavigateTo(url);
     }
 
     public class ActivityItem

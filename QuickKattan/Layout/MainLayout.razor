@@ -1,0 +1,121 @@
+﻿@inherits LayoutComponentBase
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+
+<MudLayout>
+    <MudAppBar Elevation="1">
+        <MudIconButton Icon="Icons.Material.Filled.Menu" Color="MudBlazor.Color.Inherit" Edge="Edge.Start" OnClick="@ToggleDrawer" />
+        <MudText Typo="Typo.h6" Class="ml-3">QuickKattan - Dashboard Financiero</MudText>
+        <MudSpacer />
+        
+        @if (isAuthenticated)
+        {
+            <MudButton Variant="Variant.Text" Color="MudBlazor.Color.Inherit" StartIcon="Icons.Material.Filled.AccountCircle">
+                @currentUser
+            </MudButton>
+            <MudButton Variant="Variant.Text" Color="MudBlazor.Color.Inherit" StartIcon="Icons.Material.Filled.Logout" OnClick="Logout">
+                Cerrar Sesión
+            </MudButton>
+        }
+        else
+        {
+            <MudButton Variant="Variant.Text" Color="MudBlazor.Color.Primary" StartIcon="Icons.Material.Filled.Login" OnClick="GoToLogin">
+                Iniciar Sesión
+            </MudButton>
+        }
+    </MudAppBar>
+
+    <MudDrawer @bind-Open="@drawerOpen" ClipMode="DrawerClipMode.Always" Elevation="2" Variant="@DrawerVariant.Mini">
+        <MudNavMenu>
+            <MudNavLink Href="/" Match="NavLinkMatch.All" Icon="Icons.Material.Filled.Dashboard">
+                Dashboard
+            </MudNavLink>
+            @if (isAuthenticated)
+            {
+                <MudNavLink Href="/companies" Icon="Icons.Material.Filled.Business">
+                    Empresas
+                </MudNavLink>
+                <MudNavLink Href="/stocks" Icon="Icons.Material.Filled.TrendingUp">
+                    Acciones
+                </MudNavLink>
+                <MudNavLink Href="/reports" Icon="Icons.Material.Filled.Assessment">
+                    Reportes
+                </MudNavLink>
+                <MudNavLink Href="/portfolio" Icon="Icons.Material.Filled.AccountBalance">
+                    Portafolio
+                </MudNavLink>
+            }
+        </MudNavMenu>
+    </MudDrawer>
+
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="my-4 pt-4">
+            @if (isAuthenticated || Navigation.Uri.EndsWith("/") || Navigation.Uri.Contains("/login"))
+            {
+                @Body
+            }
+            else
+            {
+                <MudCard>
+                    <MudCardContent>
+                        <MudAlert Severity="Severity.Warning">
+                            <MudText>Necesitas iniciar sesión para acceder a esta página.</MudText>
+                        </MudAlert>
+                        <MudButton Variant="Variant.Filled" Color="MudBlazor.Color.Primary" StartIcon="Icons.Material.Filled.Login" OnClick="GoToLogin" Class="mt-3">
+                            Iniciar Sesión
+                        </MudButton>
+                    </MudCardContent>
+                </MudCard>
+            }
+        </MudContainer>
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private bool drawerOpen = true;
+    private bool isAuthenticated = false;
+    private string currentUser = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await CheckAuthStatus();
+    }
+
+    private void ToggleDrawer()
+    {
+        drawerOpen = !drawerOpen;
+    }
+
+    private async Task CheckAuthStatus()
+    {
+        isAuthenticated = await AuthService.IsAuthenticatedAsync();
+        if (isAuthenticated)
+        {
+            currentUser = await AuthService.GetCurrentUserAsync() ?? "Usuario";
+        }
+        else
+        {
+            // Si no está autenticado y no está en home o login, redirigir a login
+            if (!Navigation.Uri.EndsWith("/") && !Navigation.Uri.Contains("/login"))
+            {
+                Navigation.NavigateTo("/login");
+                return;
+            }
+        }
+        StateHasChanged();
+    }
+
+    private async Task Logout()
+    {
+        await AuthService.LogoutAsync();
+        isAuthenticated = false;
+        currentUser = "";
+        Navigation.NavigateTo("/login");
+        StateHasChanged();
+    }
+
+    private void GoToLogin()
+    {
+        Navigation.NavigateTo("/login");
+    }
+}

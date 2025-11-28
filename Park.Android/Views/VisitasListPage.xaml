@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Park.Android.Views.VisitasListPage"
+             xmlns:viewmodels="clr-namespace:Park.Android.ViewModels"
+             xmlns:dto="clr-namespace:Park.Comun.DTOs;assembly=Park.Comun"
+             x:DataType="viewmodels:VisitasListViewModel"
+             Title="Lista de Visitas"
+             BackgroundColor="{StaticResource BackgroundLight}">
+
+    <Grid RowDefinitions="Auto,*">
+
+        <!-- Búsqueda -->
+        <Frame Grid.Row="0" 
+               Style="{StaticResource CardFrame}"
+               Margin="10">
+            <VerticalStackLayout Spacing="10">
+                <SearchBar Text="{Binding SearchText}"
+                          Placeholder="Buscar por nombre, identidad o número..."
+                          SearchCommand="{Binding SearchVisitasCommand}"
+                          BackgroundColor="{StaticResource Surface}" />
+            </VerticalStackLayout>
+        </Frame>
+
+        <!-- Lista de Visitas -->
+        <RefreshView Grid.Row="1"
+                     IsRefreshing="{Binding IsRefreshing}"
+                     Command="{Binding RefreshVisitasCommand}">
+            
+            <CollectionView ItemsSource="{Binding Visitas}"
+                           SelectionMode="None">
+                
+                <CollectionView.EmptyView>
+                    <VerticalStackLayout VerticalOptions="Center" 
+                                        HorizontalOptions="Center"
+                                        Padding="20">
+                        <Label Text="No hay visitas para mostrar" 
+                               Style="{StaticResource LabelBody}"
+                               HorizontalOptions="Center" />
+                        <Label Text="Intente buscar o refrescar la lista" 
+                               Style="{StaticResource LabelCaption}"
+                               HorizontalOptions="Center" />
+                    </VerticalStackLayout>
+                </CollectionView.EmptyView>
+
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="dto:VisitaDto">
+                        <Frame Style="{StaticResource CardFrame}" 
+                               Margin="10,5">
+                            <Frame.GestureRecognizers>
+                                <TapGestureRecognizer 
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:VisitasListViewModel}}, Path=VisitaSelectedCommand}"
+                                    CommandParameter="{Binding .}" />
+                            </Frame.GestureRecognizers>
+                            
+                            <Grid RowDefinitions="Auto,Auto,Auto,Auto" 
+                                  ColumnDefinitions="*,Auto">
+
+                                <!-- Nombre -->
+                                <Label Grid.Row="0" Grid.Column="0"
+                                      Text="{Binding NombreCompleto}" 
+                                      Style="{StaticResource LabelSubtitle}" />
+
+                                <!-- Estado Badge -->
+                                <Frame Grid.Row="0" Grid.Column="1"
+                                      Padding="8,4"
+                                      CornerRadius="12"
+                                      HasShadow="False"
+                                      BackgroundColor="{StaticResource Success}"
+                                      VerticalOptions="Center">
+                                    <Label Text="{Binding Estado}" 
+                                          TextColor="White"
+                                          FontSize="10"
+                                          FontAttributes="Bold" />
+                                </Frame>
+
+                                <!-- Número de solicitud -->
+                                <Label Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                                      Text="{Binding NumeroSolicitud, StringFormat='#{0}'}" 
+                                      Style="{StaticResource LabelBody}"
+                                      Margin="0,5,0,0" />
+
+                                <!-- Identidad -->
+                                <Label Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2"
+                                      Text="{Binding IdentidadVisitante, StringFormat='ID: {0}'}" 
+                                      Style="{StaticResource LabelCaption}" />
+
+                                <!-- Fecha -->
+                                <Label Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="2"
+                                      Text="{Binding Fecha, StringFormat='{0:dd/MM/yyyy HH:mm}'}" 
+                                      Style="{StaticResource LabelCaption}" />
+
+                            </Grid>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+
+            </CollectionView>
+
+        </RefreshView>
+
+        <!-- Loading Indicator -->
+        <ActivityIndicator Grid.Row="1"
+                         IsRunning="{Binding IsLoading}"
+                         IsVisible="{Binding IsLoading}"
+                         Color="{StaticResource Primary}"
+                         VerticalOptions="Center"
+                         HorizontalOptions="Center" />
+
+    </Grid>
+
+</ContentPage>

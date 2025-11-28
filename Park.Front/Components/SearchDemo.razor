@@ -1,0 +1,91 @@
+@* Componente de demostración para mostrar ejemplos de búsqueda unificada *@
+
+<div class="search-demo-container">
+    <div class="demo-header">
+        <h4><i class="bi bi-lightbulb me-2"></i>Ejemplos de Búsqueda</h4>
+        <p class="text-muted">Prueba estos ejemplos en el campo de búsqueda:</p>
+    </div>
+    
+    <div class="demo-examples">
+        <div class="example-group">
+            <h6><i class="bi bi-hash me-1"></i>Por Número de Solicitud:</h6>
+            <div class="example-tags">
+                <span class="badge bg-primary">VIS-2024-01-15-123456</span>
+                <span class="badge bg-primary">123456</span>
+            </div>
+        </div>
+        
+        <div class="example-group">
+            <h6><i class="bi bi-person me-1"></i>Por Nombre del Visitante:</h6>
+            <div class="example-tags">
+                <span class="badge bg-success">Juan Pérez</span>
+                <span class="badge bg-success">María</span>
+                <span class="badge bg-success">García</span>
+            </div>
+        </div>
+        
+        <div class="example-group">
+            <h6><i class="bi bi-building me-1"></i>Por Empresa:</h6>
+            <div class="example-tags">
+                <span class="badge bg-info">Kattan Group</span>
+                <span class="badge bg-info">Fintotal</span>
+            </div>
+        </div>
+        
+        <div class="example-group">
+            <h6><i class="bi bi-card-text me-1"></i>Por Identidad:</h6>
+            <div class="example-tags">
+                <span class="badge bg-warning">0801-1990-12345</span>
+                <span class="badge bg-warning">12345</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.search-demo-container {
+    background: var(--bg-light);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-md);
+    margin-top: var(--spacing-sm);
+    border-left: 4px solid var(--bs-info);
+}
+
+.demo-header h4 {
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-xs);
+    font-size: 1rem;
+}
+
+.demo-header p {
+    margin-bottom: var(--spacing-md);
+    font-size: 0.9rem;
+}
+
+.example-group {
+    margin-bottom: var(--spacing-sm);
+}
+
+.example-group h6 {
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-xs);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.example-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+}
+
+.example-tags .badge {
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.example-tags .badge:hover {
+    transform: scale(1.05);
+}
+</style>

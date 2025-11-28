@@ -605,6 +605,9 @@ namespace Park.Api.Migrations
                     b.Property<int?>("IdCompania")
                         .HasColumnType("int");
 
+                    b.Property<int?>("IdZonaAsignada")
+                        .HasColumnType("int");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
@@ -634,6 +637,9 @@ namespace Park.Api.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int?>("ZonaAsignadaId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ColaboradorId");
@@ -647,6 +653,8 @@ namespace Park.Api.Migrations
 
                     b.HasIndex("Username")
                         .IsUnique();
+
+                    b.HasIndex("ZonaAsignadaId");
 
                     b.ToTable("Users");
                 });
@@ -773,6 +781,10 @@ namespace Park.Api.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("QrCodeUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("TipoTransporte")
                         .HasColumnType("int");
@@ -1063,9 +1075,15 @@ namespace Park.Api.Migrations
                         .HasForeignKey("IdCompania")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("Park.Comun.Models.Zona", "ZonaAsignada")
+                        .WithMany()
+                        .HasForeignKey("ZonaAsignadaId");
+
                     b.Navigation("Colaborador");
 
                     b.Navigation("Compania");
+
+                    b.Navigation("ZonaAsignada");
                 });
 
             modelBuilder.Entity("Park.Comun.Models.UserRole", b =>

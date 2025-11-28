@@ -1,6 +1,8 @@
+@using MudBlazor
 @using Park.Comun.DTOs
 @using Park.Comun.Enums
 @using Park.Front.Services
+@using Park.Front.Components
 @inject IJSRuntime JSRuntime
 @inject VisitaService VisitaService
 @inject ColaboradorService ColaboradorService
@@ -26,7 +28,7 @@
                             <div class="row">
                                 <div class="col-md-12">
                                     <div class="mb-3">
-                                        <label for="numeroSolicitud" class="form-label fw-bold">Número de Solicitud <span class="text-danger">*</span></label>
+                                        <label for="numeroSolicitud" class="form-label fw-bold">Número de Solicitud <span class="text-danger">*</span></label>                                        
                                         <input type="text" class="form-control" id="numeroSolicitud" @bind="createVisita.NumeroSolicitud" maxlength="50" required readonly>
                                         <div class="form-text">Generado automáticamente</div>
                                     </div>
@@ -36,7 +38,7 @@
                                 <div class="col-md-12">
                                     <div class="mb-3">
                                         <label for="fecha" class="form-label fw-bold">Fecha de Visita <span class="text-danger">*</span></label>
-                                        <input type="datetime-local" class="form-control" id="fecha" @bind="fechaVisita" @bind:format="yyyy-MM-ddTHH:mm" required>
+                                        <input type="date" class="form-control" id="fecha" @bind="createVisita.Fecha" @bind:format="yyyy-MM-dd" required>
                                         <div class="form-text">Fecha programada para la visita</div>
                                     </div>
                                 </div>
@@ -54,7 +56,7 @@
                                 <div class="col-md-12">
                                     <div class="mb-3">
                                         <label for="fechaInicio" class="form-label fw-bold">Fecha de Inicio <span class="text-danger">*</span></label>
-                                        <input type="datetime-local" class="form-control" id="fechaInicio" @bind="fechaInicio" @bind:format="yyyy-MM-ddTHH:mm" required>
+                                        <input type="date" class="form-control" id="fechaInicio" @bind="createVisita.FechaInicio" @bind:format="yyyy-MM-dd" required>
                                         <div class="form-text">
                                             <i class="bi bi-info-circle me-1"></i>Fecha desde cuando la visita es válida
                                         </div>
@@ -65,7 +67,7 @@
                                 <div class="col-md-12">
                                     <div class="mb-3">
                                         <label for="fechaVencimiento" class="form-label fw-bold">Fecha de Vencimiento <span class="text-danger">*</span></label>
-                                        <input type="datetime-local" class="form-control" id="fechaVencimiento" @bind="fechaVencimiento" @bind:format="yyyy-MM-ddTHH:mm" required>
+                                        <input type="date" class="form-control" id="fechaVencimiento" @bind="createVisita.FechaVencimiento" @bind:format="yyyy-MM-dd" required>
                                         <div class="form-text">
                                             <i class="bi bi-exclamation-triangle me-1"></i>Fecha hasta cuando la visita es válida
                                         </div>
@@ -119,13 +121,64 @@
                             <h6 class="mb-0"><i class="bi bi-person-badge me-2"></i>Información del Visitante</h6>
                         </div>
                         <div class="card-body">
+                            <!-- Selector de Visitante -->
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold">Seleccionar Visitante <span class="text-danger">*</span></label>
+                                        <div class="input-group">
+                                            <input type="text" 
+                                                   class="form-control" 
+                                                   @bind="selectedVisitorDisplay" 
+                                                   placeholder="Buscar visitante existente..."
+                                                   readonly>
+                                            <button class="btn btn-outline-primary" type="button" @onclick="ShowVisitorSearch">
+                                                <i class="bi bi-search me-1"></i>Buscar
+                                            </button>
+                                            <button class="btn btn-outline-secondary" type="button" @onclick="ClearVisitorSelection">
+                                                <i class="bi bi-x"></i>
+                                            </button>
+                                        </div>
+                                        <div class="form-text">
+                                            <i class="bi bi-info-circle me-1"></i>Busque un visitante existente o complete los datos manualmente
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Información del Visitante Seleccionado -->
+                            @if (selectedVisitor != null)
+                            {
+                                <div class="alert alert-info">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-check-circle-fill text-success me-2"></i>
+                                        <div>
+                                            <strong>Visitante seleccionado:</strong> @selectedVisitor.FullName<br>
+                                            <small class="text-muted">@selectedVisitor.DocumentType: @selectedVisitor.DocumentNumber</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+
+                            <!-- Campos Manuales (como fallback) -->
                             <div class="row">
                                 <div class="col-md-12">
                                     <div class="mb-3">
                                         <label for="nombreCompleto" class="form-label fw-bold">Nombre Completo <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="nombreCompleto" @bind="createVisita.NombreCompleto" maxlength="200" required placeholder="Ej: Juan Pérez García">
+                                        <input type="text" 
+                                               class="form-control" 
+                                               id="nombreCompleto" 
+                                               @bind="createVisita.NombreCompleto" 
+                                               maxlength="200" 
+                                               required 
+                                               placeholder="Ej: Juan Pérez García"
+                                               disabled="@(selectedVisitor != null)">
                                         <div class="form-text">
                                             <i class="bi bi-person me-1"></i>Nombre completo del visitante
+                                            @if (selectedVisitor != null)
+                                            {
+                                                <span class="text-muted">(Completado automáticamente)</span>
+                                            }
                                         </div>
                                     </div>
                                 </div>
@@ -134,14 +187,20 @@
                                 <div class="col-md-12">
                                     <div class="mb-3">
                                         <label for="identidadVisitante" class="form-label fw-bold">Número de Identidad <span class="text-danger">*</span></label>
-                                        <div class="input-group">
-                                            <input type="text" class="form-control" id="identidadVisitante" @bind="createVisita.IdentidadVisitante" maxlength="50" required placeholder="Ej: 1234567890">
-                                            <button class="btn btn-outline-secondary" type="button" title="Buscar visitante existente">
-                                                <i class="bi bi-search"></i>
-                                            </button>
-                                        </div>
+                                        <input type="text" 
+                                               class="form-control" 
+                                               id="identidadVisitante" 
+                                               @bind="createVisita.IdentidadVisitante" 
+                                               maxlength="50" 
+                                               required 
+                                               placeholder="Ej: 1234567890"
+                                               disabled="@(selectedVisitor != null)">
                                         <div class="form-text">
                                             <i class="bi bi-card-text me-1"></i>Número de cédula o documento de identidad
+                                            @if (selectedVisitor != null)
+                                            {
+                                                <span class="text-muted">(Completado automáticamente)</span>
+                                            }
                                         </div>
                                     </div>
                                 </div>
@@ -183,7 +242,7 @@
                                         <label for="destino" class="form-label fw-bold">Destino <span class="text-danger">*</span></label>
                                         <input type="text" class="form-control" id="destino" @bind="createVisita.Destino" maxlength="200" required placeholder="Ej: Oficina Principal, Área de Producción">
                                         <div class="form-text">
-                                            <i class="bi bi-geo-alt me-1"></i>Lugar específico dentro de la empresa
+                                            <i class="bi bi-geo-alt me-1"></i>Lugar específico dentro de la empresa donde se realizará la visita
                                         </div>
                                     </div>
                                 </div>
@@ -212,16 +271,46 @@
                                 <div class="col-md-12">
                                     <div class="mb-3">
                                         <label for="idCompania" class="form-label fw-bold">Empresa <span class="text-danger">*</span></label>
-                                        <select class="form-select" id="idCompania" @bind="createVisita.IdCompania" required>
-                                            <option value="">Seleccionar empresa...</option>
-                                            @foreach (var empresa in empresas)
-                                            {
-                                                <option value="@empresa.Id">@empresa.Name</option>
-                                            }
-                                        </select>
-                                        <div class="form-text">
-                                            <i class="bi bi-building me-1"></i>Empresa donde se realizará la visita
-                                        </div>
+                                        @if (!isAdmin && assignedCompany != null)
+                                        {
+                                            <input type="text" class="form-control" value="@assignedCompany.Name" readonly>
+                                            <input type="hidden" @bind="createVisita.IdCompania" />
+                                            <div class="form-text">
+                                                <i class="bi bi-building me-1"></i>
+                                                @if (companySource == "colaborador")
+                                                {
+                                                    <span>Empresa del colaborador asignado - Solo Admin puede cambiar empresas</span>
+                                                }
+                                                else if (companySource == "usuario")
+                                                {
+                                                    <span>Empresa asignada al usuario - Solo Admin puede cambiar empresas</span>
+                                                }
+                                                else
+                                                {
+                                                    <span>Empresa asignada - Solo Admin puede cambiar empresas</span>
+                                                }
+                                            </div>
+                                        }
+                                        else if (isAdmin)
+                                        {
+                                            <select class="form-select" id="idCompania" @bind="createVisita.IdCompania" required>
+                                                <option value="">Seleccionar empresa...</option>
+                                                @foreach (var empresa in empresas)
+                                                {
+                                                    <option value="@empresa.Id">@empresa.Name</option>
+                                                }
+                                            </select>
+                                            <div class="form-text">
+                                                <i class="bi bi-building me-1"></i>Seleccione la empresa para la visita
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="alert alert-warning">
+                                                <i class="bi bi-exclamation-triangle me-1"></i>
+                                                No tiene una empresa asignada. Contacte al administrador.
+                                            </div>
+                                        }
                                     </div>
                                 </div>
                             </div>
@@ -237,41 +326,7 @@
                                             }
                                         </select>
                                         <div class="form-text">
-                                            <i class="bi bi-geo-alt me-1"></i>Centro específico dentro de la empresa
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-12">
-                                    <div class="mb-3">
-                                        <label for="idSolicitante" class="form-label fw-bold">Solicitante <span class="text-danger">*</span></label>
-                                        <select class="form-select" id="idSolicitante" @bind="createVisita.IdSolicitante" required>
-                                            <option value="">Seleccionar solicitante...</option>
-                                            @foreach (var colaborador in colaboradores)
-                                            {
-                                                <option value="@colaborador.Id">@colaborador.Nombre</option>
-                                            }
-                                        </select>
-                                        <div class="form-text">
-                                            <i class="bi bi-person me-1"></i>Colaborador que solicita la visita
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-12">
-                                    <div class="mb-3">
-                                        <label for="idRecibidoPor" class="form-label fw-bold">Recibido Por <span class="text-danger">*</span></label>
-                                        <select class="form-select" id="idRecibidoPor" @bind="createVisita.IdRecibidoPor" required>
-                                            <option value="">Seleccionar responsable...</option>
-                                            @foreach (var colaborador in colaboradores)
-                                            {
-                                                <option value="@colaborador.Id">@colaborador.Nombre</option>
-                                            }
-                                        </select>
-                                        <div class="form-text">
-                                            <i class="bi bi-person-check me-1"></i>Colaborador que recibirá al visitante
+                                            <i class="bi bi-pin-map me-1"></i>Centro específico de la visita
                                         </div>
                                     </div>
                                 </div>
@@ -281,137 +336,162 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" @onclick="CloseModal">Cancelar</button>
+                <button type="button" class="btn btn-secondary" @onclick="CloseModal" disabled="@isLoading">
+                    <i class="bi bi-x-circle me-1"></i>Cancelar
+                </button>
                 <button type="button" class="btn btn-primary" @onclick="SaveVisita" disabled="@isLoading">
                     @if (isLoading)
                     {
                         <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        <span>Guardando...</span>
                     }
-                    @(IsEdit ? "Actualizar" : "Crear") Visita
+                    else
+                    {
+                        <i class="bi bi-save me-1"></i>
+                        <span>@(IsEdit ? "Actualizar" : "Guardar")</span>
+                    }
                 </button>
             </div>
         </div>
     </div>
 </div>
 
+@if (showVisitorSearchModal)
+{
+    <VisitorSearchModal OnVisitorSelected="OnVisitorSelected" OnCancel="OnVisitorSearchCancel" />
+}
+
 @code {
+    [Parameter] public bool IsEdit { get; set; } = false;
     [Parameter] public VisitaDto? Visita { get; set; }
     [Parameter] public EventCallback OnSave { get; set; }
     [Parameter] public EventCallback OnCancel { get; set; }
 
-    private CreateVisitaDto createVisita = new();
-    private UpdateVisitaDto updateVisita = new();
+    private CreateVisitaDto createVisita = new CreateVisitaDto();
+    private UpdateVisitaDto updateVisita = new UpdateVisitaDto();
+    private List<CompanyDto> empresas = new List<CompanyDto>();
+    private List<CentroDto> centros = new List<CentroDto>();
+    private List<ColaboradorDto> colaboradores = new List<ColaboradorDto>();
     private bool isLoading = false;
-    private bool IsEdit => Visita != null;
+    private bool isAdmin = false;
+    private CompanyDto? assignedCompany = null;
+    private string companySource = ""; // Para rastrear de dónde viene la empresa
 
-    // Datos para dropdowns
-    private List<CompanyDto> empresas = new();
-    private List<CentroDto> centros = new();
-    private List<ColaboradorDto> colaboradores = new();
-
-    // Fecha como DateTime para el binding
-    private DateTime fechaVisita
-    {
-        get => IsEdit ? Visita!.Fecha : DateTime.Now;
-        set
-        {
-            if (IsEdit)
-            {
-                updateVisita.Fecha = value;
-            }
-            else
-            {
-                createVisita.Fecha = value;
-            }
-        }
-    }
-
-    // Fecha de inicio como DateTime para el binding
-    private DateTime fechaInicio
-    {
-        get => IsEdit ? Visita!.FechaInicio : DateTime.Now;
-        set
-        {
-            if (IsEdit)
-            {
-                updateVisita.FechaInicio = value;
-            }
-            else
-            {
-                createVisita.FechaInicio = value;
-            }
-        }
-    }
-
-    // Fecha de vencimiento como DateTime para el binding
-    private DateTime fechaVencimiento
-    {
-        get => IsEdit ? Visita!.FechaVencimiento : DateTime.Now.AddDays(1);
-        set
-        {
-            if (IsEdit)
-            {
-                updateVisita.FechaVencimiento = value;
-            }
-            else
-            {
-                createVisita.FechaVencimiento = value;
-            }
-        }
-    }
+    // Variables para búsqueda de visitantes
+    private bool showVisitorSearchModal = false;
+    private VisitorDto? selectedVisitor = null;
+    private string selectedVisitorDisplay = "";
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadDropdownData();
-        
-        if (IsEdit)
-        {
-            // Cargar datos para edición
-            updateVisita = new UpdateVisitaDto
-            {
-                Id = Visita!.Id,
-                NumeroSolicitud = Visita.NumeroSolicitud,
-                Fecha = Visita.Fecha,
-                FechaInicio = Visita.FechaInicio,
-                FechaVencimiento = Visita.FechaVencimiento,
-                TipoVisita = Visita.TipoVisita,
-                TipoTransporte = Visita.TipoTransporte,
-                NombreCompleto = Visita.NombreCompleto,
-                IdentidadVisitante = Visita.IdentidadVisitante,
-                PlacaVehiculo = Visita.PlacaVehiculo,
-                Procedencia = Visita.Procedencia,
-                Destino = Visita.Destino,
-                MotivoVisita = Visita.MotivoVisita,
-                IdSolicitante = Visita.IdSolicitante,
-                IdRecibidoPor = Visita.IdRecibidoPor,
-                IdCompania = Visita.IdCompania,
-                IdCentro = Visita.IdCentro
-            };
-        }
-        else
-        {
-            // Generar número de solicitud automático
-            createVisita.NumeroSolicitud = VisitaService.GenerarNumeroSolicitud();
-        }
-    }
-
-    private async Task LoadDropdownData()
-    {
         try
         {
-            var empresasTask = CompanyService.GetAllCompaniesAsync();
-            var centrosTask = CentroService.GetAllCentrosAsync();
-            var colaboradoresTask = ColaboradorService.GetAllColaboradoresAsync();
+            // Verificar el rol del usuario
+            var currentUser = await AuthService.GetCurrentUserAsync();
+            isAdmin = currentUser?.Roles?.Any(r => r.Name == "Admin") ?? false;
 
-            await Task.WhenAll(empresasTask, centrosTask, colaboradoresTask);
+            // Asignar IdSolicitante e IdRecibidoPor basado en el colaborador del usuario
+            if (currentUser != null)
+            {
+                // Si el usuario tiene un colaborador asignado, usarlo
+                if (currentUser.IdColaborador.HasValue && currentUser.IdColaborador.Value > 0)
+                {
+                    createVisita.IdSolicitante = currentUser.IdColaborador.Value;
+                    createVisita.IdRecibidoPor = currentUser.IdColaborador.Value;
+                }
+                else
+                {
+                    // Si no tiene colaborador, mostrar error
+                    await JSRuntime.InvokeVoidAsync("alert", "Error: El usuario no tiene un colaborador asignado. Contacte al administrador.");
+                    return;
+                }
+            }
 
-            empresas = empresasTask.Result;
-            centros = centrosTask.Result;
-            colaboradores = colaboradoresTask.Result;
+            // Si NO es Admin, obtener la empresa del usuario
+            if (!isAdmin && currentUser != null)
+            {
+                // Prioridad 1: Empresa del Colaborador asignado
+                if (currentUser.Colaborador?.Compania != null)
+                {
+                    assignedCompany = currentUser.Colaborador.Compania;
+                    createVisita.IdCompania = assignedCompany.Id;
+                    companySource = "colaborador";
+                }
+                // Prioridad 2: Empresa directa del usuario (IdCompania + Compania)
+                else if (currentUser.Compania != null)
+                {
+                    assignedCompany = currentUser.Compania;
+                    createVisita.IdCompania = assignedCompany.Id;
+                    companySource = "usuario";
+                }
+                // Prioridad 3: Primera empresa de AssignedCompanies
+                else if (currentUser.AssignedCompanies?.Any() == true)
+                {
+                    assignedCompany = currentUser.AssignedCompanies.First();
+                    createVisita.IdCompania = assignedCompany.Id;
+                    companySource = "asignada";
+                }
+            }
+
+            // Generar número de solicitud
+            createVisita.NumeroSolicitud = $"SOL-{DateTime.Now:yyyyMMdd}-{new Random().Next(1000, 9999)}";
+            
+            // Establecer fechas por defecto
+            createVisita.Fecha = DateTime.Today;
+            createVisita.FechaInicio = DateTime.Now;
+            createVisita.FechaVencimiento = DateTime.Now.AddDays(1);
+
+            // Cargar datos
+            if (isAdmin)
+            {
+                // Solo Admin puede ver todas las empresas
+                empresas = await CompanyService.GetAllCompaniesAsync();
+            }
+
+            // Cargar centros según la empresa seleccionada
+            await LoadCentrosForSelectedCompany();
         }
         catch (Exception ex)
         {
             await JSRuntime.InvokeVoidAsync("alert", $"Error al cargar datos: {ex.Message}");
+        }
+    }
+
+    private async Task OnCompanyChanged(ChangeEventArgs e)
+    {
+        await LoadCentrosForSelectedCompany();
+    }
+
+    private async Task LoadCentrosForSelectedCompany()
+    {
+        try
+        {
+            if (!isAdmin && assignedCompany != null)
+            {
+                // Para usuarios no Admin, obtener las zonas de acceso de la empresa asignada
+                var zonasEmpresa = assignedCompany.ZonasAcceso?.Select(z => z.Id).ToList() ?? new List<int>();
+                
+                if (zonasEmpresa.Any())
+                {
+                    // Cargar todos los centros y filtrar por las zonas de la empresa
+                    var allCentros = await CentroService.GetAllCentrosAsync();
+                    centros = allCentros.Where(c => zonasEmpresa.Contains(c.IdZona)).ToList();
+                }
+                else
+                {
+                    // Si no hay zonas asignadas, cargar todos los centros disponibles
+                    centros = await CentroService.GetAllCentrosAsync();
+                }
+            }
+            else if (isAdmin)
+            {
+                // Para Admin, cargar todos los centros
+                centros = await CentroService.GetAllCentrosAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error al cargar centros: {ex.Message}");
         }
     }
 
@@ -420,13 +500,13 @@
         if (isLoading) return;
 
         // Validaciones de fechas
-        if (fechaInicio >= fechaVencimiento)
+        if (createVisita.FechaInicio >= createVisita.FechaVencimiento)
         {
             await JSRuntime.InvokeVoidAsync("alert", "La fecha de inicio debe ser anterior a la fecha de vencimiento");
             return;
         }
 
-        if (fechaVencimiento <= DateTime.Now)
+        if (createVisita.FechaVencimiento <= DateTime.Now)
         {
             await JSRuntime.InvokeVoidAsync("alert", "La fecha de vencimiento debe ser posterior a la fecha actual");
             return;
@@ -466,5 +546,43 @@
     {
         await OnCancel.InvokeAsync();
     }
-}
+
+    // Métodos para búsqueda de visitantes
+    private void ShowVisitorSearch()
+    {
+        showVisitorSearchModal = true;
+        StateHasChanged();
+    }
+
+    private void OnVisitorSelected(VisitorDto visitor)
+    {
+        selectedVisitor = visitor;
+        selectedVisitorDisplay = $"{visitor.FullName} - {visitor.DocumentNumber}";
+        
+        // Llenar automáticamente los campos del visitante
+        createVisita.NombreCompleto = visitor.FullName;
+        createVisita.IdentidadVisitante = visitor.DocumentNumber;
+        createVisita.Procedencia = visitor.Company ?? "";
+        createVisita.IdVisitor = visitor.Id; // Asignar el ID del visitante
+        
+        showVisitorSearchModal = false;
+        StateHasChanged();
+    }
+
+    private void OnVisitorSearchCancel()
+    {
+        showVisitorSearchModal = false;
+        StateHasChanged();
+    }
+
+    private void ClearVisitorSelection()
+    {
+        selectedVisitor = null;
+        selectedVisitorDisplay = "";
+        createVisita.NombreCompleto = "";
+        createVisita.IdentidadVisitante = "";
+        createVisita.Procedencia = "";
+        createVisita.IdVisitor = null; // Limpiar el ID del visitante
+        StateHasChanged();
+    }
 }

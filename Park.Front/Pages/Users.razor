@@ -2,9 +2,12 @@
 @using Park.Front.Services
 @using Park.Comun.DTOs
 @using Park.Front.Components
+@using Park.Front.Constants
 @inject UserService UserService
 @inject ColaboradorService ColaboradorService
+@inject ZonaService ZonaService
 @inject IJSRuntime JSRuntime
+@inject NotificationService NotificationService
 
 <PageTitle>Gestión de Usuarios - Park.Front</PageTitle>
 
@@ -157,6 +160,18 @@
                                         <button class="btn btn-sm btn-outline-info" @onclick="() => ShowChangePasswordModal(user)" title="Cambiar Contraseña">
                                             <i class="bi bi-key"></i>
                                         </button>
+                                        @if (user.Roles.Any(r => r.Name == "Guardia"))
+                                        {
+                                            <button class="btn btn-sm btn-outline-primary" @onclick="() => ShowAssignZoneModal(user)" title="Asignar Zona">
+                                                <i class="bi bi-geo-alt"></i>
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn btn-sm btn-outline-success" @onclick="() => ShowAssignColaboradorModal(user)" title="Asignar Colaborador">
+                                                <i class="bi bi-person-plus"></i>
+                                            </button>
+                                        }
                                         <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteUser(user.Id)" title="Eliminar">
                                             <i class="bi bi-trash"></i>
                                         </button>
@@ -918,6 +933,57 @@
     </div>
 }
 
+<!-- Modal para asignar zona -->
+@if (showAssignZoneModal)
+{
+    <div class="modal-backdrop show" @onclick="HideAssignZoneModal"></div>
+    <div class="modal show d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Asignar Zona a Guardia</h5>
+                    <button type="button" class="btn-close" @onclick="HideAssignZoneModal"></button>
+                </div>
+                <div class="modal-body">
+                    @if (selectedUserForZone != null)
+                    {
+                        <div class="mb-3">
+                            <label class="form-label"><strong>Usuario:</strong></label>
+                            <p class="form-control-plaintext">@selectedUserForZone.FullName (@selectedUserForZone.Username)</p>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="zonaSelect" class="form-label">Zona Asignada</label>
+                            <select id="zonaSelect" class="form-select" @bind="selectedZonaId">
+                                <option value="">Sin zona asignada</option>
+                                @foreach (var zona in zonas)
+                                {
+                                    <option value="@zona.Id">@zona.Nombre - @zona.Sitio?.Nombre</option>
+                                }
+                            </select>
+                        </div>
+                        
+                        @if (!string.IsNullOrEmpty(assignZoneErrorMessage))
+                        {
+                            <div class="alert alert-danger">@assignZoneErrorMessage</div>
+                        }
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="HideAssignZoneModal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" @onclick="HandleAssignZone" disabled="@isAssigningZone">
+                        @if (isAssigningZone)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                        }
+                        Asignar Zona
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private List<UserDto> users = new();
     private List<RoleDto> availableRoles = new();
@@ -946,6 +1012,14 @@
     // Variables para modal de visualización
     private bool showViewModal = false;
     private UserDto? selectedUserForView = null;
+    
+    // Variables para asignación de zona
+    private bool showAssignZoneModal = false;
+    private List<ZonaDto> zonas = new();
+    private UserDto? selectedUserForZone = null;
+    private int? selectedZonaId = null;
+    private bool isAssigningZone = false;
+    private string assignZoneErrorMessage = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -1219,6 +1293,64 @@
         finally
         {
             isChangingPassword = false;
+        }
+    }
+
+    // Métodos para asignación de zona
+    private async Task ShowAssignZoneModal(UserDto user)
+    {
+        selectedUserForZone = user;
+        selectedZonaId = user.IdZonaAsignada;
+        assignZoneErrorMessage = string.Empty;
+        
+        try
+        {
+            zonas = await ZonaService.GetAllZonasAsync();
+        }
+        catch (Exception ex)
+        {
+            assignZoneErrorMessage = $"Error cargando zonas: {ex.Message}";
+        }
+        
+        showAssignZoneModal = true;
+    }
+
+    private void HideAssignZoneModal()
+    {
+        showAssignZoneModal = false;
+        selectedUserForZone = null;
+        selectedZonaId = null;
+        assignZoneErrorMessage = string.Empty;
+    }
+
+    private async Task HandleAssignZone()
+    {
+        if (selectedUserForZone == null) return;
+
+        try
+        {
+            isAssigningZone = true;
+            assignZoneErrorMessage = string.Empty;
+
+            var assignZoneDto = new AssignZoneToUserDto
+            {
+                UserId = selectedUserForZone.Id,
+                ZonaId = selectedZonaId
+            };
+
+            await UserService.AssignZoneToUserAsync(assignZoneDto);
+            
+            HideAssignZoneModal();
+            await LoadData();
+            NotificationService.ShowSuccess(SuccessMessages.USER_ZONE_ASSIGNED);
+        }
+        catch (Exception ex)
+        {
+            assignZoneErrorMessage = $"Error asignando zona: {ex.Message}";
+        }
+        finally
+        {
+            isAssigningZone = false;
         }
     }
 }
